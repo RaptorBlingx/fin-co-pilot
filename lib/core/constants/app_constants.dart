@@ -17,4 +17,5 @@ class AppConstants {
   static const String routeSignIn = '/sign-in';
   static const String routeOnboarding = '/onboarding';
   static const String routeDashboard = '/dashboard';
+  static const String routeSettings = '/settings';
 }

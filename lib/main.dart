@@ -10,6 +10,7 @@ import 'features/onboarding/presentation/screens/welcome_screen.dart';
 import 'features/onboarding/presentation/screens/currency_setup_screen.dart';
 import 'features/onboarding/presentation/screens/complete_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'features/settings/presentation/screens/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -82,6 +83,10 @@ final _router = GoRouter(
     GoRoute(
       path: AppConstants.routeDashboard,
       builder: (context, state) => const DashboardScreen(),
+    ),
+    GoRoute(
+      path: AppConstants.routeSettings,
+      builder: (context, state) => const SettingsScreen(),
     ),
   ],
 );

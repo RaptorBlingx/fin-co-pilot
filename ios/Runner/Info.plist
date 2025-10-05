@@ -49,5 +49,9 @@
 	<string>We need camera access to scan receipts</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We need photo library access to select receipt images</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need microphone access for voice input of transactions</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>We need speech recognition to transcribe your voice commands</string>
 </dict>
 </plist>

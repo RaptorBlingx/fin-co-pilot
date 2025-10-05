@@ -4,6 +4,7 @@ import 'dart:io';
 import '../../../../services/transaction_service.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/preferences_service.dart';
+import 'voice_input_screen.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({super.key});
@@ -166,12 +167,33 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const VoiceInputScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.mic),
+                    label: const Text('Voice'),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                        color: Colors.grey,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => _showImageSourceDialog(),
                     icon: const Icon(Icons.camera_alt),
-                    label: const Text('Receipt'),
+                    label: const Text('Photo'),
                     style: OutlinedButton.styleFrom(
                       backgroundColor: _selectedMethod == 'receipt'
                           ? Colors.blue.withOpacity(0.1)

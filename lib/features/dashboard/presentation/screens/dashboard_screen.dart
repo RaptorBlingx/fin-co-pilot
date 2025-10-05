@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/preferences_service.dart';
 import '../../../../core/utils/currency_utils.dart';
+import '../../../../services/transaction_service.dart';
+import '../../../../shared/models/transaction.dart' as model;
 import 'ai_test_screen.dart';
 import '../../../transactions/presentation/screens/transactions_screen.dart';
 import '../../../transactions/presentation/screens/add_transaction_screen.dart';
+import '../../../settings/presentation/screens/settings_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -20,10 +23,14 @@ class DashboardScreen extends StatelessWidget {
         title: const Text('Fin Co-Pilot'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await authService.signOut();
-              // Navigation will be handled by auth state listener
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
             },
           ),
         ],
@@ -51,17 +58,98 @@ class DashboardScreen extends StatelessWidget {
               ),
               
               const SizedBox(height: 32),
-              
-              // Currency info
+
+              // Current month spending summary
+              StreamBuilder<List<model.Transaction>>(
+                stream: TransactionService().getCurrentMonthTransactions(user!.uid),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(child: CircularProgressIndicator()),
+                    );
+                  }
+
+                  final transactions = snapshot.data!;
+                  final totalInUserCurrency = transactions.fold<double>(
+                    0,
+                    (sum, t) => sum + t.amount,
+                  );
+
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.calendar_month, color: Colors.blue),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'This Month',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  Text(
+                                    CurrencyUtils.formatAmount(totalInUserCurrency, currency),
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.blue,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '${transactions.length} transactions',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // Currency preference
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.grey.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.monetization_on, color: Colors.blue),
+                    const Icon(Icons.monetization_on, color: Colors.green),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
