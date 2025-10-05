@@ -8,6 +8,9 @@ import '../../../../shared/models/transaction.dart' as model;
 import '../../../../shared/models/spending_insights.dart';
 import '../../../../shared/models/financial_insight.dart';
 import '../../../../core/utils/currency_utils.dart';
+import '../../../../shared/widgets/shimmer_loading.dart';
+import '../../../../shared/widgets/empty_state.dart';
+import '../../../../core/utils/haptic_utils.dart';
 
 class InsightsScreen extends StatefulWidget {
   const InsightsScreen({super.key});
@@ -41,7 +44,16 @@ class _InsightsScreenState extends State<InsightsScreen> {
         stream: _transactionService.getCurrentMonthTransactions(user.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                const ChartSkeleton(),
+                const SizedBox(height: 24),
+                const CardSkeleton(),
+                const SizedBox(height: 24),
+                const CardSkeleton(),
+              ],
+            );
           }
 
           if (snapshot.hasError) {
@@ -51,24 +63,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
           final transactions = snapshot.data ?? [];
 
           if (transactions.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.analytics_outlined, size: 80, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No data to analyze yet',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Add some transactions to see insights',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                  ),
-                ],
-              ),
-            );
+            return const NoInsightsEmpty();
           }
 
           final insights = InsightsService.generateInsights(transactions);

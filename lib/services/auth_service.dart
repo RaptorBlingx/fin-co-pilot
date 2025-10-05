@@ -3,6 +3,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'analytics_service.dart';
+import 'notification_service.dart';
+import 'budget_monitoring_service.dart';
 import 'dart:io' show Platform;
 
 class AuthService {
@@ -28,6 +30,9 @@ class AuthService {
       await AnalyticsService.logSignIn('email');
       await AnalyticsService.setUserProperties(userId: userCredential.user?.uid);
       
+      // Initialize notifications after successful login
+      await _initializeNotificationsForUser(userCredential.user!);
+      
       return userCredential;
     } catch (e) {
       rethrow;
@@ -49,6 +54,8 @@ class AuthService {
       // Create user document in Firestore
       if (credential.user != null) {
         await _createUserDocument(credential.user!);
+        // Initialize notifications for new user
+        await _initializeNotificationsForUser(credential.user!);
       }
       
       return credential;
@@ -86,6 +93,9 @@ class AuthService {
       
       // Set user properties
       await AnalyticsService.setUserProperties(userId: userCredential.user?.uid);
+      
+      // Initialize notifications after successful login
+      await _initializeNotificationsForUser(userCredential.user!);
       
       return userCredential;
     } catch (e) {
@@ -164,6 +174,32 @@ class AuthService {
       'language_preference': language,
       'country_code': countryCode,
     });
+  }
+
+  // Initialize notifications for user after login
+  Future<void> _initializeNotificationsForUser(User user) async {
+    try {
+      final notificationService = NotificationService();
+      final budgetMonitoring = BudgetMonitoringService();
+      
+      // Save FCM token to Firestore
+      if (notificationService.fcmToken != null) {
+        await _firestore.collection('users').doc(user.uid).update({
+          'fcmToken': notificationService.fcmToken,
+          'lastTokenUpdate': FieldValue.serverTimestamp(),
+        });
+      }
+      
+      // Check for immediate budget alerts
+      await budgetMonitoring.checkBudgetAlerts();
+      
+      // Check for spending milestones
+      await budgetMonitoring.checkSpendingMilestones();
+      
+      print('Notifications initialized for user: ${user.uid}');
+    } catch (e) {
+      print('Error initializing notifications: $e');
+    }
   }
 
   // Sign out

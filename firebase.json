@@ -1,1 +1,52 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"fin-co-pilot-v2","appId":"1:957239134993:android:4f40406284f5fbf1ba9ab0","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"fin-co-pilot-v2","configurations":{"android":"1:957239134993:android:4f40406284f5fbf1ba9ab0","ios":"1:957239134993:ios:4a3bb05f1ad188c9ba9ab0"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "fin-co-pilot-v2",
+          "appId": "1:957239134993:android:4f40406284f5fbf1ba9ab0",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "fin-co-pilot-v2",
+          "configurations": {
+            "android": "1:957239134993:android:4f40406284f5fbf1ba9ab0",
+            "ios": "1:957239134993:ios:4a3bb05f1ad188c9ba9ab0"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log"
+      ]
+    }
+  ],
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

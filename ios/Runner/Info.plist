@@ -57,5 +57,11 @@
 		<true/>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+		<!-- Push Notification Background Modes -->
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>remote-notification</string>
+			<string>background-fetch</string>
+		</array>
 	</dict>
 </plist>

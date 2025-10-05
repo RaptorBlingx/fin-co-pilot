@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../../../../services/proactive_coach_agent.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../shared/models/coaching_tip.dart';
+import '../../../../shared/widgets/shimmer_loading.dart';
+import '../../../../shared/widgets/empty_state.dart';
+import '../../../../core/utils/haptic_utils.dart';
+import '../../../../shared/widgets/loading_button.dart';
 
 class CoachingScreen extends StatefulWidget {
   const CoachingScreen({super.key});
@@ -28,7 +32,10 @@ class _CoachingScreenState extends State<CoachingScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => _generateCoaching(user.uid),
+            onPressed: () {
+              HapticUtils.light();
+              _generateCoaching(user.uid);
+            },
             tooltip: 'Generate new tips',
           ),
         ],
@@ -50,7 +57,14 @@ class _CoachingScreenState extends State<CoachingScreen> {
                 print('🐛 Error: ${snapshot.error}');
                 
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: 3,
+                    itemBuilder: (context, index) => const Padding(
+                      padding: EdgeInsets.only(bottom: 16),
+                      child: CardSkeleton(),
+                    ),
+                  );
                 }
 
                 if (snapshot.hasError) {

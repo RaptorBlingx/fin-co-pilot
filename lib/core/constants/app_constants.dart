@@ -20,4 +20,7 @@ class AppConstants {
   static const String routeSettings = '/settings';
   static const String routeCoaching = '/coaching';
   static const String routeShopping = '/shopping';
+  static const String routeReports = '/reports';
+  static const String routeNotifications = '/notifications';
+  static const String routeNotificationSettings = '/settings/notifications';
 }

@@ -3,9 +3,12 @@ import '../../../../services/transaction_service.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../shared/models/transaction.dart' as model;
 import '../../../../core/utils/currency_utils.dart';
+import '../../../../core/utils/haptic_utils.dart';
 import 'add_transaction_screen.dart';
 import 'transaction_detail_screen.dart';
 import '../widgets/category_filter.dart';
+import '../../../../core/navigation/page_transitions.dart';
+import '../../../../shared/widgets/empty_state.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -81,44 +84,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 }
 
                 if (transactions.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.receipt_long,
-                          size: 80,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _selectedCategory != null
-                              ? 'No $_selectedCategory transactions'
-                              : 'No transactions yet',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const AddTransactionScreen(),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.add),
-                          label: Text(
-                            _selectedCategory != null
-                                ? 'Add $_selectedCategory transaction'
-                                : 'Add Your First Transaction',
-                          ),
-                        ),
-                      ],
-                    ),
+                  return NoTransactionsEmpty(
+                    onAdd: () {
+                      HapticUtils.medium();
+                      context.pushWithSlideUp(const AddTransactionScreen());
+                    },
                   );
                 }
 
@@ -205,12 +175,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddTransactionScreen(),
-            ),
-          );
+          HapticUtils.medium();
+          context.pushWithSlideUp(const AddTransactionScreen());
         },
         child: const Icon(Icons.add),
       ),
@@ -277,8 +243,13 @@ class _TransactionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: InkWell(
         onTap: () {
+          HapticUtils.light();
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -288,28 +259,76 @@ class _TransactionTile extends StatelessWidget {
             ),
           );
         },
-        child: ListTile(
-          leading: CircleAvatar(
-            backgroundColor: _getCategoryColor(transaction.category).withOpacity(0.1),
-            child: Icon(
-              _getCategoryIcon(transaction.category),
-              color: _getCategoryColor(transaction.category),
-            ),
-          ),
-          title: Text(
-            transaction.merchant ?? transaction.description ?? 'Transaction',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          subtitle: Text(
-            '${transaction.category} • ${_formatDate(transaction.transactionDate)}',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-          ),
-          trailing: Text(
-            CurrencyUtils.formatAmount(transaction.amount, transaction.currency),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Category icon with hero animation
+              Hero(
+                tag: 'transaction_${transaction.id}',
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _getCategoryColor(transaction.category).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    _getCategoryIcon(transaction.category),
+                    color: _getCategoryColor(transaction.category),
+                    size: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      transaction.merchant ?? transaction.description ?? 'Transaction',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      transaction.category,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    CurrencyUtils.formatAmount(
+                      transaction.amount,
+                      transaction.currency,
+                    ),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatDate(transaction.transactionDate),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

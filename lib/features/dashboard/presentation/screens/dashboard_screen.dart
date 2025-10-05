@@ -12,7 +12,13 @@ import '../../../settings/presentation/screens/settings_screen.dart';
 import '../../../insights/presentation/screens/insights_screen.dart';
 import '../../../coaching/presentation/screens/coaching_screen.dart';
 import '../../../shopping/presentation/screens/shopping_screen.dart';
+import '../../../reports/presentation/screens/reports_screen.dart';
+import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../widgets/coaching_tips_widget.dart';
+import '../../../../shared/widgets/shimmer_loading.dart';
+import '../../../../shared/widgets/empty_state.dart';
+import '../../../../core/utils/haptic_utils.dart';
+import '../../../../core/navigation/page_transitions.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -42,12 +48,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
-              );
+              HapticUtils.light();
+              context.pushWithFade(const SettingsScreen());
             },
           ),
         ],
@@ -92,11 +94,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         color: Colors.blue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Center(child: CircularProgressIndicator()),
+                      child: Row(
+                        children: [
+                          const ShimmerLoading(width: 24, height: 24, borderRadius: 12),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const ShimmerLoading(width: 80, height: 12, borderRadius: 4),
+                                const SizedBox(height: 8),
+                                ShimmerLoading(
+                                  width: MediaQuery.of(context).size.width * 0.4,
+                                  height: 24,
+                                  borderRadius: 4,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const ShimmerLoading(width: 100, height: 20, borderRadius: 10),
+                        ],
+                      ),
                     );
                   }
 
                   final transactions = snapshot.data!;
+                  
+                  if (transactions.isEmpty) {
+                    return const NoTransactionsEmpty();
+                  }
+                  
                   final totalInUserCurrency = transactions.fold<double>(
                     0,
                     (sum, t) => sum + t.amount,
@@ -264,13 +291,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             label: 'Add Transaction',
                             color: Colors.blue,
                             onTap: () {
+                              HapticUtils.medium();
                               AnalyticsService.logFeatureUsed('add_transaction_button');
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const AddTransactionScreen(),
-                                ),
-                              );
+                              context.pushWithSlideUp(const AddTransactionScreen());
                             },
                           ),
                         ),
@@ -281,13 +304,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             label: 'View All',
                             color: Colors.green,
                             onTap: () {
+                              HapticUtils.light();
                               AnalyticsService.logFeatureUsed('view_all_transactions_button');
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const TransactionsScreen(),
-                                ),
-                              );
+                              context.pushWithFade(const TransactionsScreen());
                             },
                           ),
                         ),
@@ -374,6 +393,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ],
                     ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _QuickActionCard(
+                            icon: Icons.description,
+                            label: 'Reports',
+                            color: Colors.deepPurple,
+                            onTap: () {
+                              AnalyticsService.logFeatureUsed('reports_button');
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ReportsScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _QuickActionCard(
+                            icon: Icons.notifications_active,
+                            label: 'Notifications',
+                            color: Colors.pink,
+                            onTap: () {
+                              AnalyticsService.logFeatureUsed('notifications_button');
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const NotificationsScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
             ],
@@ -400,7 +459,10 @@ class _QuickActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        HapticUtils.light();
+        onTap();
+      },
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(16),

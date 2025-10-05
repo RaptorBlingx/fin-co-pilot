@@ -5,6 +5,8 @@ import '../../../../services/transaction_service.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/preferences_service.dart';
 import 'voice_input_screen.dart';
+import '../../../../core/utils/haptic_utils.dart';
+import '../../../../shared/widgets/loading_button.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({super.key});
@@ -277,23 +279,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             const SizedBox(height: 32),
             
             // Add button
-            ElevatedButton(
-              onPressed: _isLoading ? null : _addTransaction,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text('Add Transaction'),
+            LoadingButton(
+              label: 'Add Transaction',
+              icon: Icons.add,
+              isLoading: _isLoading,
+              isFullWidth: true,
+              onPressed: _addTransaction,
             ),
           ],
         ),

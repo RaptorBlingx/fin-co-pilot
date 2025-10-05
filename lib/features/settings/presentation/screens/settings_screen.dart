@@ -4,6 +4,8 @@ import '../../../../services/preferences_service.dart';
 import '../../../../core/utils/currency_utils.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/utils/haptic_utils.dart';
+import '../../../../shared/widgets/loading_button.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -15,11 +17,15 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final AuthService _authService = AuthService();
   String _selectedCurrency = 'USD';
+  bool _isDarkMode = false;
+  bool _notificationsEnabled = true;
+  bool _hapticFeedbackEnabled = true;
 
   @override
   void initState() {
     super.initState();
     _selectedCurrency = PreferencesService.getCurrency() ?? 'USD';
+    _isDarkMode = Theme.of(context).brightness == Brightness.dark;
   }
 
   @override
@@ -71,12 +77,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
+          // Dark Mode Toggle
+          ListTile(
+            leading: Icon(_isDarkMode ? Icons.dark_mode : Icons.light_mode),
+            title: const Text('Dark Mode'),
+            subtitle: Text(_isDarkMode ? 'Enabled' : 'Disabled'),
+            trailing: Switch(
+              value: _isDarkMode,
+              onChanged: (value) {
+                HapticUtils.light();
+                setState(() {
+                  _isDarkMode = value;
+                });
+                // TODO: Implement theme switching with provider
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Theme switching coming soon!'),
+                  ),
+                );
+              },
+            ),
+          ),
+          
+          // Notifications Toggle
+          ListTile(
+            leading: const Icon(Icons.notifications),
+            title: const Text('Notifications'),
+            subtitle: Text(_notificationsEnabled ? 'Enabled' : 'Disabled'),
+            trailing: Switch(
+              value: _notificationsEnabled,
+              onChanged: (value) {
+                HapticUtils.light();
+                setState(() {
+                  _notificationsEnabled = value;
+                });
+              },
+            ),
+          ),
+          
+          // Haptic Feedback Toggle
+          ListTile(
+            leading: const Icon(Icons.vibration),
+            title: const Text('Haptic Feedback'),
+            subtitle: Text(_hapticFeedbackEnabled ? 'Enabled' : 'Disabled'),
+            trailing: Switch(
+              value: _hapticFeedbackEnabled,
+              onChanged: (value) {
+                if (value) {
+                  HapticUtils.light();
+                }
+                setState(() {
+                  _hapticFeedbackEnabled = value;
+                });
+              },
+            ),
+          ),
+          
           ListTile(
             leading: const Icon(Icons.language),
             title: const Text('Language'),
             subtitle: const Text('English'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
+              HapticUtils.light();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Language selection coming soon')),
               );

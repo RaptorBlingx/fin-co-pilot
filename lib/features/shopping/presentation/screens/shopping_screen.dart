@@ -3,6 +3,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../services/price_intelligence_agent.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../shared/models/price_result.dart';
+import '../../../../shared/widgets/shimmer_loading.dart';
+import '../../../../shared/widgets/empty_state.dart';
+import '../../../../core/utils/haptic_utils.dart';
 
 class ShoppingScreen extends StatefulWidget {
   const ShoppingScreen({super.key});
@@ -73,6 +76,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
                   ? IconButton(
                       icon: const Icon(Icons.clear),
                       onPressed: () {
+                        HapticUtils.light();
                         setState(() {
                           _searchController.clear();
                           _searchResults = [];
@@ -137,50 +141,43 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.shopping_bag_outlined,
-              size: 80,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Find the Best Prices',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Search for any product to compare prices from multiple retailers in your region',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
-              children: [
-                _buildSuggestionChip('iPhone 16 Pro'),
-                _buildSuggestionChip('MacBook Air'),
-                _buildSuggestionChip('AirPods Pro'),
-                _buildSuggestionChip('iPad'),
-              ],
-            ),
-          ],
+    return Column(
+      children: [
+        const Expanded(
+          child: EmptyState(
+            icon: Icons.shopping_bag_outlined,
+            title: 'Find the Best Prices',
+            message: 'Search for any product to compare prices from multiple retailers in your region',
+          ),
         ),
-      ),
+        Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            children: [
+              const Text(
+                'Popular searches:',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.center,
+                children: [
+                  _buildSuggestionChip('iPhone 16 Pro'),
+                  _buildSuggestionChip('MacBook Air'),
+                  _buildSuggestionChip('AirPods Pro'),
+                  _buildSuggestionChip('iPad'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -188,6 +185,7 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
     return ActionChip(
       label: Text(text),
       onPressed: () {
+        HapticUtils.light();
         setState(() {
           _searchController.text = text;
         });
@@ -199,28 +197,44 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
   }
 
   Widget _buildLoadingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 24),
-          Text(
-            'Searching for best prices...',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[700],
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 5,
+      itemBuilder: (context, index) => Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const ShimmerLoading(width: 100, height: 16, borderRadius: 4),
+                    const Spacer(),
+                    const ShimmerLoading(width: 60, height: 20, borderRadius: 10),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const ShimmerLoading(width: 120, height: 24, borderRadius: 4),
+                const SizedBox(height: 8),
+                const ShimmerLoading(width: 80, height: 14, borderRadius: 4),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: ShimmerLoading(width: double.infinity, height: 36, borderRadius: 8),
+                    ),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: ShimmerLoading(width: double.infinity, height: 36, borderRadius: 8),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'This may take 10-15 seconds',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
