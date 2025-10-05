@@ -1,0 +1,133 @@
+# Checkpoint — Fin Co-Pilot Alpha — October 5, 2025, 14:15
+
+## Summary
+
+Building **Fin Co-Pilot**, an AI-powered personal finance mobile app using Flutter + Firebase + Gemini AI multi-agent swarm architecture. **Phase 1 is 89% complete** (8 of 9 milestones done). The app currently has: authentication, onboarding with auto-currency detection, transaction logging via text/voice/receipt photo, AI-powered transaction classification, multi-currency support, insights dashboard with charts, and AI-generated financial analysis. Currently pausing to create app icon using Google's Imagen/Gemini image generation ("Nano Banana"), then implement splash screen before addressing minor bugs and polishing for alpha testing.
+
+## Key Facts & Configuration
+
+**Tech Stack:**
+- Flutter (mobile app) + Firebase (Auth, Firestore, Vertex AI)
+- Gemini 2.5 Flash (Orchestrator Agent)
+- Gemini 2.5 Flash-Lite (Receipt Parser, Transaction Classifier)
+- Gemini 2.5 Pro (Financial Analyst for insights)
+- Gemini 2.5 Flash Image / Imagen 3 (for app icon generation)
+
+**Project Structure:**
+```
+lib/
+├── core/ (config, constants, utils)
+├── features/ (auth, onboarding, dashboard, transactions, insights, settings)
+├── services/ (auth, transaction, insights, orchestrator, agents)
+└── shared/ (models, widgets)
+```
+
+**Key Files:**
+- `lib/services/gemini_orchestrator_service.dart` - AI routing logic
+- `lib/services/receipt_parser_agent.dart` - OCR from photos
+- `lib/services/transaction_classifier_agent.dart` - NLP categorization
+- `lib/services/insights_service.dart` - Analytics generation
+- `lib/shared/models/transaction.dart` - Transaction data model
+- `lib/core/utils/currency_utils.dart` - Multi-currency formatting
+
+**Firebase Project:** `fin-co-pilot-v2`
+
+**Supported Features:**
+- Text, voice, and receipt photo transaction input
+- Auto-categorization (groceries, dining, transport, entertainment, shopping, health, bills, education, travel)
+- Multi-currency (USD, EUR, GBP, CHF, TRY, etc. - auto-detected from device locale)
+- Monthly insights with pie charts and AI recommendations
+- Transaction filtering by category
+
+## Assumptions & Constraints
+
+**Design Decisions:**
+- Currency switching **disabled for alpha** (kept code commented out) - each user has one currency set at onboarding
+- App targets global market (any country, any currency, any language)
+- Freemium model planned: Free tier (3 months history, 50 transactions/month) + Premium ($4.99/month)
+- Phase 1 = Alpha MVP for initial testing (not Beta yet)
+- Cost optimization: Use cheapest Gemini model per task (Flash-Lite for simple, Pro for complex)
+
+**Budget/Costs:**
+- Currently on Firebase free tier + Vertex AI pay-as-you-go
+- GCP budget alerts set at $500/month threshold
+- Estimated cost: ~$0.78/month per 1000 transactions (vs $7.00 for single-agent approach)
+
+**Development Environment:**
+- VS Code + Claude Sonnet 4.5 (primary development tool)
+- Flutter SDK installed and configured
+- Physical Android device recommended for voice input testing
+
+## Open Tasks & Next Steps
+
+1. **APP ICON GENERATION**:
+   - Use Gemini 2.5 Flash Image (Nano Banana) API to generate app icon
+   - Prompt suggestions below
+   - Export as 1024x1024 PNG
+   - Add to Flutter project (`android/app/src/main/res/` and `ios/Runner/Assets.xcassets/`)
+
+2. **SPLASH SCREEN**:
+   - Create splash screen with app logo
+   - Configure for iOS and Android
+   - Add loading animation
+
+3. **BUG FIXES & POLISH** (User reported minor issues to address):
+   - Review and fix small bugs identified during testing
+   - Polish UI inconsistencies
+   - Test edge cases
+
+4. **M9: BETA LAUNCH PREP**:
+   - Privacy policy page
+   - Terms of service page
+   - App Store descriptions
+   - TestFlight/Firebase App Distribution setup
+
+5. **ALPHA TESTING**:
+   - Deploy to Firebase App Distribution
+   - Invite 10-20 alpha testers
+   - Collect feedback
+   - Iterate based on user input
+
+## Transition Prompt for New Chat
+
+Hi Claude, I'm continuing development of **Fin Co-Pilot**, an AI-powered personal finance mobile app. We're at **89% completion of Phase 1 (Alpha MVP)**. The app uses Flutter + Firebase + Gemini AI with a multi-agent swarm architecture (Orchestrator, Receipt Parser, Transaction Classifier, Financial Analyst agents).
+
+**Current state:** All core features working - users can add transactions via text/voice/receipt photo, view categorized spending, see insights with charts, and get AI-generated financial advice. Multi-currency support implemented. We just completed M8 (Insights & Analytics).
+
+**What we need now:**
+1. Generate an app icon using **Gemini 2.5 Flash Image** (the "Nano Banana" model) - research confirmed it's perfect for this (supports text-to-image, high quality, available via Vertex AI and Gemini API)
+2. Implement splash screen
+3. Fix minor bugs user identified
+4. Complete M9 for alpha launch
+
+**Important context:**
+- User prefers "partner" working style - collaborative, direct, no excessive praise
+- Project charter document attached contains full architecture details
+- Currency switching is disabled for alpha (code preserved but commented out)
+- Turkish Lira (TRY) support recently added
+- User is well-rested and ready to continue building
+
+**Please:**
+- Provide prompts for generating a clean, modern fintech app icon using Gemini image generation
+- Guide splash screen implementation step-by-step
+- Maintain the same technical depth and hands-on coding approach
+
+The user is energized and wants to keep building. Let's finish strong!
+
+---
+
+## Recent Decision Log
+
+**Major Decisions:**
+- **Currency Strategy:** Simplified to auto-detect only (no manual switching) to avoid conversion complexity in alpha
+- **Agent Architecture:** Confirmed multi-agent swarm (cost savings + modularity)
+- **Model Selection:** Flash-Lite for simple tasks, Flash for medium, Pro for complex analysis
+- **Turkish Lira:** Added TRY support with ₺ symbol for Turkish market
+- **Image Generation:** Confirmed Gemini 2.5 Flash Image (Nano Banana) is ideal for app icon - top-rated, supports text-to-image, available now
+
+**Recent Milestones Completed:**
+- M6: Voice input with speech-to-text (working perfectly on device)
+- M7: Multi-currency system with Turkish Lira support
+- M8: Insights dashboard with pie charts, category breakdown, top merchants, and AI-generated financial insights powered by Gemini 2.5 Pro
+
+**Current Status:** User tested insights screen, AI generated 3 excellent recommendations (identified "Unknown" merchants issue, flagged 82% transport spending, noted high average transaction). Charts rendering beautifully. Ready to finalize visual assets (icon + splash) before alpha launch prep.
