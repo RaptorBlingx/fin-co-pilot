@@ -6,10 +6,13 @@ class ReceiptParserAgent {
   late final GenerativeModel _model;
   
   ReceiptParserAgent() {
-    // Use Gemini 2.5 Flash for receipt OCR
-    // In production, you'd use Flash-Lite for cost savings
+    // Use Gemini 2.5 Flash-Lite for cost-effective receipt OCR
     _model = FirebaseVertexAI.instance.generativeModel(
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
+      generationConfig: GenerationConfig(
+        temperature: 0.2,
+        maxOutputTokens: 2048,
+      ),
     );
   }
   

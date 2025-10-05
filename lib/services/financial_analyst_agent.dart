@@ -10,6 +10,12 @@ class FinancialAnalystAgent {
   FinancialAnalystAgent()
       : _model = FirebaseVertexAI.instance.generativeModel(
           model: 'gemini-2.5-pro',
+          generationConfig: GenerationConfig(
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 8192,
+          ),
         );
 
   /// Analyze user's spending patterns and generate insights

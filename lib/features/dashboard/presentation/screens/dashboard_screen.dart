@@ -10,6 +10,9 @@ import '../../../transactions/presentation/screens/transactions_screen.dart';
 import '../../../transactions/presentation/screens/add_transaction_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
 import '../../../insights/presentation/screens/insights_screen.dart';
+import '../../../coaching/presentation/screens/coaching_screen.dart';
+import '../../../shopping/presentation/screens/shopping_screen.dart';
+import '../widgets/coaching_tips_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -50,7 +53,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -71,7 +74,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+              
+              // Coaching Tips Widget
+              const CoachingTipsWidget(),
+              
+              const SizedBox(height: 16),
 
               // Current month spending summary
               StreamBuilder<List<model.Transaction>>(
@@ -243,10 +251,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               
               const SizedBox(height: 24),
               
-              Expanded(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16),
+              Column(
+                children: [
+                  const SizedBox(height: 16),
                     
                     // Quick actions
                     Row(
@@ -328,10 +335,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                     
-                    const Spacer(),
+                    const SizedBox(height: 16),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _QuickActionCard(
+                            icon: Icons.school,
+                            label: 'Coaching',
+                            color: Colors.teal,
+                            onTap: () {
+                              AnalyticsService.logFeatureUsed('coaching_button');
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const CoachingScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _QuickActionCard(
+                            icon: Icons.shopping_bag,
+                            label: 'Shopping',
+                            color: Colors.indigo,
+                            onTap: () {
+                              AnalyticsService.logFeatureUsed('shopping_button');
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ShoppingScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-              ),
             ],
           ),
         ),

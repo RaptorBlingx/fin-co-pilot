@@ -6,7 +6,11 @@ class TransactionClassifierAgent {
   
   TransactionClassifierAgent() {
     _model = FirebaseVertexAI.instance.generativeModel(
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
+      generationConfig: GenerationConfig(
+        temperature: 0.1,
+        maxOutputTokens: 1024,
+      ),
     );
   }
   
