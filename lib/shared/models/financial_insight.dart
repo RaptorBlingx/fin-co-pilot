@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class FinancialInsight {
   final String id;
   final String userId;
@@ -8,7 +10,7 @@ class FinancialInsight {
   final String? suggestion;
   final double potentialSavings;
   final DateTime createdAt;
-  final bool isRead;
+  final bool dismissed; // User can dismiss insights
 
   FinancialInsight({
     required this.id,
@@ -18,12 +20,12 @@ class FinancialInsight {
     required this.title,
     required this.description,
     this.suggestion,
-    this.potentialSavings = 0.0,
+    this.potentialSavings = 0,
     required this.createdAt,
-    this.isRead = false,
+    this.dismissed = false,
   });
 
-  /// Create FinancialInsight from Firestore map
+  // Create from Firestore map
   factory FinancialInsight.fromMap(Map<String, dynamic> map, String id) {
     return FinancialInsight(
       id: id,
@@ -33,15 +35,13 @@ class FinancialInsight {
       title: map['title'] ?? '',
       description: map['description'] ?? '',
       suggestion: map['suggestion'],
-      potentialSavings: (map['potential_savings'] ?? 0.0).toDouble(),
-      createdAt: map['created_at'] != null 
-          ? DateTime.fromMillisecondsSinceEpoch(map['created_at'])
-          : DateTime.now(),
-      isRead: map['is_read'] ?? false,
+      potentialSavings: (map['potential_savings'] ?? 0).toDouble(),
+      createdAt: (map['created_at'] as Timestamp).toDate(),
+      dismissed: map['dismissed'] ?? false,
     );
   }
 
-  /// Convert FinancialInsight to Firestore map
+  // Convert to Firestore map
   Map<String, dynamic> toMap() {
     return {
       'user_id': userId,
@@ -51,12 +51,12 @@ class FinancialInsight {
       'description': description,
       'suggestion': suggestion,
       'potential_savings': potentialSavings,
-      'created_at': createdAt.millisecondsSinceEpoch,
-      'is_read': isRead,
+      'created_at': Timestamp.fromDate(createdAt),
+      'dismissed': dismissed,
     };
   }
 
-  /// Copy insight with updated fields
+  // Copy with method for updating
   FinancialInsight copyWith({
     String? id,
     String? userId,
@@ -67,7 +67,7 @@ class FinancialInsight {
     String? suggestion,
     double? potentialSavings,
     DateTime? createdAt,
-    bool? isRead,
+    bool? dismissed,
   }) {
     return FinancialInsight(
       id: id ?? this.id,
@@ -79,15 +79,13 @@ class FinancialInsight {
       suggestion: suggestion ?? this.suggestion,
       potentialSavings: potentialSavings ?? this.potentialSavings,
       createdAt: createdAt ?? this.createdAt,
-      isRead: isRead ?? this.isRead,
+      dismissed: dismissed ?? this.dismissed,
     );
   }
 
-  /// Get icon for insight type
+  // UI Helper Getters
   String get typeIcon {
     switch (type.toLowerCase()) {
-      case 'pattern':
-        return '📊';
       case 'achievement':
         return '🎉';
       case 'warning':
@@ -95,7 +93,9 @@ class FinancialInsight {
       case 'opportunity':
         return '💡';
       case 'anomaly':
-        return '🔍';
+        return '�';
+      case 'pattern':
+        return '�';
       default:
         return 'ℹ️';
     }
@@ -131,30 +131,17 @@ class FinancialInsight {
     }
   }
 
-  /// Check if insight has actionable suggestion
-  bool get hasActionableSuggestion {
-    return suggestion != null && suggestion!.isNotEmpty;
-  }
+  bool get hasActionableSuggestion => suggestion != null && suggestion!.isNotEmpty;
 
-  /// Check if insight represents savings opportunity
-  bool get hasSavingsOpportunity {
-    return potentialSavings > 0;
-  }
+  bool get hasSavingsOpportunity => potentialSavings > 0;
 
-  /// Get formatted potential savings
-  String get formattedSavings {
-    if (potentialSavings <= 0) return '';
-    return '\$${potentialSavings.toStringAsFixed(0)}';
-  }
+  String get formattedSavings => '\$${potentialSavings.toStringAsFixed(2)}';
 
-  /// Get relative time since creation
   String get timeAgo {
     final now = DateTime.now();
     final difference = now.difference(createdAt);
 
-    if (difference.inDays > 30) {
-      return '${(difference.inDays / 30).floor()} month${(difference.inDays / 30).floor() > 1 ? 's' : ''} ago';
-    } else if (difference.inDays > 0) {
+    if (difference.inDays > 0) {
       return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
     } else if (difference.inHours > 0) {
       return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
