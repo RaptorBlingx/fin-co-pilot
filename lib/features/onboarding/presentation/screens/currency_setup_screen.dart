@@ -160,7 +160,7 @@ class _CurrencySetupScreenState extends State<CurrencySetupScreen> {
                 child: GridView.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 3,
+                    childAspectRatio: 2.2,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
@@ -192,20 +192,22 @@ class _CurrencySetupScreenState extends State<CurrencySetupScreen> {
                         child: Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
                                 CurrencyUtils.getCurrencySymbol(currency['code']!),
                                 style: TextStyle(
-                                  fontSize: 20,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: isSelected ? Colors.white : Colors.black,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 2),
                               Text(
                                 currency['code']!,
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
                                   color: isSelected 
                                       ? Colors.white 
                                       : Colors.grey[600],
