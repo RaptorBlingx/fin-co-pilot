@@ -8,6 +8,7 @@ import 'ai_test_screen.dart';
 import '../../../transactions/presentation/screens/transactions_screen.dart';
 import '../../../transactions/presentation/screens/add_transaction_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
+import '../../../insights/presentation/screens/insights_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -277,9 +278,25 @@ class DashboardScreen extends StatelessWidget {
                       children: [
                         Expanded(
                           child: _QuickActionCard(
+                            icon: Icons.analytics,
+                            label: 'Insights',
+                            color: Colors.purple,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const InsightsScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _QuickActionCard(
                             icon: Icons.psychology,
                             label: 'Test AI',
-                            color: Colors.purple,
+                            color: Colors.orange,
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -290,8 +307,6 @@ class DashboardScreen extends StatelessWidget {
                             },
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        const Expanded(child: SizedBox()),
                       ],
                     ),
                     
