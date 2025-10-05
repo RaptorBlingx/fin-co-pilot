@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../shared/models/transaction.dart' as model;
 import 'receipt_parser_agent.dart';
 import 'transaction_classifier_agent.dart';
+import 'analytics_service.dart';
 import 'dart:io';
 
 class TransactionService {
@@ -18,6 +19,12 @@ class TransactionService {
     try {
       // Parse receipt using AI
       final parseResult = await _receiptParser.parseReceipt(imageFile);
+      
+      // Track receipt scanning
+      await AnalyticsService.logReceiptScanned(
+        success: parseResult['success'],
+        errorMessage: parseResult['success'] ? null : parseResult['error'],
+      );
       
       if (!parseResult['success']) {
         return {
@@ -50,6 +57,14 @@ class TransactionService {
       final docRef = await _firestore
           .collection('transactions')
           .add(transaction.toFirestore());
+      
+      // Track analytics
+      await AnalyticsService.logTransactionAdded(
+        method: 'receipt',
+        category: transaction.category,
+        amount: transaction.amount,
+        merchant: transaction.merchant,
+      );
       
       return {
         'success': true,
@@ -101,6 +116,14 @@ class TransactionService {
       final docRef = await _firestore
           .collection('transactions')
           .add(transaction.toFirestore());
+      
+      // Track analytics
+      await AnalyticsService.logTransactionAdded(
+        method: 'manual',
+        category: transaction.category,
+        amount: transaction.amount,
+        merchant: transaction.merchant,
+      );
       
       return {
         'success': true,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:go_router/go_router.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
@@ -22,6 +23,9 @@ void main() async {
   
   // Initialize SharedPreferences
   await PreferencesService.init();
+  
+  // Setup Crashlytics
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
   
   runApp(const FinCopilotApp());
 }

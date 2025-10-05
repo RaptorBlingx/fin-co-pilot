@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'analytics_service.dart';
 import 'dart:io' show Platform;
 
 class AuthService {
@@ -18,10 +19,16 @@ class AuthService {
   // Sign in with email and password
   Future<UserCredential> signInWithEmail(String email, String password) async {
     try {
-      return await _auth.signInWithEmailAndPassword(
+      final userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      
+      // Track analytics
+      await AnalyticsService.logSignIn('email');
+      await AnalyticsService.setUserProperties(userId: userCredential.user?.uid);
+      
+      return userCredential;
     } catch (e) {
       rethrow;
     }
@@ -34,6 +41,10 @@ class AuthService {
         email: email,
         password: password,
       );
+      
+      // Track analytics
+      await AnalyticsService.logSignUp('email');
+      await AnalyticsService.setUserProperties(userId: credential.user?.uid);
       
       // Create user document in Firestore
       if (credential.user != null) {
@@ -65,10 +76,16 @@ class AuthService {
 
       final userCredential = await _auth.signInWithCredential(credential);
       
-      // Create user document if first time
+      // Track analytics
       if (userCredential.additionalUserInfo?.isNewUser ?? false) {
+        await AnalyticsService.logSignUp('google');
         await _createUserDocument(userCredential.user!);
+      } else {
+        await AnalyticsService.logSignIn('google');
       }
+      
+      // Set user properties
+      await AnalyticsService.setUserProperties(userId: userCredential.user?.uid);
       
       return userCredential;
     } catch (e) {
@@ -151,6 +168,9 @@ class AuthService {
 
   // Sign out
   Future<void> signOut() async {
+    // Track analytics before signing out
+    await AnalyticsService.logSignOut();
+    
     await Future.wait([
       _auth.signOut(),
       _googleSignIn.signOut(),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/preferences_service.dart';
+import '../../../../services/analytics_service.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../services/transaction_service.dart';
 import '../../../../shared/models/transaction.dart' as model;
@@ -10,8 +11,20 @@ import '../../../transactions/presentation/screens/add_transaction_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
 import '../../../insights/presentation/screens/insights_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Track dashboard screen view
+    AnalyticsService.logScreenView('dashboard');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -244,6 +257,7 @@ class DashboardScreen extends StatelessWidget {
                             label: 'Add Transaction',
                             color: Colors.blue,
                             onTap: () {
+                              AnalyticsService.logFeatureUsed('add_transaction_button');
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -260,6 +274,7 @@ class DashboardScreen extends StatelessWidget {
                             label: 'View All',
                             color: Colors.green,
                             onTap: () {
+                              AnalyticsService.logFeatureUsed('view_all_transactions_button');
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -282,6 +297,8 @@ class DashboardScreen extends StatelessWidget {
                             label: 'Insights',
                             color: Colors.purple,
                             onTap: () {
+                              AnalyticsService.logInsightsViewed();
+                              AnalyticsService.logFeatureUsed('insights_button');
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -298,6 +315,7 @@ class DashboardScreen extends StatelessWidget {
                             label: 'Test AI',
                             color: Colors.orange,
                             onTap: () {
+                              AnalyticsService.logFeatureUsed('ai_test_button');
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
