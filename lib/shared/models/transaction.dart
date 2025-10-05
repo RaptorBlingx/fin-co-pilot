@@ -82,6 +82,28 @@ class Transaction {
     );
   }
 
+  // Create from Map (for financial analyst agent)
+  factory Transaction.fromMap(Map<String, dynamic> data, String id) {
+    return Transaction(
+      id: id,
+      userId: data['user_id'] ?? '',
+      amount: (data['amount'] ?? 0).toDouble(),
+      currency: data['currency'] ?? 'USD',
+      category: data['category'] ?? 'other',
+      subcategory: data['subcategory'],
+      merchant: data['merchant'],
+      description: data['description'],
+      notes: data['notes'],
+      paymentMethod: data['payment_method'] ?? 'cash',
+      transactionDate: (data['transaction_date'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      inputMethod: data['input_method'] ?? 'manual',
+      receiptImageUrl: data['receipt_image_url'],
+      receiptData: data['receipt_data'],
+      aiConfidence: data['ai_confidence']?.toDouble(),
+    );
+  }
+
   // Copy with method for updates
   Transaction copyWith({
     String? id,
