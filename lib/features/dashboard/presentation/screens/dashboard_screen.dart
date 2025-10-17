@@ -2,21 +2,15 @@ import 'package:flutter/material.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/preferences_service.dart';
 import '../../../../services/analytics_service.dart';
-import '../../../../core/utils/currency_utils.dart';
 import '../../../../services/transaction_service.dart';
 import '../../../../shared/models/transaction.dart' as model;
-import 'ai_test_screen.dart';
 import '../../../transactions/presentation/screens/transactions_screen.dart';
-import '../../../transactions/presentation/screens/add_transaction_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
-import '../../../insights/presentation/screens/insights_screen.dart';
-import '../../../coaching/presentation/screens/coaching_screen.dart';
-import '../../../shopping/presentation/screens/shopping_screen.dart';
-import '../../../reports/presentation/screens/reports_screen.dart';
-import '../../../notifications/presentation/screens/notifications_screen.dart';
-import '../widgets/coaching_tips_widget.dart';
-import '../../../../shared/widgets/shimmer_loading.dart';
-import '../../../../shared/widgets/empty_state.dart';
+
+import '../../widgets/hero_spending_card.dart';
+import '../../widgets/ai_insight_card.dart';
+import '../../widgets/compact_transaction_card.dart';
+import '../../widgets/quick_action_button.dart';
 import '../../../../core/utils/haptic_utils.dart';
 import '../../../../core/navigation/page_transitions.dart';
 
@@ -43,453 +37,218 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Fin Co-Pilot'),
+        title: Text(
+          'Fin Co-Pilot',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontFamily: 'Manrope',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: const Icon(Icons.settings_rounded),
             onPressed: () {
               HapticUtils.light();
               context.pushWithFade(const SettingsScreen());
             },
           ),
         ],
+        elevation: 0,
+        backgroundColor: Colors.transparent,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          physics: const BouncingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Welcome message
-              Text(
-                'Welcome back!',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              
-              const SizedBox(height: 8),
-              
-              Text(
-                user?.email ?? 'User',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Coaching Tips Widget
-              const CoachingTipsWidget(),
-              
-              const SizedBox(height: 16),
-
-              // Current month spending summary
+              // Hero Spending Card - 35% of screen height
               StreamBuilder<List<model.Transaction>>(
                 stream: TransactionService().getCurrentMonthTransactions(user!.uid),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return Container(
-                      padding: const EdgeInsets.all(16),
+                      height: MediaQuery.of(context).size.height * 0.35,
+                      margin: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        gradient: LinearGradient(
+                          colors: [Colors.grey[300]!, Colors.grey[400]!],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(24),
                       ),
-                      child: Row(
-                        children: [
-                          const ShimmerLoading(width: 24, height: 24, borderRadius: 12),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const ShimmerLoading(width: 80, height: 12, borderRadius: 4),
-                                const SizedBox(height: 8),
-                                ShimmerLoading(
-                                  width: MediaQuery.of(context).size.width * 0.4,
-                                  height: 24,
-                                  borderRadius: 4,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const ShimmerLoading(width: 100, height: 20, borderRadius: 10),
-                        ],
+                      child: const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
                       ),
                     );
                   }
 
                   final transactions = snapshot.data!;
+                  final totalSpent = transactions.fold<double>(0, (sum, t) => sum + t.amount);
                   
-                  if (transactions.isEmpty) {
-                    return const NoTransactionsEmpty();
-                  }
-                  
-                  final totalInUserCurrency = transactions.fold<double>(
-                    0,
-                    (sum, t) => sum + t.amount,
+                  // Generate sample weekly spending data (last 7 days)
+                  final weeklySpending = List.generate(7, (index) => 
+                    (totalSpent / 30) * (0.8 + (index % 3) * 0.4)
                   );
+                  
+                  // For demo: assuming monthly budget of $2000
+                  const monthlyBudget = 2000.0;
 
-                  return Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.calendar_month, color: Colors.blue),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'This Month',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                  Text(
-                                    CurrencyUtils.formatAmount(totalInUserCurrency, currency),
-                                    style: const TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.blue,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                '${transactions.length} transactions',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                  return Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: HeroSpendingCard(
+                      monthlySpent: totalSpent,
+                      monthlyBudget: monthlyBudget,
+                      currency: currency,
+                      weeklySpending: weeklySpending,
                     ),
                   );
                 },
               ),
 
+              // AI Insight Card - Single highlighted insight
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: AIInsightCard(
+                  insights: [
+                    InsightData(
+                      message: "You're spending 20% less on dining this month. Keep it up! 🎉",
+                      type: InsightType.achievement,
+                      actionLabel: "View details",
+                    ),
+                    InsightData(
+                      message: "Grocery spending is trending higher. Consider setting a weekly budget.",
+                      type: InsightType.tip,
+                      actionLabel: "Set budget",
+                    ),
+                    InsightData(
+                      message: "You've saved \$150 this month by reducing subscriptions! 💰",
+                      type: InsightType.pattern,
+                      actionLabel: "See savings",
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Recent Transactions Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Recent Transactions',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontFamily: 'Manrope',
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        HapticUtils.light();
+                        context.pushWithFade(const TransactionsScreen());
+                      },
+                      child: const Text('View All'),
+                    ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 16),
 
-              // Currency preference
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.monetization_on, color: Colors.green),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Your Currency',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
+              // Recent Transactions List - Show 3 most recent
+              StreamBuilder<List<model.Transaction>>(
+                stream: TransactionService().getTransactions(user.uid),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+
+                  final allTransactions = snapshot.data!;
+                  // Take only the first 3 transactions (most recent)
+                  final transactions = allTransactions.take(3).toList();
+                  
+                  if (transactions.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.receipt_long_rounded,
+                                size: 48,
+                                color: Theme.of(context).colorScheme.outline,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No transactions yet',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Add your first transaction to get started',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.outline,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          '$currency (${CurrencyUtils.getCurrencySymbol(currency)})',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 32),
-              
-              // AI Test Section
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    const Icon(
-                      Icons.psychology,
-                      size: 40,
-                      color: Colors.green,
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'M3: AI Orchestrator Ready!',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Test the AI agent routing system',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AITestScreen(),
-                          ),
+                    );
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      children: transactions.map((transaction) {
+                        return CompactTransactionCard(
+                          transaction: transaction,
+                          onTap: () {
+                            HapticUtils.light();
+                            // Navigate to transaction details or edit screen
+                          },
                         );
-                      },
-                      icon: const Icon(Icons.chat),
-                      label: const Text('Test AI Orchestrator'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                      ),
+                      }).toList(),
                     ),
-                  ],
+                  );
+                },
+              ),
+
+              const SizedBox(height: 32),
+
+              // Quick Actions Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'Quick Actions',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontFamily: 'Manrope',
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              
-              const SizedBox(height: 24),
-              
-              Column(
-                children: [
-                  const SizedBox(height: 16),
-                    
-                    // Quick actions
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _QuickActionCard(
-                            icon: Icons.add_circle,
-                            label: 'Add Transaction',
-                            color: Colors.blue,
-                            onTap: () {
-                              HapticUtils.medium();
-                              AnalyticsService.logFeatureUsed('add_transaction_button');
-                              context.pushWithSlideUp(const AddTransactionScreen());
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _QuickActionCard(
-                            icon: Icons.list,
-                            label: 'View All',
-                            color: Colors.green,
-                            onTap: () {
-                              HapticUtils.light();
-                              AnalyticsService.logFeatureUsed('view_all_transactions_button');
-                              context.pushWithFade(const TransactionsScreen());
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _QuickActionCard(
-                            icon: Icons.analytics,
-                            label: 'Insights',
-                            color: Colors.purple,
-                            onTap: () {
-                              AnalyticsService.logInsightsViewed();
-                              AnalyticsService.logFeatureUsed('insights_button');
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const InsightsScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _QuickActionCard(
-                            icon: Icons.psychology,
-                            label: 'Test AI',
-                            color: Colors.orange,
-                            onTap: () {
-                              AnalyticsService.logFeatureUsed('ai_test_button');
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const AITestScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _QuickActionCard(
-                            icon: Icons.school,
-                            label: 'Coaching',
-                            color: Colors.teal,
-                            onTap: () {
-                              AnalyticsService.logFeatureUsed('coaching_button');
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const CoachingScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _QuickActionCard(
-                            icon: Icons.shopping_bag,
-                            label: 'Shopping',
-                            color: Colors.indigo,
-                            onTap: () {
-                              AnalyticsService.logFeatureUsed('shopping_button');
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const ShoppingScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _QuickActionCard(
-                            icon: Icons.description,
-                            label: 'Reports',
-                            color: Colors.deepPurple,
-                            onTap: () {
-                              AnalyticsService.logFeatureUsed('reports_button');
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const ReportsScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _QuickActionCard(
-                            icon: Icons.notifications_active,
-                            label: 'Notifications',
-                            color: Colors.pink,
-                            onTap: () {
-                              AnalyticsService.logFeatureUsed('notifications_button');
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const NotificationsScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+
+              const SizedBox(height: 16),
+
+              // Quick Actions Grid
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: QuickActionGrid(),
+              ),
+
+              const SizedBox(height: 32),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickActionCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _QuickActionCard({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        HapticUtils.light();
-        onTap();
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 36, color: color),
-            const SizedBox(height: 8),
-            Flexible(
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
         ),
       ),
     );

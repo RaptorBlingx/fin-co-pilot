@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../themes/app_theme.dart';
+import '../../core/theme/app_theme.dart';
 import '../../utils/animation_utils.dart';
 import '../../utils/haptic_utils.dart';
 
@@ -153,7 +153,6 @@ class _AnimatedButtonState extends State<AnimatedButton>
 
   Widget _buildButtonByType(BuildContext context, Widget content, bool isDisabled) {
     final backgroundColor = widget.backgroundColor ?? AppTheme.primaryGreen;
-    final textColor = widget.textColor ?? Colors.white;
     
     switch (widget.type) {
       case AnimatedButtonType.elevated:
@@ -167,7 +166,7 @@ class _AnimatedButtonState extends State<AnimatedButton>
             boxShadow: isDisabled ? [] : [
               BoxShadow(
                 color: backgroundColor.withOpacity(0.3),
-                offset: const Offset(0, widget.elevation),
+                offset: Offset(0, widget.elevation),
                 blurRadius: widget.elevation * 2,
               ),
             ],
@@ -242,7 +241,6 @@ class _AnimatedCardState extends State<AnimatedCard>
   late AnimationController _controller;
   late Animation<double> _elevationAnimation;
   late Animation<double> _scaleAnimation;
-  bool _isHovered = false;
 
   @override
   void initState() {
@@ -278,7 +276,7 @@ class _AnimatedCardState extends State<AnimatedCard>
   void _handleHover(bool isHovered) {
     if (!widget.enableHoverEffect) return;
     
-    setState(() => _isHovered = isHovered);
+    // Hover state change
     if (isHovered) {
       _controller.forward();
     } else {

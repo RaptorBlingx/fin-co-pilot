@@ -172,7 +172,7 @@ class AnimationUtils {
   /// Shake animation for error states
   static Widget shake({
     required Widget child,
-    Duration duration = Duration(milliseconds: 500),
+    Duration duration = const Duration(milliseconds: 500),
     Duration delay = Duration.zero,
     double offset = 10.0,
   }) {
@@ -206,7 +206,7 @@ class AnimationUtils {
   /// Shimmer effect for loading states
   static Widget shimmer({
     required Widget child,
-    Duration duration = Duration(milliseconds: 1500),
+    Duration duration = const Duration(milliseconds: 1500),
     Color? color,
   }) {
     return child
@@ -256,7 +256,7 @@ class AnimationUtils {
   /// Elastic scale animation for interactive elements
   static Widget elasticScale({
     required Widget child,
-    Duration duration = Duration(milliseconds: 600),
+    Duration duration = const Duration(milliseconds: 600),
     Duration delay = Duration.zero,
     double begin = 0.0,
     double end = 1.0,
@@ -341,7 +341,7 @@ class AnimationUtils {
   /// Button press animation
   static Widget buttonPress({
     required Widget child,
-    Duration duration = Duration(milliseconds: 100),
+    Duration duration = const Duration(milliseconds: 100),
     double scale = 0.95,
     VoidCallback? onTap,
   }) {
@@ -368,7 +368,7 @@ class AnimationUtils {
   /// Attention animation for important elements
   static Widget attention({
     required Widget child,
-    Duration duration = Duration(milliseconds: 1000),
+    Duration duration = const Duration(milliseconds: 1000),
     Duration delay = Duration.zero,
   }) {
     return child
@@ -383,7 +383,7 @@ class AnimationUtils {
 
   /// Loading dots animation
   static Widget loadingDots({
-    Duration duration = Duration(milliseconds: 1200),
+    Duration duration = const Duration(milliseconds: 1200),
     Color color = Colors.grey,
     double size = 8.0,
     int dotCount = 3,
@@ -422,7 +422,7 @@ class AnimationUtils {
   /// Pulse animation for notifications
   static Widget pulse({
     required Widget child,
-    Duration duration = Duration(milliseconds: 1000),
+    Duration duration = const Duration(milliseconds: 1000),
     double minOpacity = 0.3,
     double maxOpacity = 1.0,
   }) {
@@ -439,7 +439,7 @@ class AnimationUtils {
   /// Wave animation for decorative elements
   static Widget wave({
     required Widget child,
-    Duration duration = Duration(milliseconds: 2000),
+    Duration duration = const Duration(milliseconds: 2000),
     double amplitude = 10.0,
   }) {
     return child
@@ -459,7 +459,7 @@ class AnimationUtils {
   /// Success animation with check mark effect
   static Widget success({
     required Widget child,
-    Duration duration = Duration(milliseconds: 800),
+    Duration duration = const Duration(milliseconds: 800),
     Duration delay = Duration.zero,
   }) {
     return child
@@ -482,7 +482,7 @@ class AnimationUtils {
   /// Error animation with shake and color change
   static Widget error({
     required Widget child,
-    Duration duration = Duration(milliseconds: 600),
+    Duration duration = const Duration(milliseconds: 600),
     Duration delay = Duration.zero,
     Color errorColor = Colors.red,
   }) {
@@ -503,7 +503,7 @@ class AnimationUtils {
     required Widget frontChild,
     required Widget backChild,
     required bool showFront,
-    Duration duration = Duration(milliseconds: 600),
+    Duration duration = const Duration(milliseconds: 600),
   }) {
     return AnimatedSwitcher(
       duration: duration,

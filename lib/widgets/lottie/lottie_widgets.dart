@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import '../../themes/app_theme.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../../core/theme/app_theme.dart';
 import '../../utils/animation_utils.dart';
 
 /// Lottie animation widgets for various states and interactions
@@ -22,7 +23,7 @@ class LottieAnimations {
   static Widget loading({
     double size = 100,
     String? message,
-    Color? color,
+    Color? textColor,
     bool repeat = true,
   }) {
     return Column(
@@ -40,7 +41,7 @@ class LottieAnimations {
             // Use custom loading animation or fallback to built-in
             errorBuilder: (context, error, stackTrace) {
               return AnimationUtils.loadingDots(
-                color: color ?? AppTheme.primaryGreen,
+                color: textColor ?? AppTheme.primaryGreen,
                 size: size / 8,
               );
             },
@@ -50,8 +51,9 @@ class LottieAnimations {
           const SizedBox(height: AppTheme.spacingM),
           Text(
             message,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: color,
+            style: TextStyle(
+              fontSize: 15,
+              color: textColor ?? AppTheme.slate600,
             ),
             textAlign: TextAlign.center,
           ),
@@ -64,7 +66,7 @@ class LottieAnimations {
   static Widget success({
     double size = 120,
     String? message,
-    Color? color,
+    Color? textColor,
     bool repeat = false,
     VoidCallback? onAnimationComplete,
   }) {
@@ -91,7 +93,7 @@ class LottieAnimations {
                 width: size,
                 height: size,
                 decoration: BoxDecoration(
-                  color: color ?? AppTheme.successGreen,
+                  color: textColor ?? AppTheme.successGreen,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -112,9 +114,10 @@ class LottieAnimations {
           const SizedBox(height: AppTheme.spacingM),
           Text(
             message,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: color ?? AppTheme.successGreen,
+            style: TextStyle(
+              fontSize: 16,
               fontWeight: FontWeight.w600,
+              color: textColor ?? AppTheme.successGreen,
             ),
             textAlign: TextAlign.center,
           ),
@@ -127,7 +130,7 @@ class LottieAnimations {
   static Widget error({
     double size = 120,
     String? message,
-    Color? color,
+    Color? textColor,
     bool repeat = false,
     VoidCallback? onAnimationComplete,
   }) {
@@ -154,7 +157,7 @@ class LottieAnimations {
                 width: size,
                 height: size,
                 decoration: BoxDecoration(
-                  color: color ?? AppTheme.errorRed,
+                  color: textColor ?? AppTheme.errorRed,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -172,9 +175,10 @@ class LottieAnimations {
           const SizedBox(height: AppTheme.spacingM),
           Text(
             message,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: color ?? AppTheme.errorRed,
+            style: TextStyle(
+              fontSize: 16,
               fontWeight: FontWeight.w600,
+              color: textColor ?? AppTheme.errorRed,
             ),
             textAlign: TextAlign.center,
           ),
@@ -226,8 +230,10 @@ class LottieAnimations {
           const SizedBox(height: AppTheme.spacingL),
           Text(
             title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: AppTheme.getSecondaryTextColor(context),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.slate600,
             ),
             textAlign: TextAlign.center,
           ),
@@ -236,8 +242,9 @@ class LottieAnimations {
           const SizedBox(height: AppTheme.spacingS),
           Text(
             subtitle,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppTheme.getSecondaryTextColor(context),
+            style: TextStyle(
+              fontSize: 15,
+              color: AppTheme.slate600,
             ),
             textAlign: TextAlign.center,
           ),
@@ -436,7 +443,11 @@ class LottieAnimations {
               size: size * 0.6,
             ),
           ).animate(onPlay: (controller) => controller.repeat())
-            .pulse(duration: const Duration(milliseconds: 2000));
+            .scale(
+              duration: const Duration(milliseconds: 2000),
+              begin: const Offset(0.95, 0.95),
+              end: const Offset(1.05, 1.05),
+            );
         },
       ),
     );
@@ -572,7 +583,9 @@ class StatusAnimation extends StatelessWidget {
             Text(
               subtitle!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.getSecondaryTextColor(context),
+                color: Theme.of(context).brightness == Brightness.light 
+                    ? AppTheme.slate600 
+                    : AppTheme.slate400,
               ),
               textAlign: TextAlign.center,
             ),

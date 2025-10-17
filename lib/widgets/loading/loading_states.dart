@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-import '../../themes/app_theme.dart';
+import '../../core/theme/app_theme.dart';
 import '../../utils/animation_utils.dart';
 
 /// Comprehensive loading states with shimmer effects and skeleton loaders

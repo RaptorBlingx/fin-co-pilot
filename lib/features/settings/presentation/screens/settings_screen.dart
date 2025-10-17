@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/preferences_service.dart';
 import '../../../../core/utils/currency_utils.dart';
@@ -6,15 +7,16 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/haptic_utils.dart';
 import '../../../../shared/widgets/loading_button.dart';
+import '../../../../main.dart' show themeProvider;
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final AuthService _authService = AuthService();
   String _selectedCurrency = 'USD';
   bool _isDarkMode = false;
@@ -25,7 +27,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _selectedCurrency = PreferencesService.getCurrency() ?? 'USD';
-    _isDarkMode = Theme.of(context).brightness == Brightness.dark;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final themeNotifier = ref.read(themeProvider);
+    _isDarkMode = themeNotifier.isDarkMode || 
+        (themeNotifier.isSystemMode && Theme.of(context).brightness == Brightness.dark);
   }
 
   @override
@@ -86,13 +95,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: _isDarkMode,
               onChanged: (value) {
                 HapticUtils.light();
+                final themeNotifier = ref.read(themeProvider.notifier);
+                
+                // Toggle between light and dark mode
+                if (value) {
+                  themeNotifier.setThemeMode(ThemeMode.dark);
+                } else {
+                  themeNotifier.setThemeMode(ThemeMode.light);
+                }
+                
                 setState(() {
                   _isDarkMode = value;
                 });
-                // TODO: Implement theme switching with provider
+                
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Theme switching coming soon!'),
+                  SnackBar(
+                    content: Text('Theme changed to ${value ? 'dark' : 'light'} mode'),
+                    duration: const Duration(seconds: 2),
                   ),
                 );
               },

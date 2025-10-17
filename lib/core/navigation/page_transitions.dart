@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class SlideUpRoute extends PageRouteBuilder {
+class SlideUpRoute<T> extends PageRouteBuilder<T> {
   final Widget page;
 
   SlideUpRoute({required this.page})
@@ -24,7 +24,7 @@ class SlideUpRoute extends PageRouteBuilder {
         );
 }
 
-class FadeRoute extends PageRouteBuilder {
+class FadeRoute<T> extends PageRouteBuilder<T> {
   final Widget page;
 
   FadeRoute({required this.page})
@@ -40,7 +40,7 @@ class FadeRoute extends PageRouteBuilder {
         );
 }
 
-class ScaleRoute extends PageRouteBuilder {
+class ScaleRoute<T> extends PageRouteBuilder<T> {
   final Widget page;
 
   ScaleRoute({required this.page})
@@ -68,7 +68,7 @@ class ScaleRoute extends PageRouteBuilder {
 }
 
 // Shared axis transition (Material Design)
-class SharedAxisRoute extends PageRouteBuilder {
+class SharedAxisRoute<T> extends PageRouteBuilder<T> {
   final Widget page;
   final SharedAxisTransitionType transitionType;
 
@@ -176,15 +176,15 @@ enum SharedAxisTransitionType {
 // Helper extension for easy navigation
 extension NavigationExtension on BuildContext {
   Future<T?> pushWithSlideUp<T extends Object?>(Widget page) {
-    return Navigator.of(this).push<T>(SlideUpRoute(page: page));
+    return Navigator.of(this).push<T>(SlideUpRoute<T>(page: page));
   }
 
   Future<T?> pushWithFade<T extends Object?>(Widget page) {
-    return Navigator.of(this).push<T>(FadeRoute(page: page));
+    return Navigator.of(this).push<T>(FadeRoute<T>(page: page));
   }
 
   Future<T?> pushWithScale<T extends Object?>(Widget page) {
-    return Navigator.of(this).push<T>(ScaleRoute(page: page));
+    return Navigator.of(this).push<T>(ScaleRoute<T>(page: page));
   }
 
   Future<T?> pushWithSharedAxis<T extends Object?>(
@@ -192,7 +192,7 @@ extension NavigationExtension on BuildContext {
     SharedAxisTransitionType type = SharedAxisTransitionType.scaled,
   }) {
     return Navigator.of(this).push<T>(
-      SharedAxisRoute(page: page, transitionType: type),
+      SharedAxisRoute<T>(page: page, transitionType: type),
     );
   }
 }

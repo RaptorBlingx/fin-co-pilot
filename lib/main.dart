@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/preferences_service.dart';
@@ -9,6 +11,9 @@ import 'services/notification_service.dart';
 import 'services/budget_monitoring_service.dart';
 import 'services/coaching_service.dart';
 import 'core/constants/app_constants.dart';
+import 'core/theme/app_theme.dart';
+import 'core/theme/theme_provider.dart';
+import 'core/navigation/app_navigation.dart';
 import 'features/auth/presentation/screens/sign_in_screen.dart';
 import 'features/onboarding/presentation/screens/welcome_screen.dart';
 import 'features/onboarding/presentation/screens/currency_setup_screen.dart';
@@ -20,7 +25,11 @@ import 'features/shopping/presentation/screens/shopping_screen.dart';
 import 'features/reports/presentation/screens/reports_screen.dart';
 import 'features/notifications/presentation/screens/notifications_screen.dart';
 import 'features/settings/presentation/screens/notification_settings_screen.dart';
-import 'themes/app_theme.dart';
+
+// Riverpod provider for theme management
+final themeProvider = ChangeNotifierProvider<ThemeProvider>((ref) {
+  return ThemeProvider();
+});
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,7 +51,11 @@ void main() async {
   // Setup Crashlytics
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
   
-  runApp(const FinCopilotApp());
+  runApp(
+    ProviderScope(
+      child: const FinCopilotApp(),
+    ),
+  );
 }
 
 /// Setup periodic background tasks
@@ -60,32 +73,37 @@ void _setupPeriodicTasks() {
   coachingService.sendDailyCoachingTip();
 }
 
-class FinCopilotApp extends StatefulWidget {
+class FinCopilotApp extends ConsumerWidget {
   const FinCopilotApp({super.key});
 
   @override
-  State<FinCopilotApp> createState() => _FinCopilotAppState();
-}
-
-class _FinCopilotAppState extends State<FinCopilotApp> {
-  ThemeMode _themeMode = ThemeMode.system;
-
-  void _toggleTheme() {
-    setState(() {
-      _themeMode = _themeMode == ThemeMode.light
-          ? ThemeMode.dark
-          : ThemeMode.light;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp.router(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeNotifier = ref.watch(themeProvider);
+    
+    return MaterialApp(
       title: AppConstants.appName,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: _themeMode,
-      routerConfig: _router,
+      theme: themeNotifier.lightTheme.copyWith(
+        textTheme: GoogleFonts.interTextTheme(themeNotifier.lightTheme.textTheme).apply(
+          displayColor: themeNotifier.lightTheme.colorScheme.onSurface,
+          bodyColor: themeNotifier.lightTheme.colorScheme.onSurface,
+        ),
+      ),
+      darkTheme: themeNotifier.darkTheme.copyWith(
+        textTheme: GoogleFonts.interTextTheme(themeNotifier.darkTheme.textTheme).apply(
+          displayColor: themeNotifier.darkTheme.colorScheme.onSurface,
+          bodyColor: themeNotifier.darkTheme.colorScheme.onSurface,
+        ),
+      ),
+      themeMode: themeNotifier.themeMode,
+      home: const AppNavigation(),
+      routes: {
+        '/reports': (context) => const ReportsScreen(),
+        '/shopping': (context) => const ShoppingScreen(),
+        '/coach': (context) => const CoachingScreen(),
+        '/settings/account': (context) => const SettingsScreen(),
+        '/settings/notifications': (context) => const NotificationSettingsScreen(),
+        '/settings/appearance': (context) => const SettingsScreen(),
+      },
     );
   }
 }
