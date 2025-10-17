@@ -4,6 +4,7 @@ import '../../shopping/presentation/screens/shopping_screen.dart';
 import '../../coaching/presentation/screens/coaching_screen.dart';
 import '../../settings/presentation/screens/settings_screen.dart';
 import '../../settings/presentation/screens/notification_settings_screen.dart';
+import '../../price_intelligence/presentation/price_intelligence_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -23,6 +24,17 @@ class MoreScreen extends StatelessWidget {
             context,
             title: 'Features',
             items: [
+              _MenuItem(
+                icon: Icons.analytics_outlined,
+                title: 'Price Intelligence',
+                subtitle: 'Track items & predict purchases',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PriceIntelligenceScreen()),
+                  );
+                },
+              ),
               _MenuItem(
                 icon: Icons.assessment_outlined,
                 title: 'Reports',

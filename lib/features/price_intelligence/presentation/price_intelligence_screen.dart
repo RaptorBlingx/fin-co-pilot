@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../services/agents/item_tracker_agent.dart';
 
@@ -508,41 +509,13 @@ class _PriceIntelligenceScreenState extends ConsumerState<PriceIntelligenceScree
                 const SizedBox(height: 24),
               ],
 
-              // Price Chart Placeholder (for fl_chart implementation)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryIndigo.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppTheme.primaryIndigo.withOpacity(0.3),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.show_chart, color: AppTheme.primaryIndigo),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Price Trend Chart',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.primaryIndigo,
-                              ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Coming soon: Visual price trends with fl_chart',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.slate600,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
+              // Price Trend Chart
+              if (item.purchases.length > 1) ...[
+                _buildSectionHeader('Price Trend'),
+                const SizedBox(height: 12),
+                _buildPriceChart(item.purchases, item.itemName),
+                const SizedBox(height: 24),
+              ],
             ],
           ),
         );
@@ -941,5 +914,199 @@ class _PriceIntelligenceScreenState extends ConsumerState<PriceIntelligenceScree
       default:
         return AppTheme.primaryIndigo;
     }
+  }
+
+  Widget _buildPriceChart(List<ItemPurchase> purchases, String itemName) {
+    if (purchases.length < 2) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.slate100,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          'Need at least 2 purchases to show price trend',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.slate600,
+              ),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    // Sort purchases by date
+    final sorted = purchases.toList()..sort((a, b) => a.date.compareTo(b.date));
+    
+    // Create spots for the line chart
+    final spots = sorted.asMap().entries.map((entry) {
+      return FlSpot(entry.key.toDouble(), entry.value.price);
+    }).toList();
+
+    // Calculate min and max for better chart scaling
+    final prices = sorted.map((p) => p.price).toList();
+    final minPrice = prices.reduce((a, b) => a < b ? a : b);
+    final maxPrice = prices.reduce((a, b) => a > b ? a : b);
+    final priceRange = maxPrice - minPrice;
+    final chartMinY = (minPrice - priceRange * 0.1).clamp(0.0, double.infinity);
+    final chartMaxY = maxPrice + priceRange * 0.1;
+
+    // Determine trend color
+    final trend = _calculateTrend(ItemPurchaseHistory(
+      itemName: itemName,
+      purchaseCount: purchases.length,
+      averagePrice: prices.reduce((a, b) => a + b) / prices.length,
+      lastPrice: prices.last,
+      category: 'Other',
+      purchases: purchases,
+    ));
+
+    final lineColor = trend == 'up' 
+        ? Colors.red 
+        : trend == 'down' 
+            ? Colors.green 
+            : AppTheme.primaryIndigo;
+
+    return Container(
+      height: 220,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.slate200),
+      ),
+      child: LineChart(
+        LineChartData(
+          minY: chartMinY,
+          maxY: chartMaxY,
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              color: lineColor,
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (spot, percent, barData, index) {
+                  return FlDotCirclePainter(
+                    radius: 4,
+                    color: lineColor,
+                    strokeWidth: 2,
+                    strokeColor: Colors.white,
+                  );
+                },
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                color: lineColor.withOpacity(0.1),
+              ),
+            ),
+          ],
+          titlesData: FlTitlesData(
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 45,
+                getTitlesWidget: (value, meta) {
+                  return Text(
+                    '\$${value.toStringAsFixed(2)}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.slate600,
+                          fontSize: 10,
+                        ),
+                  );
+                },
+              ),
+            ),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 30,
+                getTitlesWidget: (value, meta) {
+                  final index = value.toInt();
+                  if (index < 0 || index >= sorted.length) {
+                    return const SizedBox.shrink();
+                  }
+                  
+                  // Show date for first, last, and middle points
+                  if (index == 0 || 
+                      index == sorted.length - 1 || 
+                      index == sorted.length ~/ 2) {
+                    final date = sorted[index].date;
+                    final month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][date.month - 1];
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        '${month.substring(0, 3)}\n${date.day}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppTheme.slate600,
+                              fontSize: 9,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          ),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval: priceRange / 4,
+            getDrawingHorizontalLine: (value) {
+              return FlLine(
+                color: AppTheme.slate200,
+                strokeWidth: 1,
+                dashArray: [5, 5],
+              );
+            },
+          ),
+          borderData: FlBorderData(
+            show: true,
+            border: Border.all(color: AppTheme.slate200),
+          ),
+          lineTouchData: LineTouchData(
+            enabled: true,
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipItems: (touchedSpots) {
+                return touchedSpots.map((spot) {
+                  final index = spot.x.toInt();
+                  if (index < 0 || index >= sorted.length) return null;
+                  
+                  final purchase = sorted[index];
+                  return LineTooltipItem(
+                    '\$${purchase.price.toStringAsFixed(2)}\n${_formatDate(purchase.date)}',
+                    TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                    children: [
+                      if (purchase.merchant != null)
+                        TextSpan(
+                          text: '\n${purchase.merchant}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                    ],
+                  );
+                }).toList();
+              },
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
