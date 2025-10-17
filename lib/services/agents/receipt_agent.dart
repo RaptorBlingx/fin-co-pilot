@@ -9,10 +9,12 @@ class ReceiptAgent {
   late final GenerativeModel _visionModel;
 
   ReceiptAgent() {
-    // Use Gemini Pro with Vision for image analysis
+    // Use Gemini 2.5 Flash-Lite for fast, cost-effective receipt OCR
+    // Gemini 2.5 Flash-Lite: Optimized for low-latency, high-volume OCR tasks
+    // Supports image analysis with text extraction at lower cost
     // ignore: deprecated_member_use
     _visionModel = FirebaseVertexAI.instance.generativeModel(
-      model: 'gemini-1.5-pro',
+      model: 'gemini-2.5-flash-lite',
     );
   }
 
