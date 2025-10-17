@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import '../widgets/chat_bubble.dart';
@@ -9,6 +10,7 @@ import '../providers/conversation_provider.dart';
 import '../services/voice_input_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../services/agents/receipt_agent.dart';
+import '../../../services/agents/item_tracker_agent.dart';
 import 'receipt_review_screen.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
@@ -44,11 +46,165 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     _scrollToBottom();
   }
 
-  void _handleCameraPressed() {
-    // TODO: Implement camera/receipt photo
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Camera feature coming in Step 5.7')),
+  void _handleCameraPressed() async {
+    // Show options: Camera or Gallery
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take Photo'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from Gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
     );
+
+    if (source == null) return;
+
+    try {
+      // Pick image
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        imageQuality: 85,
+      );
+
+      if (image == null) return;
+
+      // Show processing dialog
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Processing receipt...\nThis may take a few seconds'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Read image bytes
+      final Uint8List imageBytes = await File(image.path).readAsBytes();
+
+      // Process with Receipt Agent
+      final receiptAgent = ReceiptAgent();
+      final receiptData = await receiptAgent.extractFromReceipt(
+        imageBytes: imageBytes,
+      );
+
+      // Dismiss processing dialog
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      // Show receipt review screen
+      if (!mounted) return;
+      final confirmedReceipt = await Navigator.push<ReceiptExtractionResult>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ReceiptReviewScreen(
+            receiptData: receiptData,
+          ),
+        ),
+      );
+
+      // If user confirmed, process the receipt
+      if (confirmedReceipt != null && mounted) {
+        _processConfirmedReceipt(confirmedReceipt);
+      }
+    } catch (e) {
+      // Dismiss processing dialog if open
+      if (mounted) Navigator.pop(context);
+
+      // Show error
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to process receipt: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _processConfirmedReceipt(ReceiptExtractionResult receipt) async {
+    final itemCount = receipt.items.length;
+    final total = receipt.total;
+    final merchant = receipt.merchant ?? 'Unknown Store';
+
+    try {
+      // Get current user
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Save items using Item Tracker Agent
+      if (receipt.items.isNotEmpty) {
+        final itemTracker = ItemTrackerAgent();
+
+        // Generate a temporary transaction ID (will be replaced when full transaction is saved)
+        final tempTransactionId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+
+        await itemTracker.trackItems(
+          userId: user.uid,
+          transactionId: tempTransactionId,
+          items: receipt.items,
+          purchaseDate: receipt.date ?? DateTime.now(),
+          merchant: receipt.merchant,
+        );
+      }
+
+      // Create message summary for conversation
+      final summary = 'Receipt from $merchant: $itemCount items, total \$${total.toStringAsFixed(2)}';
+
+      // Send to conversation AI
+      _handleSendMessage(summary);
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Receipt processed! $itemCount items tracked 📊'),
+            backgroundColor: AppTheme.successGreen,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error saving items: $e');
+      // Still send summary to conversation even if item tracking fails
+      final summary = 'Receipt from $merchant: $itemCount items, total \$${total.toStringAsFixed(2)}';
+      _handleSendMessage(summary);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Receipt processed (item tracking failed: $e)'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
   }
 
   void _handleVoicePressed() {
