@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'notification_service.dart';
+import 'coaching_tips_library.dart';
 
 class CoachingService {
   static final CoachingService _instance = CoachingService._internal();
@@ -139,149 +140,39 @@ class CoachingService {
     }
   }
 
-  /// Get tip from category
+  /// Get tip from category using the new coaching tips library
   Map<String, String>? _getTipFromCategory(String category) {
-    final tips = _getTipsByCategory();
-    final categoryTips = tips[category] ?? tips['general']!;
-    
-    if (categoryTips.isEmpty) return null;
-    
-    return categoryTips[_random.nextInt(categoryTips.length)];
-  }
+    // Map old category names to new library categories
+    String libraryCategory;
+    switch (category) {
+      case 'food_savings':
+        libraryCategory = 'dining';
+        break;
+      case 'transportation':
+        libraryCategory = 'transport';
+        break;
+      case 'smart_shopping':
+        libraryCategory = 'shopping';
+        break;
+      case 'budgeting':
+      case 'mindful_spending':
+      case 'savings':
+      case 'general':
+      default:
+        libraryCategory = 'general';
+        break;
+    }
 
-  /// Get all tips organized by category
-  Map<String, List<Map<String, String>>> _getTipsByCategory() {
+    // Get tips from the new library
+    final tips = CoachingTipsLibrary.getTipsForCategory(libraryCategory, {});
+    
+    if (tips.isEmpty) return null;
+    
+    // Select random tip and convert to old format
+    final tip = tips[_random.nextInt(tips.length)];
     return {
-      'budgeting': [
-        {
-          'title': '💰 50/30/20 Rule',
-          'body': 'Try the 50/30/20 rule: 50% needs, 30% wants, 20% savings. It\'s a simple way to balance your finances!',
-        },
-        {
-          'title': '📊 Track Your Spending',
-          'body': 'Spend 5 minutes each day reviewing your transactions. Awareness is the first step to better money management!',
-        },
-        {
-          'title': '🎯 Set Specific Goals',
-          'body': 'Instead of "save more," try "save \$200 this month." Specific goals are more likely to be achieved!',
-        },
-        {
-          'title': '📱 Use the Envelope Method',
-          'body': 'Allocate specific amounts to different spending categories. When the "envelope" is empty, you\'re done spending in that category!',
-        },
-      ],
-      'food_savings': [
-        {
-          'title': '🍳 Meal Prep Magic',
-          'body': 'Spend Sunday prepping meals for the week. You\'ll save money and make healthier choices!',
-        },
-        {
-          'title': '📋 Shop with a List',
-          'body': 'Always grocery shop with a list and stick to it. This simple habit can cut your food spending by 20%!',
-        },
-        {
-          'title': '🏠 Cook at Home',
-          'body': 'Cooking one extra meal at home per week instead of dining out can save you \$1,200+ per year!',
-        },
-        {
-          'title': '🥪 Pack Your Lunch',
-          'body': 'Bringing lunch to work just 3 days a week can save you over \$600 annually!',
-        },
-      ],
-      'transportation': [
-        {
-          'title': '⛽ Track Gas Prices',
-          'body': 'Use apps like GasBuddy to find the cheapeast gas stations near you. Small savings add up!',
-        },
-        {
-          'title': '🚗 Combine Trips',
-          'body': 'Plan your errands to combine multiple stops in one trip. You\'ll save on gas and time!',
-        },
-        {
-          'title': '🚲 Alternative Transportation',
-          'body': 'Consider biking, walking, or public transit for short trips. Your wallet and health will thank you!',
-        },
-        {
-          'title': '🔧 Regular Maintenance',
-          'body': 'Keep up with car maintenance. A well-maintained car is more fuel-efficient and lasts longer!',
-        },
-      ],
-      'smart_shopping': [
-        {
-          'title': '⏰ 24-Hour Rule',
-          'body': 'For non-essential purchases over \$50, wait 24 hours before buying. You might find you don\'t need it!',
-        },
-        {
-          'title': '🛍️ Compare Prices',
-          'body': 'Check 2-3 stores or websites before making larger purchases. Price comparison can save you 10-30%!',
-        },
-        {
-          'title': '🏷️ Use Cashback Apps',
-          'body': 'Apps like Rakuten or Honey can give you cashback on purchases you\'re already making!',
-        },
-        {
-          'title': '📅 Time Your Purchases',
-          'body': 'Buy seasonal items at the end of the season when they go on clearance!',
-        },
-      ],
-      'mindful_spending': [
-        {
-          'title': '🤔 Ask "Do I Need This?"',
-          'body': 'Before each purchase, ask yourself: "Do I need this, or do I just want it?" This simple question can prevent impulse buys!',
-        },
-        {
-          'title': '💳 Use Cash for Discretionary Spending',
-          'body': 'Using cash for entertainment and shopping makes spending feel more real and helps you stick to budgets!',
-        },
-        {
-          'title': '📱 Delete Shopping Apps',
-          'body': 'Remove shopping apps from your phone\'s home screen to reduce impulse purchases!',
-        },
-        {
-          'title': '🛒 Shop with Purpose',
-          'body': 'Only shop when you need something specific. Avoid browsing stores or websites when you\'re bored!',
-        },
-      ],
-      'savings': [
-        {
-          'title': '🏦 Automate Your Savings',
-          'body': 'Set up automatic transfers to savings right after payday. Pay yourself first!',
-        },
-        {
-          'title': '🪙 Save Your Change',
-          'body': 'Use apps that round up purchases and save the change. Small amounts add up to big savings!',
-        },
-        {
-          'title': '💰 High-Yield Savings',
-          'body': 'Move your emergency fund to a high-yield savings account. Let your money work for you!',
-        },
-        {
-          'title': '🎯 Emergency Fund First',
-          'body': 'Focus on building a \$1,000 emergency fund before other financial goals. It\'s your financial safety net!',
-        },
-      ],
-      'general': [
-        {
-          'title': '📈 Start Small',
-          'body': 'Small consistent actions lead to big results. Start with saving just \$1 per day!',
-        },
-        {
-          'title': '💡 Learn Something New',
-          'body': 'Read one financial article or watch one money management video today. Knowledge is power!',
-        },
-        {
-          'title': '🔍 Review Your Subscriptions',
-          'body': 'Cancel subscriptions you don\'t use regularly. That \$10/month adds up to \$120/year!',
-        },
-        {
-          'title': '🎉 Celebrate Small Wins',
-          'body': 'Acknowledge your financial progress, no matter how small. Positive reinforcement builds good habits!',
-        },
-        {
-          'title': '📞 Negotiate Bills',
-          'body': 'Call your internet, phone, or insurance companies to ask about discounts. You might be surprised what you can save!',
-        },
-      ],
+      'title': tip['title'] as String,
+      'body': tip['message'] as String,
     };
   }
 
@@ -321,12 +212,20 @@ class CoachingService {
       final lastWeekSpending = await _getSpendingForPeriod(twoWeeksAgo, weekAgo);
 
       final spendingChange = thisWeekSpending - lastWeekSpending;
-      final percentageChange = lastWeekSpending > 0 ? (spendingChange / lastWeekSpending) * 100 : 0;
+      final percentageChange = lastWeekSpending > 0 ? (spendingChange / lastWeekSpending) * 100 : 0.0;
 
       String title;
       String body;
 
-      if (spendingChange > 0) {
+      // Check for trend tips from the new library
+      final trendTips = CoachingTipsLibrary.getTrendTips(percentageChange.toDouble());
+      
+      if (trendTips.isNotEmpty) {
+        // Use the new coaching tips library for trend insights
+        final tip = trendTips.first;
+        title = tip['title'] as String;
+        body = tip['message'] as String;
+      } else if (spendingChange > 0) {
         title = '📊 Weekly Spending Up';
         body = 'Your spending increased by \$${spendingChange.toStringAsFixed(2)} (${percentageChange.toStringAsFixed(1)}%) this week. Current: \$${thisWeekSpending.toStringAsFixed(2)}';
       } else if (spendingChange < 0) {
@@ -345,6 +244,32 @@ class CoachingService {
     } catch (e) {
       if (kDebugMode) {
         print('Error sending weekly report: $e');
+      }
+    }
+  }
+
+  /// Send budget alert tips when approaching or exceeding budget
+  Future<void> sendBudgetAlert(double spentAmount, double budgetAmount) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final spentPercent = (spentAmount / budgetAmount) * 100;
+      
+      // Get budget tips from the new library
+      final budgetTips = CoachingTipsLibrary.getBudgetTips(spentPercent);
+      
+      if (budgetTips.isNotEmpty) {
+        final tip = budgetTips.first;
+        await _notificationService.sendCoachingTip(
+          title: tip['title'] as String,
+          body: tip['message'] as String,
+          tipCategory: 'budget_alert',
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error sending budget alert: $e');
       }
     }
   }
@@ -384,10 +309,6 @@ class CoachingService {
     if (user == null) return;
 
     try {
-      // Get user's progress metrics
-      final userProfile = await _getUserSpendingProfile();
-      final totalSpending = userProfile['totalSpending'] as double? ?? 0;
-      
       // Get user's goals
       final goalsSnapshot = await _firestore
           .collection('goals')

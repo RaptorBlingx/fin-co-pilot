@@ -3,9 +3,13 @@ import '../../../../services/auth_service.dart';
 import '../../../../services/preferences_service.dart';
 import '../../../../services/analytics_service.dart';
 import '../../../../services/transaction_service.dart';
+import '../../../../services/insights_service.dart';
 import '../../../../shared/models/transaction.dart' as model;
+import '../../../../shared/models/spending_insights.dart';
 import '../../../transactions/presentation/screens/transactions_screen.dart';
+import '../../../transactions/presentation/screens/transaction_detail_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
+import '../../../budget/presentation/screens/budget_screen.dart';
 
 import '../../widgets/hero_spending_card.dart';
 import '../../widgets/ai_insight_card.dart';
@@ -27,6 +31,144 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     // Track dashboard screen view
     AnalyticsService.logScreenView('dashboard');
+  }
+
+  /// Generate smart insights based on user's real transaction data
+  List<InsightData> _generateSmartInsights(List<model.Transaction> allTransactions) {
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final startOfLastMonth = DateTime(now.year, now.month - 1, 1);
+
+    // Get this month's and last month's transactions
+    final thisMonthTransactions = allTransactions.where((t) =>
+      t.transactionDate.isAfter(startOfMonth.subtract(const Duration(days: 1)))
+    ).toList();
+
+    final lastMonthTransactions = allTransactions.where((t) =>
+      t.transactionDate.isAfter(startOfLastMonth.subtract(const Duration(days: 1))) &&
+      t.transactionDate.isBefore(startOfMonth)
+    ).toList();
+
+    final thisMonthInsights = InsightsService.generateInsights(thisMonthTransactions);
+    final lastMonthInsights = InsightsService.generateInsights(lastMonthTransactions);
+
+    final List<InsightData> insights = [];
+
+    // Insight 1: Spending trend comparison
+    if (lastMonthInsights.totalSpent > 0) {
+      final change = thisMonthInsights.totalSpent - lastMonthInsights.totalSpent;
+      final percentChange = (change / lastMonthInsights.totalSpent * 100).abs();
+
+      if (change < 0) {
+        insights.add(InsightData(
+          message: "You're spending ${percentChange.toStringAsFixed(0)}% less this month. Keep it up! 🎉",
+          type: InsightType.achievement,
+          actionLabel: "View details",
+          onActionTap: () {
+            HapticUtils.light();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const TransactionsScreen()),
+            );
+          },
+        ));
+      } else if (change > lastMonthInsights.totalSpent * 0.2) {
+        insights.add(InsightData(
+          message: "Spending is up ${percentChange.toStringAsFixed(0)}% this month. Consider reviewing your budget.",
+          type: InsightType.warning,
+          actionLabel: "Review spending",
+          onActionTap: () {
+            HapticUtils.light();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const TransactionsScreen()),
+            );
+          },
+        ));
+      }
+    }
+
+    // Insight 2: Top category spending
+    if (thisMonthInsights.topCategory.isNotEmpty) {
+      final categorySpending = thisMonthInsights.byCategory[thisMonthInsights.topCategory] ?? 0;
+      final percentage = (categorySpending / thisMonthInsights.totalSpent * 100);
+
+      if (percentage > 40) {
+        insights.add(InsightData(
+          message: "${thisMonthInsights.topCategory} is ${percentage.toStringAsFixed(0)}% of your spending. Consider setting a budget for this category.",
+          type: InsightType.tip,
+          actionLabel: "Set budget",
+          onActionTap: () {
+            HapticUtils.light();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const BudgetScreen()),
+            );
+          },
+        ));
+      }
+    }
+
+    // Insight 3: Category comparison with last month
+    if (lastMonthInsights.byCategory.isNotEmpty && thisMonthInsights.byCategory.isNotEmpty) {
+      for (final category in thisMonthInsights.byCategory.keys) {
+        final thisMonthAmount = thisMonthInsights.byCategory[category] ?? 0;
+        final lastMonthAmount = lastMonthInsights.byCategory[category] ?? 0;
+
+        if (lastMonthAmount > 0) {
+          final savings = lastMonthAmount - thisMonthAmount;
+          if (savings > 50) {
+            insights.add(InsightData(
+              message: "You've saved \$${savings.toStringAsFixed(0)} in $category this month! 💰",
+              type: InsightType.pattern,
+              actionLabel: "See savings",
+              onActionTap: () {
+                HapticUtils.light();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const TransactionsScreen()),
+                );
+              },
+            ));
+            break;
+          }
+        }
+      }
+    }
+
+    // Insight 4: Transaction count pattern
+    if (thisMonthInsights.transactionCount > lastMonthInsights.transactionCount + 10) {
+      insights.add(InsightData(
+        message: "You made ${thisMonthInsights.transactionCount - lastMonthInsights.transactionCount} more transactions this month. Consider consolidating purchases.",
+        type: InsightType.tip,
+        actionLabel: "Learn more",
+        onActionTap: () {
+          HapticUtils.light();
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const TransactionsScreen()),
+          );
+        },
+      ));
+    }
+
+    // Default insight if no specific patterns found
+    if (insights.isEmpty && thisMonthInsights.transactionCount > 0) {
+      insights.add(InsightData(
+        message: "You've made ${thisMonthInsights.transactionCount} transactions this month totaling \$${thisMonthInsights.totalSpent.toStringAsFixed(2)}",
+        type: InsightType.pattern,
+        actionLabel: "View all",
+        onActionTap: () {
+          HapticUtils.light();
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const TransactionsScreen()),
+          );
+        },
+      ));
+    }
+
+    return insights.take(3).toList();
   }
 
   @override
@@ -107,28 +249,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 },
               ),
 
-              // AI Insight Card - Single highlighted insight
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: AIInsightCard(
-                  insights: [
-                    InsightData(
-                      message: "You're spending 20% less on dining this month. Keep it up! 🎉",
-                      type: InsightType.achievement,
-                      actionLabel: "View details",
-                    ),
-                    InsightData(
-                      message: "Grocery spending is trending higher. Consider setting a weekly budget.",
-                      type: InsightType.tip,
-                      actionLabel: "Set budget",
-                    ),
-                    InsightData(
-                      message: "You've saved \$150 this month by reducing subscriptions! 💰",
-                      type: InsightType.pattern,
-                      actionLabel: "See savings",
-                    ),
-                  ],
-                ),
+              // AI Insight Card - Dynamic insights based on real user data
+              StreamBuilder<List<model.Transaction>>(
+                stream: TransactionService().getTransactions(user.uid),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final allTransactions = snapshot.data!;
+                  final insights = _generateSmartInsights(allTransactions);
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: AIInsightCard(insights: insights),
+                  );
+                },
               ),
 
               const SizedBox(height: 32),
@@ -215,7 +351,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           transaction: transaction,
                           onTap: () {
                             HapticUtils.light();
-                            // Navigate to transaction details or edit screen
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TransactionDetailScreen(
+                                  transaction: transaction,
+                                ),
+                              ),
+                            );
                           },
                         );
                       }).toList(),

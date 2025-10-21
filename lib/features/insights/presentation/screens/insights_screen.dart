@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../../../services/transaction_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../services/insights_service.dart';
 import '../../../../services/financial_analyst_agent.dart';
 import '../../../../services/auth_service.dart';
@@ -12,6 +12,8 @@ import '../../../../shared/widgets/shimmer_loading.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../core/utils/haptic_utils.dart';
 
+/// Enhanced Insights Screen with Time Period Selection
+/// Combines existing AI insights with new time-based analytics
 class InsightsScreen extends StatefulWidget {
   const InsightsScreen({super.key});
 
@@ -20,14 +22,64 @@ class InsightsScreen extends StatefulWidget {
 }
 
 class _InsightsScreenState extends State<InsightsScreen> {
-  final TransactionService _transactionService = TransactionService();
   final AuthService _authService = AuthService();
   final FinancialAnalystAgent _financialAnalyst = FinancialAnalystAgent();
   
+  // Existing AI features
   bool _isLoadingAI = false;
   List<String> _aiInsights = [];
   bool _isLoadingFinancialAnalyst = false;
   List<FinancialInsight> _financialInsights = [];
+
+  // NEW: Time period selection
+  String _selectedPeriod = 'month'; // 'week', 'month', 'year'
+
+  /// Get transactions stream based on selected time period
+  Stream<List<model.Transaction>> _getTransactionsStreamByPeriod(String userId) {
+    final now = DateTime.now();
+    DateTime startDate;
+    
+    switch (_selectedPeriod) {
+      case 'week':
+        startDate = now.subtract(const Duration(days: 7));
+        break;
+      case 'year':
+        startDate = DateTime(now.year, 1, 1);
+        break;
+      case 'month':
+      default:
+        startDate = DateTime(now.year, now.month, 1);
+    }
+
+    // Query Firestore for transactions in the selected period
+    // Using transaction_date field which should have existing indexes
+    return FirebaseFirestore.instance
+        .collection('transactions')
+        .where('user_id', isEqualTo: userId)
+        .where('transaction_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .where('transaction_date', isLessThanOrEqualTo: Timestamp.fromDate(now))
+        .orderBy('transaction_date', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return model.Transaction.fromMap(data, doc.id);
+      }).toList();
+    });
+  }
+
+  /// Get period display text for UI
+  String _getPeriodDisplayText() {
+    switch (_selectedPeriod) {
+      case 'week':
+        return 'This Week';
+      case 'year':
+        return 'This Year';
+      case 'month':
+      default:
+        return 'This Month';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,9 +91,11 @@ class _InsightsScreenState extends State<InsightsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Insights'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        elevation: 0,
       ),
       body: StreamBuilder<List<model.Transaction>>(
-        stream: _transactionService.getCurrentMonthTransactions(user.uid),
+        stream: _getTransactionsStreamByPeriod(user.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return ListView(
@@ -76,8 +130,23 @@ class _InsightsScreenState extends State<InsightsScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                // Summary card
-                _SummaryCard(insights: insights, currency: currency),
+                // Time period selector with improved styling
+                _PeriodSelector(
+                  selectedPeriod: _selectedPeriod,
+                  onPeriodChanged: (period) {
+                    HapticUtils.light();
+                    setState(() => _selectedPeriod = period);
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                // Summary card with dynamic period
+                _SummaryCard(
+                  insights: insights,
+                  currency: currency,
+                  periodText: _getPeriodDisplayText(),
+                ),
                 
                 const SizedBox(height: 24),
 
@@ -175,8 +244,13 @@ class _InsightsScreenState extends State<InsightsScreen> {
 class _SummaryCard extends StatelessWidget {
   final SpendingInsights insights;
   final String currency;
+  final String periodText; // NEW: Dynamic period text
 
-  const _SummaryCard({required this.insights, required this.currency});
+  const _SummaryCard({
+    required this.insights,
+    required this.currency,
+    required this.periodText,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -187,9 +261,9 @@ class _SummaryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'This Month',
-              style: TextStyle(
+            Text(
+              periodText, // Changed from static 'This Month'
+              style: const TextStyle(
                 fontSize: 14,
                 color: Colors.grey,
                 fontWeight: FontWeight.w600,
@@ -1007,5 +1081,87 @@ class _FinancialAnalystSection extends StatelessWidget {
       default:
         return Colors.grey;
     }
+  }
+}
+
+/// Improved Period Selector Widget with better styling
+class _PeriodSelector extends StatelessWidget {
+  final String selectedPeriod;
+  final Function(String) onPeriodChanged;
+
+  const _PeriodSelector({
+    required this.selectedPeriod,
+    required this.onPeriodChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          _buildPeriodButton(context, 'week', 'Week', Icons.calendar_view_week),
+          _buildPeriodButton(context, 'month', 'Month', Icons.calendar_view_month),
+          _buildPeriodButton(context, 'year', 'Year', Icons.calendar_today),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeriodButton(BuildContext context, String value, String label, IconData icon) {
+    final isSelected = selectedPeriod == value;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onPeriodChanged(value),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: isSelected ? [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ] : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                  ? Colors.white
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

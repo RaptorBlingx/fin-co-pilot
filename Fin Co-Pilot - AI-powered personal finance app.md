@@ -554,23 +554,6 @@ dependencies:
 
 ---
 
-## **FOR THE NEXT SONNET 4.5 SESSION**
-
-**Start with this context:**
-
-"We're continuing Phase B implementation of the Fin Co-Pilot redesign. Phase A (foundation) is complete: new theme, bottom navigation, hero dashboard, and FAB are all implemented and working.
-
-**Current blocker:** The conversational Add Transaction feature is not working correctly. It's showing debug text instead of proper chat UI, and transaction preview cards aren't appearing. The core issue is that we're using regex parsing instead of calling the Gemini AI properly.
-
-**Immediate task:** Implement the RobustAIService that connects to the existing GeminiOrchestratorService, uses the system prompt we designed, and returns structured JSON responses that the UI can render correctly.
-
-All the architecture and prompts are designed. We just need to implement it properly. The files exist but need the AI integration fixed.
-
-Reference the '13-Agent Swarm Architecture' section above for the complete system design. Start with agents 1-7 (transaction agents), then add 8-13 (location agents) later.
-
-The user wants to see the conversational UI working robustly with beautiful transaction preview cards appearing when all required fields are collected."
-
----
 
 ## **SUMMARY FOR QUICK REFERENCE**
 

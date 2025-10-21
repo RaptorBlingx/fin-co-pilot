@@ -57,7 +57,15 @@ class TransactionService {
       final docRef = await _firestore
           .collection('transactions')
           .add(transaction.toFirestore());
-      
+
+      // Update budget spending
+      await _updateBudgetSpending(
+        userId: userId,
+        category: transaction.category,
+        amount: transaction.amount,
+        transactionDate: transaction.transactionDate,
+      );
+
       // Track analytics
       await AnalyticsService.logTransactionAdded(
         method: 'receipt',
@@ -65,7 +73,7 @@ class TransactionService {
         amount: transaction.amount,
         merchant: transaction.merchant,
       );
-      
+
       return {
         'success': true,
         'transaction_id': docRef.id,
@@ -116,7 +124,15 @@ class TransactionService {
       final docRef = await _firestore
           .collection('transactions')
           .add(transaction.toFirestore());
-      
+
+      // Update budget spending
+      await _updateBudgetSpending(
+        userId: userId,
+        category: transaction.category,
+        amount: transaction.amount,
+        transactionDate: transaction.transactionDate,
+      );
+
       // Track analytics
       await AnalyticsService.logTransactionAdded(
         method: 'manual',
@@ -124,7 +140,7 @@ class TransactionService {
         amount: transaction.amount,
         merchant: transaction.merchant,
       );
-      
+
       return {
         'success': true,
         'transaction_id': docRef.id,
@@ -150,6 +166,23 @@ class TransactionService {
           .map((doc) => model.Transaction.fromFirestore(doc))
           .toList();
     });
+  }
+
+  /// Get a single transaction by ID
+  Future<model.Transaction?> getTransactionById(String transactionId) async {
+    try {
+      final doc = await _firestore
+          .collection('transactions')
+          .doc(transactionId)
+          .get();
+      
+      if (doc.exists) {
+        return model.Transaction.fromFirestore(doc);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 
   /// Get transactions for current month
@@ -185,5 +218,42 @@ class TransactionService {
     Map<String, dynamic> updates,
   ) async {
     await _firestore.collection('transactions').doc(transactionId).update(updates);
+  }
+
+  /// Update budget spending when a transaction is added
+  Future<void> _updateBudgetSpending({
+    required String userId,
+    required String category,
+    required double amount,
+    required DateTime transactionDate,
+  }) async {
+    try {
+      // Get the month of the transaction
+      final month = '${transactionDate.year}-${transactionDate.month.toString().padLeft(2, '0')}';
+
+      // Find the budget for this category and month
+      final budgetQuery = await _firestore
+          .collection('budgets')
+          .where('userId', isEqualTo: userId)
+          .where('category', isEqualTo: category)
+          .where('month', isEqualTo: month)
+          .limit(1)
+          .get();
+
+      if (budgetQuery.docs.isNotEmpty) {
+        final budgetDoc = budgetQuery.docs.first;
+        final currentSpending = (budgetDoc.data()['currentSpending'] as num?)?.toDouble() ?? 0;
+        final newSpending = currentSpending + amount;
+
+        // Update the budget
+        await _firestore.collection('budgets').doc(budgetDoc.id).update({
+          'currentSpending': newSpending,
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      // Log error but don't fail the transaction
+      print('Error updating budget spending: $e');
+    }
   }
 }

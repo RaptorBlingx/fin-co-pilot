@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_utils.dart';
+import '../../../shared/models/transaction.dart' as model;
+import '../../../services/analytics_service.dart';
 import '../models/chat_message.dart';
 
 class ChatBubble extends StatelessWidget {
@@ -310,17 +314,97 @@ class ChatBubble extends StatelessWidget {
     }
   }
 
-  void _handleAddTransaction(BuildContext context, TransactionPreview preview) {
-    // TODO: Save transaction to database/service
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Transaction added: ${preview.description} - \$${preview.amount}'),
-        backgroundColor: AppTheme.successGreen,
-      ),
-    );
-    
-    // Navigate back to home
-    Navigator.of(context).pop();
+  void _handleAddTransaction(BuildContext context, TransactionPreview preview) async {
+    try {
+      // Get current user
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Show loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              SizedBox(width: 12),
+              Text('Saving transaction...'),
+            ],
+          ),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Create transaction from preview
+      final transaction = model.Transaction(
+        userId: user.uid,
+        amount: preview.amount,
+        currency: preview.currency,
+        category: preview.category,
+        merchant: preview.merchant,
+        description: preview.description ?? preview.merchant ?? preview.category,
+        transactionDate: preview.date,
+        createdAt: DateTime.now(),
+        inputMethod: 'chat',
+        paymentMethod: 'cash',
+      );
+
+      // Save to Firestore
+      await FirebaseFirestore.instance
+          .collection('transactions')
+          .add(transaction.toFirestore());
+
+      // Track analytics
+      await AnalyticsService.logTransactionAdded(
+        method: 'chat',
+        category: transaction.category,
+        amount: transaction.amount,
+        merchant: transaction.merchant,
+      );
+
+      // Show success message
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Transaction saved! ${CurrencyUtils.formatAmount(preview.amount, preview.currency)} added to ${preview.category}',
+          ),
+          backgroundColor: AppTheme.successGreen,
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'View',
+            textColor: Colors.white,
+            onPressed: () {
+              // Navigate to transactions screen
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+          ),
+        ),
+      );
+
+      // Navigate back to home
+      Navigator.of(context).pop();
+    } catch (e) {
+      // Show error message
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save transaction: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   void _handleEditTransaction(BuildContext context, TransactionPreview preview) {

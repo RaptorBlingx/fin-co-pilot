@@ -4,147 +4,86 @@ import '../../shared/widgets/gradient_fab.dart';
 
 // Import your existing screens
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../../features/transactions/presentation/screens/transactions_screen.dart';
 import '../../features/insights/presentation/screens/insights_screen.dart';
 import '../../features/more/presentation/more_screen.dart';
-import '../../features/add_transaction/presentation/add_transaction_screen.dart' as conversational;
+import '../../features/financial_copilot/presentation/screens/financial_copilot_screen.dart';
 
-// Navigation State Provider
-final currentTabIndexProvider = StateProvider<int>((ref) => 0);
+/// Provider for managing the selected navigation tab
+final selectedIndexProvider = StateProvider<int>((ref) => 0);
 
+/// Main app navigation widget with 4-tab bottom navigation
+/// 
+/// ARCHITECTURE DECISION: Changed from 5-tab to 4-tab layout
+/// - Removed disabled "Add" tab (was causing UX confusion)
+/// - FAB handles all "Add Transaction" functionality
+/// - Cleaner, more premium feel
 class AppNavigation extends ConsumerWidget {
   const AppNavigation({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentIndex = ref.watch(currentTabIndexProvider);
-    
-    // Define your screens for each tab
-    final screens = [
-      const DashboardScreen(),           // Tab 0: Home
-      const _PlaceholderScreen(                // Tab 1: Transactions (will be created later)
-        title: 'Transactions', 
-        icon: Icons.receipt_long,
-      ),
-      const SizedBox.shrink(),              // Tab 2: Empty (Add via FAB only)
-      const InsightsScreen(),            // Tab 3: Insights (analytics & charts)
-      const MoreScreen(),                // Tab 4: More
+    final selectedIndex = ref.watch(selectedIndexProvider);
+
+    // 4 main screens - NO PLACEHOLDERS
+    final List<Widget> screens = [
+      const DashboardScreen(),        // Tab 0: Home
+      const TransactionsScreen(),      // Tab 1: Transactions (FIXED - using real screen)
+      const InsightsScreen(),          // Tab 2: Insights
+      const MoreScreen(),              // Tab 3: More
     ];
 
     return Scaffold(
       body: IndexedStack(
-        index: currentIndex,
+        index: selectedIndex,
         children: screens,
       ),
-      
-      // FLOATING ACTION BUTTON
+      // Global FAB - accessible from all tabs
       floatingActionButton: GradientFAB(
         onPressed: () {
-          // Navigate to Add Transaction screen (conversational UI)
-          _showAddTransactionModal(context);
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const FinancialCopilotScreen(),
+              fullscreenDialog: true,
+            ),
+          );
         },
-        icon: Icons.add_rounded,
-        tooltip: 'Add Transaction',
+        icon: Icons.auto_awesome,
+        tooltip: 'Fin Copilot',
       ),
-      
-      // Position FAB
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      
-      // Bottom Navigation
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIndex,
-        onDestinationSelected: (index) {
-          // Don't navigate to index 2 (Add tab) via bottom nav
-          // User should use FAB instead
-          if (index != 2) {
-            ref.read(currentTabIndexProvider.notifier).state = index;
-          }
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: selectedIndex,
+        onTap: (index) {
+          ref.read(selectedIndexProvider.notifier).state = index;
         },
-        destinations: const [
-          NavigationDestination(
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
+        items: const [
+          BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
+            activeIcon: Icon(Icons.home),
             label: 'Home',
           ),
-          NavigationDestination(
+          BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
+            activeIcon: Icon(Icons.receipt_long),
             label: 'Transactions',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.add_circle_outline),
-            selectedIcon: Icon(Icons.add_circle),
-            label: 'Add',
-            // This tab is handled by FAB - navigation blocked in onDestinationSelected
-          ),
-          NavigationDestination(
+          BottomNavigationBarItem(
             icon: Icon(Icons.insights_outlined),
-            selectedIcon: Icon(Icons.insights),
+            activeIcon: Icon(Icons.insights),
             label: 'Insights',
           ),
-          NavigationDestination(
+          BottomNavigationBarItem(
             icon: Icon(Icons.more_horiz),
-            selectedIcon: Icon(Icons.menu),
+            activeIcon: Icon(Icons.more_horiz),
             label: 'More',
           ),
         ],
-      ),
-    );
-  }
-  
-  void _showAddTransactionModal(BuildContext context) {
-    // OPTION 1: Full-screen modal (recommended for conversational UI)
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const conversational.AddTransactionScreen(),
-        fullscreenDialog: true,
-      ),
-    );
-    
-    // OPTION 2: Bottom sheet (alternative)
-    // showModalBottomSheet(
-    //   context: context,
-    //   isScrollControlled: true,
-    //   backgroundColor: Colors.transparent,
-    //   builder: (context) => const AddTransactionBottomSheet(),
-    // );
-  }
-}
-
-// Old placeholder removed - now using the real conversational AddTransactionScreen
-
-// Temporary placeholder widget
-class _PlaceholderScreen extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  
-  const _PlaceholderScreen({
-    required this.title,
-    required this.icon,
-  });
-  
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 64, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.displaySmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Screen coming soon',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ],
-        ),
       ),
     );
   }

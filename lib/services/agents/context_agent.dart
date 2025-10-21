@@ -143,6 +143,108 @@ Generate suggestion:
 
     return encourage;
   }
+
+  // ============================================================================
+  // PHASE 2 ENHANCEMENTS: Transaction Evaluation Methods
+  // ============================================================================
+
+  /// Evaluate how much context we have about a transaction (Map version)
+  /// Returns: 'rich', 'adequate', 'minimal'
+  /// 
+  /// This method works with raw transaction maps from Firestore.
+  /// Use this for evaluating existing transactions.
+  String evaluateTransactionRichness(Map<String, dynamic> transaction) {
+    int score = 0;
+    
+    // Core fields (required)
+    if (transaction['amount'] != null && transaction['amount'] > 0) score++;
+    if (transaction['category'] != null && transaction['category'].toString().isNotEmpty) score++;
+    
+    // Enhanced fields (good to have)
+    if (transaction['merchant'] != null && transaction['merchant'].toString().isNotEmpty) score++;
+    if (transaction['items'] != null && (transaction['items'] as List).isNotEmpty) score += 2;
+    if (transaction['notes'] != null && transaction['notes'].toString().isNotEmpty) score++;
+    if (transaction['receipt_image_url'] != null) score += 2;
+    
+    // Metadata (nice to have)
+    if (transaction['payment_method'] != null) score++;
+    if (transaction['subcategory'] != null) score++;
+    
+    // Rich: 7+ points (has items, receipt, or detailed info)
+    if (score >= 7) return 'rich';
+    
+    // Adequate: 4-6 points (has merchant and category at minimum)
+    if (score >= 4) return 'adequate';
+    
+    // Minimal: < 4 points (missing key details)
+    return 'minimal';
+  }
+  
+  /// Determine what additional context should be requested
+  /// 
+  /// Use this to identify which fields are missing from a transaction.
+  List<String> suggestMissingFields(Map<String, dynamic> transaction) {
+    final missing = <String>[];
+    
+    if (transaction['merchant'] == null || transaction['merchant'].toString().isEmpty) {
+      missing.add('merchant');
+    }
+    
+    if (transaction['category'] == null || transaction['category'].toString().isEmpty) {
+      missing.add('category');
+    }
+    
+    if (transaction['items'] == null || (transaction['items'] as List?)?.isEmpty == true) {
+      missing.add('items');
+    }
+    
+    if (transaction['payment_method'] == null) {
+      missing.add('payment_method');
+    }
+    
+    return missing;
+  }
+  
+  /// Generate a follow-up question to enrich context
+  /// 
+  /// Use this to prompt users for missing information.
+  /// Returns empty string if transaction is already rich.
+  String generateFollowUpQuestion(Map<String, dynamic> transaction) {
+    final richness = evaluateTransactionRichness(transaction);
+    
+    if (richness == 'rich') {
+      return ''; // No follow-up needed
+    }
+    
+    final missing = suggestMissingFields(transaction);
+    
+    if (missing.contains('merchant')) {
+      return 'Where did you make this purchase?';
+    }
+    
+    if (missing.contains('items')) {
+      final merchant = transaction['merchant'] ?? 'the store';
+      return 'What did you buy at $merchant?';
+    }
+    
+    if (missing.contains('category')) {
+      return 'What category should this be? (Groceries, Dining, Transport, etc.)';
+    }
+    
+    if (missing.contains('payment_method')) {
+      return 'How did you pay? (Card, Cash, Digital wallet)';
+    }
+    
+    return ''; // No more questions
+  }
+  
+  /// Check if transaction has enough context for insights
+  /// 
+  /// Use this to determine if a transaction can be used for analytics.
+  bool hasEnoughContextForInsights(Map<String, dynamic> transaction) {
+    final richness = evaluateTransactionRichness(transaction);
+    return richness == 'rich' || richness == 'adequate';
+  }
 }
 
 /// Context analysis result

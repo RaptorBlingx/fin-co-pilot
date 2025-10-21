@@ -363,6 +363,7 @@ class NotificationService {
     if (user == null) return;
 
     try {
+      // Save to Firestore
       await _firestore.collection('notifications').add({
         'userId': user.uid,
         'type': 'budget_alert',
@@ -377,6 +378,18 @@ class NotificationService {
         'timestamp': FieldValue.serverTimestamp(),
         'read': false,
       });
+
+      // Display local notification immediately
+      await _displayLocalNotification(
+        title: title,
+        body: body,
+        channelId: 'budget_alerts',
+        payload: jsonEncode({
+          'type': 'budget_alert',
+          'action': 'open_budget',
+          'category': category,
+        }),
+      );
     } catch (e) {
       if (kDebugMode) {
         print('Error sending budget alert: $e');
@@ -394,6 +407,7 @@ class NotificationService {
     if (user == null) return;
 
     try {
+      // Save to Firestore
       await _firestore.collection('notifications').add({
         'userId': user.uid,
         'type': 'coaching_tip',
@@ -406,6 +420,18 @@ class NotificationService {
         'timestamp': FieldValue.serverTimestamp(),
         'read': false,
       });
+
+      // Display local notification immediately
+      await _displayLocalNotification(
+        title: title,
+        body: body,
+        channelId: 'coaching_tips',
+        payload: jsonEncode({
+          'type': 'coaching_tip',
+          'action': 'open_coaching',
+          'tipCategory': tipCategory,
+        }),
+      );
     } catch (e) {
       if (kDebugMode) {
         print('Error sending coaching tip: $e');
@@ -425,6 +451,7 @@ class NotificationService {
     if (user == null) return;
 
     try {
+      // Save to Firestore
       await _firestore.collection('notifications').add({
         'userId': user.uid,
         'type': 'price_alert',
@@ -439,6 +466,18 @@ class NotificationService {
         'timestamp': FieldValue.serverTimestamp(),
         'read': false,
       });
+
+      // Display local notification immediately
+      await _displayLocalNotification(
+        title: title,
+        body: body,
+        channelId: 'price_alerts',
+        payload: jsonEncode({
+          'type': 'price_alert',
+          'action': 'open_price_alerts',
+          'itemName': itemName,
+        }),
+      );
     } catch (e) {
       if (kDebugMode) {
         print('Error sending price alert: $e');
@@ -457,6 +496,7 @@ class NotificationService {
     if (user == null) return;
 
     try {
+      // Save to Firestore
       await _firestore.collection('notifications').add({
         'userId': user.uid,
         'type': 'milestone',
@@ -470,9 +510,67 @@ class NotificationService {
         'timestamp': FieldValue.serverTimestamp(),
         'read': false,
       });
+
+      // Display local notification immediately
+      await _displayLocalNotification(
+        title: title,
+        body: body,
+        channelId: 'milestones',
+        payload: jsonEncode({
+          'type': 'milestone',
+          'action': 'open_achievements',
+          'milestoneType': milestoneType,
+        }),
+      );
     } catch (e) {
       if (kDebugMode) {
         print('Error sending milestone notification: $e');
+      }
+    }
+  }
+
+  /// Display a local notification to the user
+  Future<void> _displayLocalNotification({
+    required String title,
+    required String body,
+    required String channelId,
+    String? payload,
+  }) async {
+    try {
+      final int notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      await _localNotifications.show(
+        notificationId,
+        title,
+        body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            channelId,
+            _getChannelName(channelId),
+            importance: channelId == 'budget_alerts' || channelId == 'price_alerts'
+                ? Importance.high
+                : Importance.defaultImportance,
+            priority: channelId == 'budget_alerts' || channelId == 'price_alerts'
+                ? Priority.high
+                : Priority.defaultPriority,
+            icon: '@mipmap/ic_launcher',
+            styleInformation: BigTextStyleInformation(body),
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        payload: payload,
+      );
+
+      if (kDebugMode) {
+        print('Local notification displayed: $title');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error displaying local notification: $e');
       }
     }
   }

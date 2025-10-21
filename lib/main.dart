@@ -10,6 +10,7 @@ import 'services/preferences_service.dart';
 import 'services/notification_service.dart';
 import 'services/budget_monitoring_service.dart';
 import 'services/coaching_service.dart';
+import 'services/price_alert_service.dart';
 import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
@@ -44,7 +45,10 @@ void main() async {
   
   // Initialize Notification Service
   await NotificationService().initialize();
-  
+
+  // Initialize Price Alert Service
+  await PriceAlertService().initialize();
+
   // Setup periodic monitoring
   _setupPeriodicTasks();
   
@@ -62,15 +66,19 @@ void main() async {
 void _setupPeriodicTasks() {
   final budgetMonitoring = BudgetMonitoringService();
   final coachingService = CoachingService();
-  
+  final priceAlertService = PriceAlertService();
+
   // Check budget alerts every hour
   // In production, this would be handled by cloud functions or background tasks
   // For demo purposes, we'll check when the app starts
   budgetMonitoring.checkBudgetAlerts();
   budgetMonitoring.checkSpendingMilestones();
-  
+
   // Send daily coaching tip
   coachingService.sendDailyCoachingTip();
+
+  // Check price alerts for all watchlist items
+  priceAlertService.checkAllPriceAlerts();
 }
 
 class FinCopilotApp extends ConsumerWidget {

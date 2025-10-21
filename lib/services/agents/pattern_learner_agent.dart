@@ -261,6 +261,158 @@ class PatternLearnerAgent {
       predictedNextPurchase: DateTime.now().add(const Duration(days: 7)),
     );
   }
+
+  /// PHASE 2 ENHANCEMENT: Analyze purchase history and predict next purchase date
+  /// This is the complete implementation replacing the placeholder above
+  Future<Map<String, dynamic>> predictNextPurchase(String userId, String itemName) async {
+    final purchases = await _getPurchaseHistory(userId, itemName);
+    
+    if (purchases.length < 2) {
+      return {
+        'prediction': 'insufficient_data',
+        'confidence': 0.0,
+        'purchaseCount': purchases.length,
+        'message': 'Need at least 2 purchases to predict patterns',
+      };
+    }
+
+    final intervals = _calculateIntervals(purchases);
+    final avgInterval = _average(intervals);
+    final stdDev = _standardDeviation(intervals, avgInterval);
+    final lastPurchase = purchases.last['date'] as DateTime;
+    final predictedDate = lastPurchase.add(Duration(days: avgInterval.round()));
+    final daysUntil = predictedDate.difference(DateTime.now()).inDays;
+    
+    // Confidence: higher with more data, lower with high variance
+    double confidence = (purchases.length / 10).clamp(0.0, 1.0);
+    if (stdDev > avgInterval * 0.5) {
+      confidence *= 0.5; // High variance reduces confidence
+    }
+    
+    return {
+      'prediction': predictedDate.toIso8601String(),
+      'daysUntil': daysUntil,
+      'confidence': confidence,
+      'averageInterval': avgInterval,
+      'standardDeviation': stdDev,
+      'purchaseCount': purchases.length,
+      'shouldNotify': daysUntil <= 3 && daysUntil >= 0,
+      'lastPurchaseDate': lastPurchase.toIso8601String(),
+    };
+  }
+
+  /// PHASE 2 ENHANCEMENT: Get all recurring items user might need soon
+  Future<List<Map<String, dynamic>>> getUpcomingNeeds(String userId) async {
+    final tracked = await _firestore
+        .collection('tracked_items')
+        .where('userId', isEqualTo: userId)
+        .get();
+
+    final predictions = <Map<String, dynamic>>[];
+    
+    for (var doc in tracked.docs) {
+      final itemName = doc.data()['itemName'] as String?;
+      if (itemName == null) continue;
+      
+      final prediction = await predictNextPurchase(userId, itemName);
+      
+      if (prediction['shouldNotify'] == true) {
+        predictions.add({
+          'itemName': itemName,
+          ...prediction,
+        });
+      }
+    }
+    
+    // Sort by urgency (soonest first)
+    predictions.sort((a, b) => (a['daysUntil'] as int).compareTo(b['daysUntil'] as int));
+    return predictions;
+  }
+
+  /// Helper: Get purchase history for a specific item
+  Future<List<Map<String, dynamic>>> _getPurchaseHistory(String userId, String itemName) async {
+    final txns = await _firestore
+        .collection('transactions')
+        .where('userId', isEqualTo: userId)
+        .orderBy('transactionDate')
+        .get();
+
+    final purchases = <Map<String, dynamic>>[];
+    for (var doc in txns.docs) {
+      final data = doc.data();
+      final receiptData = data['receiptData'] as Map<String, dynamic>?;
+      
+      if (receiptData != null) {
+        final items = receiptData['items'] as List?;
+        if (items != null) {
+          for (var item in items) {
+            final name = item['name'] as String?;
+            if (name != null && name.toLowerCase().contains(itemName.toLowerCase())) {
+              purchases.add({
+                'date': (data['transactionDate'] as Timestamp).toDate(),
+                'price': (item['price'] ?? 0).toDouble(),
+                'merchant': data['merchant'],
+              });
+            }
+          }
+        }
+      }
+      
+      // Also check transaction description/merchant for item name
+      final merchant = data['merchant'] as String?;
+      final description = data['description'] as String?;
+      if (merchant != null && merchant.toLowerCase().contains(itemName.toLowerCase())) {
+        purchases.add({
+          'date': (data['transactionDate'] as Timestamp).toDate(),
+          'price': (data['amount'] as num?)?.toDouble() ?? 0.0,
+          'merchant': merchant,
+        });
+      } else if (description != null && description.toLowerCase().contains(itemName.toLowerCase())) {
+        purchases.add({
+          'date': (data['transactionDate'] as Timestamp).toDate(),
+          'price': (data['amount'] as num?)?.toDouble() ?? 0.0,
+          'merchant': merchant,
+        });
+      }
+    }
+    return purchases;
+  }
+
+  /// Helper: Calculate intervals between purchases
+  List<int> _calculateIntervals(List<Map<String, dynamic>> purchases) {
+    final intervals = <int>[];
+    for (int i = 1; i < purchases.length; i++) {
+      final prev = purchases[i - 1]['date'] as DateTime;
+      final curr = purchases[i]['date'] as DateTime;
+      intervals.add(curr.difference(prev).inDays);
+    }
+    return intervals;
+  }
+
+  /// Helper: Calculate average
+  double _average(List<int> values) {
+    if (values.isEmpty) return 0;
+    return values.reduce((a, b) => a + b) / values.length;
+  }
+
+  /// Helper: Calculate standard deviation
+  double _standardDeviation(List<int> values, double mean) {
+    if (values.isEmpty) return 0;
+    final variance = values.map((v) => (v - mean) * (v - mean)).reduce((a, b) => a + b) / values.length;
+    return _sqrt(variance);
+  }
+
+  /// Helper: Square root (since dart:math import would conflict with existing imports)
+  double _sqrt(double value) {
+    if (value <= 0) return 0;
+    double x = value;
+    double prev = 0;
+    while ((x - prev).abs() > 0.0001) {
+      prev = x;
+      x = (x + value / x) / 2;
+    }
+    return x;
+  }
 }
 
 /// Spending patterns

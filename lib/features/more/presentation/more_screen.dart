@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../reports/presentation/screens/reports_screen.dart';
-import '../../shopping/presentation/screens/shopping_screen.dart';
 import '../../coaching/presentation/screens/coaching_screen.dart';
 import '../../settings/presentation/screens/settings_screen.dart';
 import '../../settings/presentation/screens/notification_settings_screen.dart';
-import '../../price_intelligence/presentation/price_intelligence_screen.dart';
+import '../../price_finder/presentation/enhanced_price_finder_home.dart';
+import '../../budget/presentation/screens/budget_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -25,13 +25,24 @@ class MoreScreen extends StatelessWidget {
             title: 'Features',
             items: [
               _MenuItem(
-                icon: Icons.analytics_outlined,
-                title: 'Price Intelligence',
-                subtitle: 'Track items & predict purchases',
+                icon: Icons.account_balance_wallet,
+                title: 'Budget Manager',
+                subtitle: 'Set & track spending limits',
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const PriceIntelligenceScreen()),
+                    MaterialPageRoute(builder: (context) => const BudgetScreen()),
+                  );
+                },
+              ),
+              _MenuItem(
+                icon: Icons.shopping_cart,
+                title: 'Price Finder',
+                subtitle: 'Track prices & find best deals',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const EnhancedPriceFinderHome()),
                   );
                 },
               ),
@@ -43,17 +54,6 @@ class MoreScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const ReportsScreen()),
-                  );
-                },
-              ),
-              _MenuItem(
-                icon: Icons.shopping_bag_outlined,
-                title: 'Shopping',
-                subtitle: 'Price comparison & deals',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ShoppingScreen()),
                   );
                 },
               ),
