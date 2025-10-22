@@ -1,5 +1,5 @@
 name: fin_copilot
-description: "AI-powered personal finance assistant"
+description: "Financial wellness companion that reduces anxiety through zero-effort tracking"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -57,8 +57,11 @@ dependencies:
   image_picker: ^1.1.2
   path_provider: ^2.1.5
   permission_handler: ^12.0.1
-  speech_to_text: ^6.6.2
+  speech_to_text: ^7.3.0
   fl_chart: ^0.68.0
+  flutter_secure_storage: ^9.2.2  # Secure token storage
+  local_auth: ^2.3.0  # Biometric authentication
+  # telephony: ^0.2.0  # SMS monitoring - DISCONTINUED, needs replacement with sms_advanced or similar
   url_launcher: ^6.2.5
   pdf: ^3.10.8
   csv: ^6.0.0

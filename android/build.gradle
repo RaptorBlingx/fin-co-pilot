@@ -6,8 +6,31 @@ allprojects {
 }
 
 rootProject.buildDir = "../build"
+
+// Load Flutter properties for legacy plugins
+def flutterPropertiesFile = rootProject.file("gradle.properties")
+def flutterProperties = new Properties()
+if (flutterPropertiesFile.exists()) {
+    flutterPropertiesFile.withReader("UTF-8") { reader ->
+        flutterProperties.load(reader)
+    }
+}
+
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+
+subprojects { subproject ->
+    // Only inject for plugins that aren't the main app
+    if (subproject.name != 'app') {
+        subproject.ext {
+            flutter = [
+                compileSdkVersion: Integer.parseInt(flutterProperties.getProperty('flutter.compileSdkVersion', '35')),
+                targetSdkVersion: Integer.parseInt(flutterProperties.getProperty('flutter.targetSdkVersion', '35')),
+                ndkVersion: flutterProperties.getProperty('flutter.ndkVersion', '25.1.8937393')
+            ]
+        }
+    }
 }
 
 tasks.register("clean", Delete) {
