@@ -1,427 +1,476 @@
-# Fin Copilot v2 - Knowledge Base
+# Fin Copilot v3 - Knowledge Base
 ## Complete Development Blueprint & Technical Documentation
 
-**Version:** 2.0
-**Last Updated:** October 21, 2025
-**Status:** Active - Ready for Development
+**Version:** 3.0
+**Last Updated:** October 22, 2025
+**Status:** Active - MVP Ready for Development
 
 ---
 
-## 📋 Overview
+## Overview
 
-This Knowledge Base contains **comprehensive documentation** for building Fin Copilot v2, an AI-powered personal finance management application built on Google's state-of-the-art AI infrastructure (ADK, Genkit, Firebase AI Logic).
+This Knowledge Base contains **comprehensive documentation** for Fin Copilot v3, a financial wellness companion that reduces anxiety through zero-effort tracking.
 
-### Purpose
+**What's New in v3:**
+- Simplified 3-agent architecture (from 9 agents)
+- SMS auto-parsing (80% automatic capture)
+- Daily Money Story (9 PM engagement)
+- Financial Health Score (0-100 metric)
+- Couples Dashboard + AI Mediator
+- 12-week MVP roadmap (from 28 weeks)
+- Direct Firebase AI (removed ADK/Genkit complexity)
 
-This documentation serves as the **single source of truth** for:
-- Product vision and requirements
-- Technical architecture decisions
-- AI agent specifications and prompts
-- Database schema and data models
-- UI/UX design system
-- Implementation roadmap
-- Security and privacy standards
-- Testing strategies
-
-### Intended Audience
-
-- **Development Team**: Implement features based on specifications
-- **Project Managers**: Track progress and dependencies
-- **Stakeholders**: Understand product scope and timeline
-- **Future AI Assistants**: Complete context for development tasks
+**Core Differentiation:**
+- 87% have financial anxiety → We reduce it
+- Zero manual entry via SMS parsing
+- Proactive warnings before problems
+- Emotional intelligence (detect stress spending)
+- Supportive tone, never judgmental
 
 ---
 
-## 📚 Core Documentation
+## Core Documentation
 
 ### 1. [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)
-**Start here for high-level understanding**
+**Vision & Strategic Foundation**
 
-- Vision & mission statement
-- Target users & personas
-- Core value proposition
-- Competitive analysis
-- Success metrics & KPIs
-- Technology foundation
-- Project scope (in/out)
-- Development philosophy
+- Problem: 87% have financial anxiety, 48% couples fight about money
+- Solution: Financial wellness companion (not just tracker)
+- Target users: 5 research-based personas
+- Competitive analysis: vs Mint, YNAB, Monarch, Rocket Money
+- Success metrics: Anxiety reduction, not feature count
+- Technology: Firebase AI Logic + Gemini 2.5
 
-**Key Questions Answered:**
-- What is Fin Copilot v2?
-- Who is it for?
-- Why build it?
-- How is it different from competitors?
-- What makes it unique?
+**Key Insights:**
+- Users want less anxiety, not more features
+- 80% automatic capture = killer feature
+- Proactive > reactive (prevent problems before they happen)
+- Couples features = 48% market opportunity
 
 ---
 
 ### 2. [FEATURES_SPECIFICATION.md](FEATURES_SPECIFICATION.md)
-**Complete feature requirements**
+**10 Core Features (All P0 for MVP)**
 
-- Transaction Management
-  - AI Chat entry
-  - Voice input
-  - Receipt scanning
-  - Manual entry
-  - View & manage
-- Budgeting System
-  - Budget creation
-  - Real-time tracking
-  - Smart alerts
-- Insights & Analytics
-  - Dashboard insights
-  - Detailed reports
-  - Trend analysis
-- Price Intelligence
-  - Barcode scanner
-  - Price comparison
-  - Wishlist management
-  - Smart alerts
-- Financial Coaching
-  - Personalized tips
-  - Goal tracking
-  - Progress monitoring
+**Weeks 1-3:**
+1. **SMS Auto-Parsing** - 80% automatic transaction capture
+2. **Voice Entry** - Zero-friction voice input
+3. **Financial Health Score** - 0-100 metric with breakdown
+
+**Weeks 4-6:**
+4. **Smart Nudges** - Proactive warnings before overspending
+5. **Predictive Cash Flow** - Days until $0, prevent overdrafts
+
+**Weeks 7-9:**
+6. **Money Story** - Daily 9 PM narrative summary
+7. **Subscription Detection** - Find $500/year waste
+
+**Weeks 10-12:**
+8. **Receipt Intelligence** - Price comparison, market averages
+9. **Couples Dashboard** - Shared visibility, financial transparency
+10. **AI Mediator** - Conflict resolution for couples
 
 **For Each Feature:**
-- User stories
+- User story
 - Functional requirements
-- UI/UX designs
-- AI agent involvement
-- Edge cases
+- UI flow examples
 - Acceptance criteria
+- Success metrics
 
 ---
 
 ### 3. [ARCHITECTURE.md](ARCHITECTURE.md)
-**Complete technical architecture**
+**Simplified 3-Agent System**
 
-- System architecture overview
-- Technology stack details
-- Frontend architecture (Flutter)
-  - App structure
-  - State management (Riverpod)
-  - Navigation (go_router)
-- Backend architecture (Genkit + ADK)
-  - Firebase Genkit flows
-  - Google ADK agents
-  - Cloud Functions
-- AI infrastructure
-  - Model selection strategy
-  - Hybrid processing
-- Data flow diagrams
-- Security architecture
-- Deployment strategy
-- Scalability & performance
-- Monitoring & observability
+**High-Level:**
+- Flutter 3.32+ → Firebase AI Logic → 3 Agents → Cloud Functions → Firestore
+- No orchestration overhead
+- Direct function calling
+- <1 sec response times
 
-**Architecture Diagrams:**
-- High-level system diagram
-- Multi-agent architecture
-- Data flow examples
-- Security layers
+**Technology Stack:**
+- Frontend: Flutter 3.32+, firebase_ai ^3.4.0, riverpod, go_router
+- Backend: Cloud Functions (Node.js 20), Firestore, Firebase Storage
+- AI: Gemini 2.5 Flash (Copilot + Analyst), Gemini 2.5 Flash-Lite (Vision)
+
+**3-Agent Architecture:**
+
+1. **Financial Copilot Agent** (Gemini 2.5 Flash)
+   - Main intelligence (80% of interactions)
+   - Transaction extraction + validation in 1 call
+   - Multi-turn conversations with context
+   - Function calling: saveTransaction, getBudget, getPredictedCashFlow, etc.
+   - Emotional intelligence, anxiety reduction
+   - Temp: 0.7, TopK: 40, MaxTokens: 512
+
+2. **Vision Agent** (Gemini 2.5 Flash-Lite)
+   - Receipt OCR only (15% of interactions)
+   - Extract items, prices, merchant, date
+   - Pass to Copilot for price analysis
+   - Temp: 0.2 (low for accuracy), MaxTokens: 2048
+
+3. **Analyst Agent** (Gemini 2.5 Flash)
+   - Background analysis (5% of interactions)
+   - Daily Money Story (9 PM scheduled)
+   - Weekly Pattern Analysis (Sunday 8 PM)
+   - Anomaly Detection (Firestore triggers)
+   - Temp: 0.4, MaxTokens: 1024
+
+**Why 3 Agents Work:**
+- OLD (9 agents): 4 sequential API calls, 3-5 sec, $0.004/transaction
+- NEW (3 agents): 1 API call, <1 sec, $0.0008/transaction
+- Result: 5x cheaper, 3x faster, simpler codebase
+
+**Performance Targets:**
+- App launch: <2 sec
+- AI response (simple): <1 sec
+- Voice processing: <3 sec
+- Receipt OCR: <5 sec
+- SMS parsing: <2 sec
 
 ---
 
 ### 4. [AI_AGENTS_SPECIFICATION.md](AI_AGENTS_SPECIFICATION.md)
-**Multi-agent system design**
+**Complete Agent System Prompts & Configuration**
 
-- Agent architecture patterns
-- Agent roster (9 specialized agents):
-  1. **Orchestrator Agent** - Main coordinator
-  2. **Financial Analyst Agent** - Deep analysis
-  3. **Receipt Parser Agent** - OCR + parsing
-  4. **Extractor Agent** - NLP extraction
-  5. **Validator Agent** - Data quality
-  6. **Context Agent** - User preferences
-  7. **Pattern Learner Agent** - ML patterns
-  8. **Price Intelligence Agent** - Price optimization
-  9. **Coaching Agent** - Financial advice
+**Financial Copilot Agent:**
+```
+CORE PERSONALITY:
+- Supportive and encouraging, never judgmental
+- Reduce anxiety, don't increase it
+- Celebrate wins, gentle on overspending
+- Like a friend who genuinely cares
 
-**For Each Agent:**
-- Purpose & role
-- Model configuration
-- Complete system prompts
-- Tool specifications
-- Example interactions
-- Performance metrics
+PRIMARY FUNCTIONS:
+1. Transaction Extraction - Parse natural language
+2. Financial Queries - "How much on coffee this week?"
+3. Guidance & Support - Budget checks before purchases
 
-**Includes:**
-- Prompt engineering guidelines
-- PTCF framework
-- Temperature settings
-- Tool registry
-- Communication protocols (A2A, MCP)
-- Evaluation metrics
+EXTRACTION RULES:
+- Categories: Coffee, Dining, Groceries, Transport, etc.
+- Infer merchant from context
+- Handle various amount formats
+
+RESPONSE STYLE:
+- Conversational, warm, brief (2-3 sentences)
+- Use 1 emoji max per response
+- "Got it! $15 for lunch at Chipotle 🌯"
+
+EMOTIONAL INTELLIGENCE:
+- Detect stress spending patterns
+- Offer pause prompts
+- Celebrate restraint
+
+ANXIETY REDUCTION:
+- Frame everything positively
+- "You're doing great" > "You're overspending"
+```
+
+**All 3 Agents Include:**
+- Complete system prompts (production-ready)
+- Function declarations (saveTransaction, getTransactions, getBudget, etc.)
+- Configuration parameters (temperature, topK, topP, maxOutputTokens)
+- Usage examples (1-agent, 2-agent, background scenarios)
+- Cloud Function schedules (9 PM daily, Sunday 8 PM weekly)
 
 ---
 
 ### 5. [DATA_MODELS.md](DATA_MODELS.md)
-**Complete database schema**
+**16 Firestore Collections (Up from 8 in v2)**
 
-- Firestore collections:
-  1. `users` - User profiles & preferences
-  2. `transactions` - Transaction data
-  3. `budgets` - Budget configurations
-  4. `insights` - AI-generated insights
-  5. `watchlist` - Price tracking
-  6. `notifications` - User notifications
-  7. `chat_history` - AI conversations
-  8. `user_patterns` - ML data
+**Core Collections:**
+1. `users` - User profiles + SMS permission + Financial Health + Couple account
+2. `transactions` - Transaction data + SMS source + AI agent tracking
+3. `budgets` - Budget configurations
+4. `chat_messages` - AI conversations (simplified, no sessions)
+
+**NEW in v3:**
+5. `sms_transactions` - SMS auto-parsing pending confirmations
+6. `money_stories` - Daily 9 PM narrative summaries
+7. `subscriptions` - Recurring charge detection
+8. `financial_health_scores` - Historical 0-100 score tracking
+9. `smart_nudges` - Proactive warnings
+10. `stress_logs` - Emotional spending tracking
+11. `couple_accounts` - Couples Dashboard feature
+12. `coaching_tips` - Contextual coaching library
+
+**Existing (Updated):**
+13. `insights` - AI-generated insights (now includes agent attribution)
+14. `watchlist` - Price Intelligence (receipt price tracking)
+15. `notifications` - Push notifications log
+16. `user_patterns` - ML-generated spending patterns
 
 **For Each Collection:**
 - TypeScript interfaces
 - Dart model classes
 - Field descriptions
-- Relationships
-- Indexes required
-
-**Also Includes:**
-- Firestore security rules
-- Composite indexes
-- Query patterns
-- Migration guides
+- Firestore indexes
+- Security rules
 
 ---
 
 ### 6. [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md)
-**Phase-by-phase build plan**
+**12-Week MVP Plan (Down from 28 Weeks)**
 
-**6 Major Phases (28 weeks):**
+**Weeks 1-3: Foundation + Killer Features**
+- Week 1: Project setup, authentication, core infrastructure
+- Week 2: SMS auto-parsing (80% automatic capture)
+- Week 3: Voice entry + Financial Health Score
 
-**Phase 1:** SDK Migration & Foundation (Weeks 1-2)
-- Migrate firebase_vertexai → firebase_ai
-- Upgrade to Gemini 2.5 models
-- Foundation testing
+**Weeks 4-6: Proactive Intelligence**
+- Week 4: Smart Nudges (real-time budget warnings)
+- Week 5: Predictive Cash Flow (days until $0)
+- Week 6: Enhanced Insights (weekly pattern analysis)
 
-**Phase 2:** Core Features (Weeks 3-8)
-- Transaction management
-- Budgeting system
-- Basic insights
+**Weeks 7-9: Daily Engagement**
+- Week 7: Money Story (9 PM daily summaries)
+- Week 8: Subscription Detection ($500/year savings)
+- Week 9: Coaching Tips (100+ tips library)
 
-**Phase 3:** AI Enhancement (Weeks 9-14)
-- Genkit backend
-- Google ADK agents
-- Receipt scanning
+**Weeks 10-12: Social + Launch**
+- Week 10: Receipt Intelligence (price comparison)
+- Week 11: Couples Dashboard + AI Mediator
+- Week 12: Polish + Launch Prep
 
-**Phase 4:** Price Intelligence (Weeks 15-18)
-- Barcode scanner
-- Price comparison
-- Wishlist & alerts
-
-**Phase 5:** Advanced Features (Weeks 19-24)
-- MCP integration
-- Enhanced insights
-- Financial coaching
-- Reports & export
-
-**Phase 6:** Polish & Launch (Weeks 25-28)
-- UI/UX polish
-- Performance optimization
-- Testing & QA
-- Launch
-
-**For Each Phase:**
-- Detailed week-by-week tasks
+**For Each Week:**
+- Day-by-day tasks
 - Deliverables
-- Success criteria
-- Dependencies
+- Success metrics
 - Risk mitigation
+
+**Launch Target:** Week 12, all features operational, >99.5% stability
 
 ---
 
-## 🔧 Supporting Documentation
+## Supporting Documentation
 
-### 7. [UI_UX_DESIGN_SYSTEM.md](UI_UX_DESIGN_SYSTEM.md)
-*(To be created during Phase 2)*
+### 7. GLOBAL_PAIN_POINTS_ANALYSIS.md ✅
+**Research Foundation**
+- 87% have financial anxiety
+- 70% experience it weekly
+- 48% couples fight about money
+- $500/year wasted on subscriptions
+- 50% emotionally spend when stressed
+- 24% reverted to spreadsheets (apps too complex)
 
+### 8. AGENT_ARCHITECTURE_V2_SIMPLIFIED.md ✅
+**Architecture Decision Record**
+- Why 9 agents is wrong
+- 3-agent solution rationale
+- Cost analysis (94% savings)
+- 10 killer features fully specified
+
+### 9. UI_UX_DESIGN_SYSTEM.md
+*(To be created Week 1)*
 - Material Design 3 implementation
 - Color schemes (light/dark)
 - Typography scale
 - Component library
-- Spacing system
 - Animation guidelines
-- Accessibility standards
 
-### 8. [SECURITY_PRIVACY.md](SECURITY_PRIVACY.md)
-*(To be created during Phase 1)*
-
-- PCI DSS compliance
+### 10. SECURITY_PRIVACY.md
+*(To be created Week 1)*
 - Encryption standards (AES-256, TLS 1.3)
-- Authentication flow
-- Authorization model
-- Data privacy policies
-- Security audit checklist
-- Incident response plan
+- Biometric authentication
+- Firestore security rules
+- GDPR compliance
+- Privacy policy
 
-### 9. [TESTING_STRATEGY.md](TESTING_STRATEGY.md)
-*(To be created during Phase 2)*
-
-- Unit testing approach
-- Widget testing
-- Integration testing
-- E2E testing
+### 11. TESTING_STRATEGY.md
+*(To be created Week 2)*
+- Unit tests (>80% coverage)
+- Widget tests
+- Integration tests
+- E2E tests
 - AI agent evaluation
-- Performance testing
-- Security testing
-
-### 10. [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)
-*(To be created during Phase 3)*
-
-- Firebase services setup
-- Third-party APIs
-  - Exchange rate APIs
-  - Price comparison APIs
-  - ML Kit integration
-- MCP servers
-- Analytics tracking
-- Error monitoring
-
-### 11. [PERFORMANCE_OPTIMIZATION.md](PERFORMANCE_OPTIMIZATION.md)
-*(To be created during Phase 6)*
-
-- Flutter performance best practices
-- Firestore query optimization
-- Image optimization
-- Caching strategies
-- Bundle size reduction
-- Memory management
-
-### 12. [GENKIT_BACKEND_SPECIFICATION.md](GENKIT_BACKEND_SPECIFICATION.md)
-*(To be created during Phase 3)*
-
-- Complete Genkit flow specifications
-- Deployment configuration
-- Environment setup
-- Monitoring & logging
-- Error handling
-- Testing strategies
 
 ---
 
-## 🗺️ How to Use This Knowledge Base
+## How to Use This Knowledge Base
 
 ### For New Team Members
 
-1. **Start with**: [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)
-   - Understand the vision and goals
-   - Learn about target users
-   - Review competitive landscape
+**Day 1: Strategic Context**
+1. Read [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) - Vision, problem, solution
+2. Read [GLOBAL_PAIN_POINTS_ANALYSIS.md](GLOBAL_PAIN_POINTS_ANALYSIS.md) - Research foundation
 
-2. **Then read**: [FEATURES_SPECIFICATION.md](FEATURES_SPECIFICATION.md)
-   - Understand what we're building
-   - Review user stories
-   - Learn acceptance criteria
+**Day 2: Product Understanding**
+3. Read [FEATURES_SPECIFICATION.md](FEATURES_SPECIFICATION.md) - What we're building
+4. Read [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) - 12-week plan
 
-3. **Study**: [ARCHITECTURE.md](ARCHITECTURE.md)
-   - Understand technical decisions
-   - Learn the stack
-   - Review architecture patterns
+**Day 3: Technical Deep Dive**
+5. Read [ARCHITECTURE.md](ARCHITECTURE.md) - 3-agent system, tech stack
+6. Read [AI_AGENTS_SPECIFICATION.md](AI_AGENTS_SPECIFICATION.md) - Agent prompts
+7. Read [DATA_MODELS.md](DATA_MODELS.md) - Database schema
 
-4. **Finally**: [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md)
-   - See the development plan
-   - Understand your phase
-   - Review dependencies
+**Day 4: Start Building**
+8. Review current week's tasks in roadmap
+9. Implement according to specifications
 
 ### For AI Development Assistants
 
-**You can use this Knowledge Base to:**
-- Understand complete project context
-- Implement features according to spec
-- Make architectural decisions aligned with vision
-- Write code following established patterns
-- Create tests matching our strategy
+**Context Loading Order:**
+1. PROJECT_OVERVIEW.md - Mission and vision
+2. FEATURES_SPECIFICATION.md - Feature requirements
+3. ARCHITECTURE.md - Technical architecture
+4. AI_AGENTS_SPECIFICATION.md - Agent system
+5. DATA_MODELS.md - Database schema
+6. IMPLEMENTATION_ROADMAP.md - Current phase
 
-**When implementing a feature:**
-1. Find the feature in FEATURES_SPECIFICATION.md
-2. Review the architecture in ARCHITECTURE.md
+**When Implementing:**
+1. Find feature in FEATURES_SPECIFICATION.md
+2. Review architecture in ARCHITECTURE.md
 3. Check data models in DATA_MODELS.md
 4. Review agent specs in AI_AGENTS_SPECIFICATION.md
-5. Follow roadmap phase in IMPLEMENTATION_ROADMAP.md
+5. Follow roadmap in IMPLEMENTATION_ROADMAP.md
 6. Implement according to specifications
 
-### For Development Tasks
+### Development Workflows
 
-**Transaction Entry Implementation:**
+**Implementing SMS Auto-Parsing:**
 ```
-1. Read: FEATURES_SPECIFICATION.md → Section 1.1 (AI Chat)
-2. Review: ARCHITECTURE.md → Frontend Structure
-3. Check: DATA_MODELS.md → Transaction Model
-4. Study: AI_AGENTS_SPECIFICATION.md → Extractor Agent
-5. Implement: Follow specs exactly
-6. Test: Per TESTING_STRATEGY.md criteria
+1. FEATURES_SPECIFICATION.md → Section 1 (SMS Auto-Parsing)
+2. ARCHITECTURE.md → SMS Monitoring Architecture
+3. DATA_MODELS.md → sms_transactions Collection
+4. AI_AGENTS_SPECIFICATION.md → Financial Copilot Agent
+5. IMPLEMENTATION_ROADMAP.md → Week 2 Tasks
+6. Implement: SMS listener → Parse → Confirm → Save
+7. Test: 80% capture rate, 95% accuracy, <2 sec
 ```
 
-**Agent Prompt Tuning:**
+**Creating Money Story Feature:**
 ```
-1. Read: AI_AGENTS_SPECIFICATION.md → Agent to modify
-2. Review: Current prompt template
-3. Check: PTCF framework guidelines
-4. Modify: Prompt with reasoning
-5. Test: Evaluation metrics
-6. Document: Changes and results
+1. FEATURES_SPECIFICATION.md → Section 6 (Money Story)
+2. ARCHITECTURE.md → Cloud Functions Schedule
+3. DATA_MODELS.md → money_stories Collection
+4. AI_AGENTS_SPECIFICATION.md → Analyst Agent
+5. IMPLEMENTATION_ROADMAP.md → Week 7 Tasks
+6. Implement: Cloud Function (9 PM) → Generate → Save → Notify
+7. Test: Daily generation, >60% open rate
 ```
 
 ---
 
-## 📊 Project Status
+## Project Status
 
 ### Current Phase
-**Phase 0: Planning & Documentation** ✅ COMPLETE
-- All core documentation created
-- Architecture finalized
-- Roadmap approved
-- Ready to begin Phase 1
+**Phase 0: Documentation** ✅ COMPLETE
+- All v3 documentation updated
+- 3-agent architecture finalized
+- 12-week roadmap approved
+- Ready to begin Week 1
 
 ### Next Milestone
-**Phase 1: SDK Migration** (Weeks 1-2)
-- Start Date: TBD
-- End Date: TBD
-- Deliverables: Migrated to firebase_ai, Gemini 2.5
+**Week 1: Foundation** (Days 1-5)
+- Project setup
+- Firebase configuration
+- Authentication
+- Core infrastructure
+- Theme system
 
 ### Overall Progress
 ```
 Documentation:    ████████████████████ 100%
-Phase 1:          ░░░░░░░░░░░░░░░░░░░░   0%
-Phase 2:          ░░░░░░░░░░░░░░░░░░░░   0%
-Phase 3:          ░░░░░░░░░░░░░░░░░░░░   0%
-Phase 4:          ░░░░░░░░░░░░░░░░░░░░   0%
-Phase 5:          ░░░░░░░░░░░░░░░░░░░░   0%
-Phase 6:          ░░░░░░░░░░░░░░░░░░░░   0%
+Week 1:           ░░░░░░░░░░░░░░░░░░░░   0%
+Week 2:           ░░░░░░░░░░░░░░░░░░░░   0%
+Week 3:           ░░░░░░░░░░░░░░░░░░░░   0%
+Week 4-6:         ░░░░░░░░░░░░░░░░░░░░   0%
+Week 7-9:         ░░░░░░░░░░░░░░░░░░░░   0%
+Week 10-12:       ░░░░░░░░░░░░░░░░░░░░   0%
 Overall:          ████░░░░░░░░░░░░░░░░  20%
 ```
 
 ---
 
-## 🔗 Related Documents
+## v3 Improvements Summary
 
-### External References
+| Aspect | v2 (Old) | v3 (New) | Improvement |
+|--------|----------|----------|-------------|
+| **Agents** | 9 agents (Orchestrator + 8 specialized) | 3 agents (Copilot, Vision, Analyst) | 5x cost reduction |
+| **Response Time** | 3-5 sec (4 sequential calls) | <1 sec (1 call) | 3x faster |
+| **Cost** | $0.004 per transaction | $0.0008 per transaction | 5x cheaper |
+| **Architecture** | ADK + Genkit (complex) | Direct Firebase AI (simple) | Simpler maintenance |
+| **Features** | 5 core features | 10 killer features | 2x more value |
+| **Roadmap** | 28 weeks (6 phases) | 12 weeks (1 MVP) | 2.3x faster to market |
+| **Killer Feature** | Price Intelligence | SMS Auto-Parsing (80% capture) | True differentiation |
+| **Value Prop** | "Track spending" | "Reduce anxiety" | Emotional connection |
+| **Target Users** | General users | 5 specific personas | Focused positioning |
+| **Collections** | 8 Firestore collections | 16 collections | Richer features |
 
-1. **Google AI Documentation**
-   - [Firebase AI Logic](https://firebase.google.com/docs/ai-logic)
-   - [Google ADK](https://google.github.io/adk-docs/)
-   - [Firebase Genkit](https://firebase.google.com/docs/genkit)
-   - [Gemini API](https://ai.google.dev/docs)
-
-2. **Flutter Documentation**
-   - [Flutter Docs](https://docs.flutter.dev/)
-   - [Material Design 3](https://m3.material.io/develop/flutter)
-   - [Riverpod](https://riverpod.dev/)
-
-3. **Migration Guides**
-   - [../GOOGLE_AI_SOTA_RESEARCH_AND_MIGRATION_PLAN.md](../GOOGLE_AI_SOTA_RESEARCH_AND_MIGRATION_PLAN.md)
+**Result:** Faster, cheaper, simpler, more valuable.
 
 ---
 
-## ✅ Quality Standards
+## Success Metrics
 
-### Documentation Standards
-- ✅ All documents use consistent formatting
-- ✅ Code examples are tested and verified
-- ✅ Diagrams are clear and comprehensive
-- ✅ Cross-references are accurate
-- ✅ Version control is maintained
+### Development Metrics
+- Sprint velocity: 1 feature per week
+- Code coverage: >80%
+- Bug density: <1 per 100 LOC
+- CI/CD: <15 min build
+- PR review: <24 hours
 
-### Implementation Standards
+### Performance Metrics
+- App launch: <2 sec
+- AI response: <1 sec (simple), <3 sec (complex)
+- Voice processing: <3 sec
+- Receipt OCR: <5 sec
+- SMS parsing: <2 sec
+- Crash-free: >99.5%
+
+### User Engagement Metrics
+- DAU/MAU: >30%
+- 30-day retention: >70%
+- SMS auto-capture rate: >80%
+- Daily Money Story open rate: >60%
+- Financial Health Score improvement: >15 points in 30 days
+
+### Business Metrics
+- App store rating: >4.5 stars
+- NPS: >60
+- Feature adoption: >60% within 1 week
+- Average session time: >5 min
+
+---
+
+## Related Resources
+
+### External Documentation
+
+**Google AI:**
+- [Firebase AI Logic](https://firebase.google.com/docs/ai-logic)
+- [Gemini API](https://ai.google.dev/docs)
+- [Vertex AI](https://cloud.google.com/vertex-ai/docs)
+
+**Flutter:**
+- [Flutter Docs](https://docs.flutter.dev/)
+- [Material Design 3](https://m3.material.io/develop/flutter)
+- [Riverpod](https://riverpod.dev/)
+- [go_router](https://pub.dev/packages/go_router)
+
+**Firebase:**
+- [Firebase Docs](https://firebase.google.com/docs)
+- [Cloud Functions](https://firebase.google.com/docs/functions)
+- [Firestore](https://firebase.google.com/docs/firestore)
+- [Cloud Scheduler](https://cloud.google.com/scheduler/docs)
+
+### Internal Research
+- [GOOGLE_AI_SOTA_RESEARCH_AND_MIGRATION_PLAN.md](../GOOGLE_AI_SOTA_RESEARCH_AND_MIGRATION_PLAN.md)
+- [GLOBAL_PAIN_POINTS_ANALYSIS.md](GLOBAL_PAIN_POINTS_ANALYSIS.md)
+- [AGENT_ARCHITECTURE_V2_SIMPLIFIED.md](AGENT_ARCHITECTURE_V2_SIMPLIFIED.md)
+
+---
+
+## Quality Standards
+
+### Documentation
+✅ Consistent formatting across all documents
+✅ Code examples tested and verified
+✅ Clear diagrams and flow charts
+✅ Accurate cross-references
+✅ Version control maintained
+
+### Implementation
 - Code coverage: >80%
 - Documentation coverage: 100%
 - Performance targets met
@@ -430,77 +479,56 @@ Overall:          ████░░░░░░░░░░░░░░░░  
 
 ---
 
-## 🤝 Contributing
-
-### Document Updates
-
-When updating documentation:
-1. Create feature branch: `docs/update-{document-name}`
-2. Make changes following existing format
-3. Update version number
-4. Update "Last Updated" date
-5. Add entry to Document Control table
-6. Create pull request
-7. Request review from team lead
-
-### Adding New Documents
-
-1. Create document in Knowledge-Base folder
-2. Follow existing template structure
-3. Add entry to this README
-4. Cross-reference from related documents
-5. Submit PR for review
-
----
-
-## 📞 Contact & Support
-
-### Project Team
-- **Project Lead**: TBD
-- **Tech Lead**: TBD
-- **Product Manager**: TBD
-
-### Questions?
-- Create GitHub issue with `documentation` label
-- Tag relevant team members
-- Reference specific document and section
-
----
-
-## 📝 Document Control
+## Document Control
 
 | Document | Version | Last Updated | Status |
 |----------|---------|--------------|--------|
-| README.md | 1.0 | 2025-10-21 | Active |
-| PROJECT_OVERVIEW.md | 1.0 | 2025-10-21 | Active |
-| FEATURES_SPECIFICATION.md | 1.0 | 2025-10-21 | Active |
-| ARCHITECTURE.md | 1.0 | 2025-10-21 | Active |
-| AI_AGENTS_SPECIFICATION.md | 1.0 | 2025-10-21 | Active |
-| DATA_MODELS.md | 1.0 | 2025-10-21 | Active |
-| IMPLEMENTATION_ROADMAP.md | 1.0 | 2025-10-21 | Active |
+| README.md | 3.0 | 2025-10-22 | Active |
+| PROJECT_OVERVIEW.md | 3.0 | 2025-10-22 | Active |
+| FEATURES_SPECIFICATION.md | 3.0 | 2025-10-22 | Active |
+| ARCHITECTURE.md | 3.0 | 2025-10-22 | Active |
+| AI_AGENTS_SPECIFICATION.md | 3.0 | 2025-10-22 | Active |
+| DATA_MODELS.md | 3.0 | 2025-10-22 | Active |
+| IMPLEMENTATION_ROADMAP.md | 3.0 | 2025-10-22 | Active |
+| GLOBAL_PAIN_POINTS_ANALYSIS.md | 1.0 | 2025-10-21 | Active |
+| AGENT_ARCHITECTURE_V2_SIMPLIFIED.md | 1.0 | 2025-10-21 | Active |
 
 ---
 
-## 🎯 Quick Links
+## Quick Reference
 
-### Most Referenced
-- [Transaction Entry Flow](FEATURES_SPECIFICATION.md#11-add-transaction-via-ai-chat)
-- [Agent Prompts](AI_AGENTS_SPECIFICATION.md#orchestrator-agent)
-- [Database Schema](DATA_MODELS.md#firestore-collections)
-- [Phase 1 Tasks](IMPLEMENTATION_ROADMAP.md#phase-1-sdk-migration--foundation-weeks-1-2-)
+### Most Referenced Sections
+- [SMS Auto-Parsing](FEATURES_SPECIFICATION.md#1-sms-auto-parsing)
+- [Financial Copilot Agent Prompt](AI_AGENTS_SPECIFICATION.md#financial-copilot-agent)
+- [3-Agent Architecture Diagram](ARCHITECTURE.md#system-architecture)
+- [Firestore Collections](DATA_MODELS.md#firestore-collections)
+- [Week-by-Week Tasks](IMPLEMENTATION_ROADMAP.md#weeks-1-3-foundation--killer-features)
 
-### Development Guides
-- [Flutter App Structure](ARCHITECTURE.md#flutter-app-structure)
-- [Genkit Flows](ARCHITECTURE.md#firebase-genkit-flows)
-- [Security Rules](DATA_MODELS.md#firestore-security-rules)
+### Critical Workflows
+- [Transaction Entry Flow](ARCHITECTURE.md#transaction-entry-via-voice)
+- [Receipt Scanning Flow](ARCHITECTURE.md#receipt-scanning)
+- [SMS Auto-Parsing Flow](ARCHITECTURE.md#sms-auto-parsing)
+- [Daily Money Story Generation](ARCHITECTURE.md#daily-money-story-background)
+
+### Key Decisions
+- [Why 3 Agents vs 9](AGENT_ARCHITECTURE_V2_SIMPLIFIED.md)
+- [Why SMS Auto-Parsing First](FEATURES_SPECIFICATION.md#priority-matrix)
+- [Why 12 Weeks vs 28](IMPLEMENTATION_ROADMAP.md#overview)
+- [Why Anxiety Reduction](GLOBAL_PAIN_POINTS_ANALYSIS.md)
 
 ---
 
-**Welcome to Fin Copilot v2 Development!** 🚀
+**Welcome to Fin Copilot v3 Development!** 🚀
 
-This Knowledge Base provides everything needed to build a world-class AI-powered personal finance application. Follow the roadmap, implement according to specs, and build something amazing!
+This Knowledge Base provides everything needed to build a financial wellness companion that reduces anxiety through zero-effort tracking. The simplified 3-agent architecture enables rapid development while the 12-week roadmap keeps us focused on MVP delivery.
+
+**Core Mission:** Reduce financial anxiety for 87% of users through proactive intelligence and zero-effort tracking.
+
+**Launch Target:** 12 weeks, all 10 killer features operational, >99.5% stability.
+
+Let's build something that genuinely helps people! 💙
 
 ---
 
-**Last Updated:** October 21, 2025
-**Next Review:** Start of Phase 1
+**Last Updated:** October 22, 2025
+**Next Review:** Week 1 Start

@@ -1,13 +1,13 @@
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import 'dart:convert';
 
 class GeminiOrchestratorService {
   late final GenerativeModel _model;
-  
+
   GeminiOrchestratorService() {
     // Initialize Gemini 2.5 Flash using Firebase AI Logic
     // No API key needed - uses Firebase app credentials
-    _model = FirebaseVertexAI.instance.generativeModel(
+    _model = FirebaseAI.googleAI().generativeModel(
       model: 'gemini-2.5-flash',
     );
   }

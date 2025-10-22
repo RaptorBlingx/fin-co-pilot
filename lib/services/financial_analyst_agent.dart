@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import '../shared/models/transaction.dart';
 import '../shared/models/financial_insight.dart';
 
@@ -8,7 +8,7 @@ class FinancialAnalystAgent {
   final GenerativeModel _model;
 
   FinancialAnalystAgent()
-      : _model = FirebaseVertexAI.instance.generativeModel(
+      : _model = FirebaseAI.googleAI().generativeModel(
           model: 'gemini-2.5-pro',
           generationConfig: GenerationConfig(
             temperature: 0.7,

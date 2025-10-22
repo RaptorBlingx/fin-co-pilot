@@ -1,9 +1,7 @@
-# Fin Copilot v2 - Technical Architecture
-## Complete System Design & Implementation Guide
+# Fin Copilot v3 - Technical Architecture
 
-**Document Version:** 1.0
-**Last Updated:** October 21, 2025
-**Status:** Active Development Blueprint
+**Last Updated:** October 22, 2025
+**Version:** 3.0 (Simplified 3-Agent System)
 
 ---
 
@@ -11,13 +9,13 @@
 1. [Architecture Overview](#architecture-overview)
 2. [Technology Stack](#technology-stack)
 3. [System Architecture](#system-architecture)
-4. [Frontend Architecture (Flutter)](#frontend-architecture)
-5. [Backend Architecture (Genkit + ADK)](#backend-architecture)
+4. [Frontend Architecture](#frontend-architecture)
+5. [Backend Architecture](#backend-architecture)
 6. [AI Infrastructure](#ai-infrastructure)
 7. [Data Flow](#data-flow)
 8. [Security Architecture](#security-architecture)
-9. [Deployment Strategy](#deployment-strategy)
-10. [Scalability & Performance](#scalability--performance)
+9. [Performance Targets](#performance-targets)
+10. [Deployment Strategy](#deployment-strategy)
 
 ---
 
@@ -25,782 +23,687 @@
 
 ### Design Principles
 
-1. **Hybrid AI Processing**
-   - Sensitive operations → On-device (Gemini Nano)
-   - Complex analysis → Cloud (Gemini 2.5 Pro/Flash)
-   - Automatic failover and optimization
+**1. Radical Simplification**
+- 3 agents vs 9 agents (5x cost reduction, 3x faster)
+- Direct function calling, no orchestration overhead
+- Financial Copilot Agent handles 80% of interactions
 
-2. **Multi-Agent Intelligence**
-   - Google Agent Development Kit (ADK) for agent orchestration
-   - Specialized agents for specific domains
-   - Agent-to-Agent (A2A) communication protocol
-   - Shared tool registry via Model Context Protocol (MCP)
+**2. Serverless-First**
+- Firebase Cloud Functions for backend
+- Auto-scaling, pay-per-use
+- Global edge distribution
 
-3. **Serverless-First**
-   - Firebase Cloud Functions for backend logic
-   - Auto-scaling based on load
-   - Pay only for what you use
-   - Global distribution
+**3. Offline-Capable**
+- Firestore offline persistence
+- Queue-based sync when online
+- Optimistic UI updates
 
-4. **Offline-Capable**
-   - Local SQLite cache for transactions
-   - Firebase Firestore offline persistence
-   - Queue-based sync when reconnected
-   - Optimistic UI updates
+**4. SMS Auto-Parsing**
+- Background monitoring (sms_advanced package)
+- 80% automatic transaction capture
+- One-tap confirmation notifications
 
-5. **Security by Design**
-   - PCI DSS compliant architecture
-   - AES-256 encryption at rest
-   - TLS 1.3 for data in transit
-   - Biometric authentication
-   - Secure enclaves for sensitive data
+**5. Security by Design**
+- Biometric authentication
+- AES-256 encryption at rest
+- TLS 1.3 in transit
+- Firestore security rules
 
 ---
 
 ## Technology Stack
 
-### Frontend Stack
+### Frontend
 
 ```yaml
 Platform: Flutter 3.32+
 Language: Dart 3.8+
 
-UI Framework:
-  - Material Design 3 (useMaterial3: true)
-  - Custom design system components
-  - Responsive layouts (mobile, tablet, web)
+Core Packages:
+  firebase_ai: ^3.4.0              # Gemini AI Logic
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.7.0
+  cloud_firestore: ^5.4.4
 
 State Management:
-  - Riverpod 3.0 (primary)
-  - Providers for dependency injection
-  - StateNotifier for complex state
-  - FutureProvider/StreamProvider for async data
+  riverpod: ^3.0.0
 
 Navigation:
-  - go_router (declarative routing)
-  - Deep linking support
-  - Route guards for authentication
+  go_router: ^15.1.2
 
-Key Packages:
-  - firebase_core: ^3.6.0
-  - firebase_auth: ^5.7.0
-  - cloud_firestore: ^5.4.4
-  - firebase_ai: ^1.0.0  # NEW - replaces firebase_vertexai
-  - google_generative_ai: ^0.4.7
-  - riverpod: ^3.0.0
-  - go_router: ^15.1.2
-  - fl_chart: ^0.68.0
-  - mobile_scanner: ^5.2.3
-  - cached_network_image: ^3.4.1
-  - flutter_secure_storage: ^9.2.2
-  - speech_to_text: ^7.3.0
-  - image_picker: ^1.1.2
+UI:
+  Material Design 3
+  fl_chart: ^0.68.0                # Charts
+
+Key Features:
+  mobile_scanner: ^5.2.3           # Receipt scanning
+  speech_to_text: ^7.3.0           # Voice input
+  flutter_local_notifications      # Push notifications
+  sms_advanced: ^1.1.1             # SMS monitoring
+  flutter_secure_storage: ^9.2.2   # Secure storage
+  image_picker: ^1.1.2             # Camera access
 ```
 
-### Backend Stack
+### Backend
 
 ```yaml
 Platform: Firebase + Google Cloud
 
 Database:
-  - Cloud Firestore (primary NoSQL database)
-  - Firestore indexes for optimized queries
-  - Real-time synchronization
+  - Cloud Firestore (NoSQL, real-time sync)
+  - Composite indexes for optimized queries
 
 Functions:
   - Cloud Functions (Node.js 20)
-  - Firebase Genkit flows
-  - Google ADK agents (Python)
-  - Scheduled functions for background jobs
+  - Scheduled functions (cron jobs)
+  - Firestore triggers
 
-AI Services:
-  - Firebase AI Logic (Gemini 2.5)
-  - Gemini Developer API (free tier)
-  - Vertex AI Gemini API (production)
-  - ML Kit (on-device OCR)
+AI:
+  - Firebase AI Logic (firebase_ai)
+  - Gemini 2.5 Flash (primary)
+  - Gemini 2.5 Flash-Lite (OCR)
+  - Function calling for data access
 
 Storage:
-  - Firebase Storage (receipt images, exports)
-  - Cloud Storage buckets
+  - Firebase Storage (receipts, exports)
 
 Authentication:
   - Firebase Authentication
-  - Email/password, Google Sign-In, Apple Sign-In
-  - Biometric (platform native)
+  - Email/password, Google, Apple, Biometric
 
 Monitoring:
   - Firebase Crashlytics
   - Firebase Performance Monitoring
   - Cloud Logging
-  - Cloud Trace
-```
-
-### AI Infrastructure
-
-```yaml
-Agent Framework:
-  - Google Agent Development Kit (ADK)
-  - Multi-agent orchestration
-  - Agent-to-Agent (A2A) protocol
-
-Flow Orchestration:
-  - Firebase Genkit
-  - RAG, chat, tool use primitives
-  - Tracing and observability
-
-Model Context Protocol:
-  - MCP Dart client
-  - Custom MCP servers
-  - Ecosystem tool integration
-
-Models:
-  - Gemini 2.5 Pro (complex analysis)
-  - Gemini 2.5 Flash (real-time chat)
-  - Gemini 2.5 Flash-Lite (simple tasks)
-  - Gemini Nano (on-device)
 ```
 
 ---
 
 ## System Architecture
 
-### High-Level Architecture Diagram
+### High-Level Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      CLIENT APPLICATIONS                        │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐      │
-│  │   iOS    │  │  Android │  │   Web    │  │  Desktop │      │
-│  │  Flutter │  │  Flutter │  │  Flutter │  │  Flutter │      │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘      │
-│                              ↕                                  │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │           Firebase AI Logic (firebase_ai)                │  │
-│  │  ┌──────────────┐              ┌──────────────────┐     │  │
-│  │  │ Gemini Dev   │              │ Vertex AI Gemini │     │  │
-│  │  │ API (Free)   │              │  API (Enterprise)│     │  │
-│  │  └──────────────┘              └──────────────────┘     │  │
-│  │         ↓                              ↓                  │  │
-│  │  ┌──────────────┐              ┌──────────────────┐     │  │
-│  │  │  On-Device   │              │   Cloud Models   │     │  │
-│  │  │ Gemini Nano  │              │ Gemini 2.5 Flash │     │  │
-│  │  └──────────────┘              └──────────────────┘     │  │
-│  └─────────────────────────────────────────────────────────┘  │
-│                              ↕                                  │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │      Model Context Protocol (MCP) Layer                  │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────────┐          │  │
-│  │  │   Dart   │  │Financial │  │   Custom     │          │  │
-│  │  │   MCP    │  │MCP Tools │  │ MCP Servers  │          │  │
-│  │  │  Server  │  │          │  │              │          │  │
-│  │  └──────────┘  └──────────┘  └──────────────┘          │  │
-│  └─────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-                               ↕
-┌─────────────────────────────────────────────────────────────────┐
-│               BACKEND (Firebase + Google Cloud)                 │
-│                                                                   │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │          Google Agent Development Kit (ADK)              │  │
-│  │                                                           │  │
-│  │  ┌────────────────────────────────────────────────┐    │  │
-│  │  │     Multi-Agent Orchestrator (Coordinator)     │    │  │
-│  │  │    (Agent-to-Agent Communication via A2A)      │    │  │
-│  │  └────────────────────────────────────────────────┘    │  │
-│  │                         ↓                                │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────┐ │  │
-│  │  │Financial │  │ Receipt  │  │  Price   │  │Context│ │  │
-│  │  │ Analyst  │  │  Parser  │  │  Intel   │  │ Agent │ │  │
-│  │  │  Agent   │  │  Agent   │  │  Agent   │  │       │ │  │
-│  │  └──────────┘  └──────────┘  └──────────┘  └───────┘ │  │
-│  │                         ↓                                │  │
-│  │  ┌───────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐ │  │
-│  │  │Extrac-│  │Validator │  │ Pattern  │  │ Coaching │ │  │
-│  │  │ tor   │  │  Agent   │  │ Learner  │  │  Agent   │ │  │
-│  │  └───────┘  └──────────┘  └──────────┘  └──────────┘ │  │
-│  │                         ↓                                │  │
-│  │  ┌────────────────────────────────────────────────┐    │  │
-│  │  │         Shared Tool Registry (MCP)             │    │  │
-│  │  │  • Firestore Access   • External APIs          │    │  │
-│  │  │  • ML Kit OCR         • Exchange Rate APIs     │    │  │
-│  │  │  • Price Comparison   • Function Calling       │    │  │
-│  │  └────────────────────────────────────────────────┘    │  │
-│  └─────────────────────────────────────────────────────────┘  │
-│                                                                   │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │             Firebase Genkit Flows                        │  │
-│  │                                                           │  │
-│  │  analyzeTransaction()   │  generateInsights()           │  │
-│  │  parseReceipt()         │  findBestPrice()              │  │
-│  │  coachUser()            │  detectAnomalies()            │  │
-│  │  categor izeExpense()    │  optimizeBudget()             │  │
-│  └─────────────────────────────────────────────────────────┘  │
-│                                                                   │
-│  Deployment: Cloud Functions for Firebase / Cloud Run          │
-└─────────────────────────────────────────────────────────────────┘
-                               ↕
-                  ┌───────────────────────┐
-                  │   Firebase Services   │
-                  │  • Firestore          │
-                  │  • Authentication     │
-                  │  • Storage            │
-                  │  • Analytics          │
-                  │  • Crashlytics        │
-                  └───────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                   FLUTTER APPLICATION                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │  iOS/Android │  │     Web      │  │   Desktop    │     │
+│  └──────────────┘  └──────────────┘  └──────────────┘     │
+│                                                               │
+│  Features:                                                   │
+│  • Voice/Text Chat  • SMS Monitoring  • Receipt Scanning   │
+│  • Budget Tracking  • Insights        • Price Intelligence │
+└─────────────────────────────────────────────────────────────┘
+                           ↕
+                   ┌───────────────┐
+                   │  Firebase AI  │
+                   │  Logic Layer  │
+                   └───────────────┘
+                           ↕
+┌─────────────────────────────────────────────────────────────┐
+│                    AI AGENTS (3 Total)                       │
+│                                                               │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │  FINANCIAL COPILOT AGENT (Gemini 2.5 Flash)          │ │
+│  │  • Main intelligence (80% of interactions)            │ │
+│  │  • Transaction extraction + validation in 1 call      │ │
+│  │  • Multi-turn conversations with context             │ │
+│  │  • Function calling: saveTransaction, getBudget, etc. │ │
+│  │  • Emotional intelligence & anxiety reduction         │ │
+│  └───────────────────────────────────────────────────────┘ │
+│                           ↓                                   │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │  VISION AGENT (Gemini 2.5 Flash-Lite)                │ │
+│  │  • Receipt OCR only (15% of interactions)            │ │
+│  │  • Extract items, prices, merchant, date              │ │
+│  │  • Pass to Copilot for price analysis                │ │
+│  └───────────────────────────────────────────────────────┘ │
+│                           ↓                                   │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │  ANALYST AGENT (Gemini 2.5 Flash)                    │ │
+│  │  • Background analysis (5% of interactions)           │ │
+│  │  • Daily Money Story (9 PM scheduled)                │ │
+│  │  • Weekly Pattern Analysis (Sunday 8 PM)             │ │
+│  │  • Anomaly Detection (Firestore triggers)            │ │
+│  └───────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+                           ↕
+┌─────────────────────────────────────────────────────────────┐
+│              CLOUD FUNCTIONS (Serverless)                    │
+│                                                               │
+│  Scheduled Functions:                                        │
+│  • generateMoneyStory()      - Daily 9 PM                   │
+│  • weeklyAnalysis()          - Sunday 8 PM                  │
+│  • budgetAlerts()            - Daily 8 AM                   │
+│  • subscriptionDetection()   - Weekly                       │
+│                                                               │
+│  Firestore Triggers:                                         │
+│  • onTransactionCreate()     - Anomaly detection            │
+│  • onBudgetUpdate()          - Smart nudges                 │
+│  • onUserSignup()            - Initialize user data         │
+└─────────────────────────────────────────────────────────────┘
+                           ↕
+                   ┌───────────────┐
+                   │   FIRESTORE   │
+                   │   DATABASE    │
+                   └───────────────┘
 ```
+
+### Why 3 Agents Work
+
+**OLD (9 agents):**
+- Orchestrator → Extractor → Validator → Context → Response
+- 4 sequential API calls for 1 transaction
+- 3-5 seconds total
+- $0.004 cost per transaction
+
+**NEW (3 agents):**
+- Financial Copilot does extraction + validation + context in 1 call
+- 1 API call for 1 transaction
+- <1 second total
+- $0.0008 cost per transaction
+
+**Result:** 5x cheaper, 3x faster, simpler codebase
 
 ---
 
 ## Frontend Architecture
 
-### Flutter App Structure
+### App Structure
 
 ```
 lib/
-├── main.dart                           # App entry point
-├── firebase_options.dart               # Firebase configuration
+├── main.dart
+├── firebase_options.dart
 │
-├── core/                               # Core app functionality
+├── core/
 │   ├── constants/
-│   │   ├── app_constants.dart          # App-wide constants
-│   │   ├── categories.dart             # Transaction categories
-│   │   └── routes.dart                 # Route names
+│   │   ├── app_constants.dart
+│   │   ├── categories.dart
+│   │   └── routes.dart
 │   ├── theme/
-│   │   ├── app_theme.dart              # Material Design 3 theme
-│   │   ├── color_schemes.dart          # Light/dark color schemes
-│   │   └── text_styles.dart            # Typography
-│   ├── utils/
-│   │   ├── currency_utils.dart         # Currency formatting
-│   │   ├── date_utils.dart             # Date/time helpers
-│   │   ├── haptic_utils.dart           # Haptic feedback
-│   │   └── validators.dart             # Input validation
-│   └── navigation/
-│       └── app_router.dart             # go_router configuration
+│   │   ├── app_theme.dart
+│   │   ├── color_schemes.dart
+│   │   └── text_styles.dart
+│   └── utils/
+│       ├── currency_utils.dart
+│       ├── date_utils.dart
+│       └── validators.dart
 │
-├── features/                           # Feature modules
+├── features/
 │   ├── authentication/
-│   │   ├── data/
-│   │   │   ├── repositories/
-│   │   │   │   └── auth_repository.dart
-│   │   │   └── models/
-│   │   │       └── user_model.dart
-│   │   ├── domain/
-│   │   │   └── use_cases/
-│   │   │       ├── sign_in_use_case.dart
-│   │   │       └── sign_out_use_case.dart
+│   │   ├── data/repositories/
+│   │   ├── domain/use_cases/
 │   │   └── presentation/
 │   │       ├── screens/
-│   │       │   ├── sign_in_screen.dart
-│   │       │   └── sign_up_screen.dart
-│   │       ├── widgets/
 │   │       └── providers/
-│   │           └── auth_provider.dart
 │   │
-│   ├── transactions/
-│   │   ├── data/
-│   │   │   ├── repositories/
-│   │   │   │   └── transaction_repository.dart
-│   │   │   └── models/
-│   │   │       └── transaction_model.dart
-│   │   ├── domain/
-│   │   │   └── use_cases/
-│   │   │       ├── add_transaction_use_case.dart
-│   │   │       ├── get_transactions_use_case.dart
-│   │   │       └── delete_transaction_use_case.dart
-│   │   └── presentation/
-│   │       ├── screens/
-│   │       │   ├── transactions_list_screen.dart
-│   │       │   ├── transaction_detail_screen.dart
-│   │       │   └── transaction_edit_screen.dart
-│   │       ├── widgets/
-│   │       │   ├── transaction_list_item.dart
-│   │       │   └── category_selector.dart
-│   │       └── providers/
-│   │           ├── transactions_provider.dart
-│   │           └── transaction_filter_provider.dart
-│   │
-│   ├── financial_copilot/              # AI Chat Interface
+│   ├── chat/                      # Financial Copilot Chat
 │   │   ├── data/
 │   │   │   └── repositories/
-│   │   │       └── ai_repository.dart
-│   │   ├── domain/
-│   │   │   └── use_cases/
-│   │   │       ├── send_message_use_case.dart
-│   │   │       └── extract_transaction_use_case.dart
+│   │   │       └── chat_repository.dart
 │   │   └── presentation/
 │   │       ├── screens/
-│   │       │   └── financial_copilot_screen.dart
+│   │       │   └── chat_screen.dart
 │   │       ├── widgets/
-│   │       │   ├── chat_bubble.dart
-│   │       │   ├── message_input_bar.dart
-│   │       │   └── typing_indicator.dart
+│   │       │   ├── message_bubble.dart
+│   │       │   ├── voice_input_button.dart
+│   │       │   └── transaction_confirmation.dart
 │   │       └── providers/
 │   │           └── chat_provider.dart
 │   │
-│   ├── budgeting/
-│   │   └── [similar structure]
-│   │
+│   ├── transactions/
+│   ├── budgets/
 │   ├── insights/
-│   │   └── [similar structure]
-│   │
-│   ├── price_finder/
-│   │   ├── presentation/
-│   │   │   ├── screens/
-│   │   │   │   ├── enhanced_price_finder_home.dart
-│   │   │   │   ├── barcode_scanner_screen.dart
-│   │   │   │   ├── product_detail_screen.dart
-│   │   │   │   └── wishlist_screen.dart
-│   │   │   └── widgets/
-│   │   └── data/
-│   │       └── repositories/
-│   │
+│   ├── receipt_scanner/
+│   ├── price_intelligence/
 │   └── dashboard/
-│       └── [similar structure]
 │
-├── services/                           # Business logic services
+├── services/
 │   ├── firebase/
-│   │   ├── firestore_service.dart      # Firestore operations
-│   │   ├── auth_service.dart           # Authentication
-│   │   └── storage_service.dart        # File storage
+│   │   ├── firestore_service.dart
+│   │   ├── auth_service.dart
+│   │   └── storage_service.dart
 │   ├── ai/
-│   │   ├── firebase_ai_service.dart    # Firebase AI Logic client
-│   │   ├── genkit_client.dart          # Genkit flow client
-│   │   └── mcp_client.dart             # MCP client
-│   ├── agents/                         # Local agent coordinators
-│   │   ├── orchestrator_coordinator.dart
-│   │   └── agent_communication.dart
-│   ├── enhanced_price_service.dart
-│   ├── price_alert_service.dart
-│   ├── notification_service.dart
-│   ├── analytics_service.dart
-│   └── sync_service.dart               # Offline sync
+│   │   ├── financial_copilot_service.dart    # Main AI service
+│   │   ├── vision_service.dart               # Receipt OCR
+│   │   └── analyst_service.dart              # Background insights
+│   ├── sms/
+│   │   └── sms_parser_service.dart           # SMS monitoring
+│   └── notifications/
+│       └── notification_service.dart
 │
-├── shared/                             # Shared components
-│   ├── models/
-│   │   ├── transaction.dart
-│   │   ├── budget.dart
-│   │   ├── product_price_data.dart
-│   │   └── user_preferences.dart
-│   ├── widgets/
-│   │   ├── custom_button.dart
-│   │   ├── loading_indicator.dart
-│   │   ├── error_widget.dart
-│   │   └── gradient_fab.dart
-│   ├── extensions/
-│   │   ├── string_extensions.dart
-│   │   ├── date_extensions.dart
-│   │   └── number_extensions.dart
-│   └── providers/
-│       ├── theme_provider.dart
-│       └── locale_provider.dart
-│
-└── generated/                          # Generated files
-    ├── intl/                           # Internationalization
-    └── assets.dart                     # Asset references
+└── shared/
+    ├── models/
+    │   ├── transaction.dart
+    │   ├── budget.dart
+    │   ├── chat_message.dart
+    │   └── money_story.dart
+    ├── widgets/
+    └── providers/
 ```
 
-### State Management with Riverpod
+### State Management (Riverpod)
 
 ```dart
-// Example: Transaction List Provider
-import 'package:riverpod/riverpod.dart';
-
-// Repository provider
-final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
-  final firestore = ref.watch(firestoreServiceProvider);
-  final auth = ref.watch(authServiceProvider);
-  return TransactionRepository(firestore: firestore, auth: auth);
+// Financial Copilot Chat Provider
+final chatRepositoryProvider = Provider<ChatRepository>((ref) {
+  return ChatRepository();
 });
 
-// Transactions stream provider
-final transactionsStreamProvider = StreamProvider.autoDispose<List<Transaction>>((ref) {
-  final repository = ref.watch(transactionRepositoryProvider);
-  final userId = ref.watch(currentUserIdProvider);
-
-  if (userId == null) {
-    return Stream.value([]);
-  }
-
-  return repository.getTransactionsStream(userId);
+final chatMessagesProvider =
+    StateNotifierProvider<ChatNotifier, List<ChatMessage>>((ref) {
+  final repository = ref.watch(chatRepositoryProvider);
+  return ChatNotifier(repository);
 });
 
-// Filtered transactions provider
-final filteredTransactionsProvider = Provider.autoDispose<List<Transaction>>((ref) {
-  final transactions = ref.watch(transactionsStreamProvider).value ?? [];
-  final filter = ref.watch(transactionFilterProvider);
-
-  return transactions.where((txn) {
-    if (filter.category != null && txn.category != filter.category) {
-      return false;
-    }
-    if (filter.dateRange != null &&
-        !filter.dateRange!.contains(txn.date)) {
-      return false;
-    }
-    return true;
-  }).toList();
+final transactionExtractionProvider =
+    FutureProvider.family<TransactionData, String>((ref, userMessage) {
+  final repository = ref.watch(chatRepositoryProvider);
+  return repository.extractTransaction(userMessage);
 });
 
-// Transaction actions provider
-final transactionActionsProvider = Provider<TransactionActions>((ref) {
-  final repository = ref.watch(transactionRepositoryProvider);
-  return TransactionActions(repository);
+// SMS Monitoring Provider
+final smsParserProvider = Provider<SmsParserService>((ref) {
+  return SmsParserService();
 });
 
-class TransactionActions {
-  final TransactionRepository repository;
-
-  TransactionActions(this.repository);
-
-  Future<void> addTransaction(Transaction transaction) async {
-    await repository.add(transaction);
-  }
-
-  Future<void> updateTransaction(String id, Transaction transaction) async {
-    await repository.update(id, transaction);
-  }
-
-  Future<void> deleteTransaction(String id) async {
-    await repository.delete(id);
-  }
-}
+final pendingTransactionsProvider =
+    StreamProvider<List<ParsedSmsTransaction>>((ref) {
+  final parser = ref.watch(smsParserProvider);
+  return parser.pendingTransactionsStream;
+});
 ```
 
 ---
 
 ## Backend Architecture
 
-### Firebase Genkit Flows
-
-#### Project Structure
+### Cloud Functions Structure
 
 ```
-backend/
+functions/
 ├── package.json
-├── genkit.config.ts                   # Genkit configuration
 ├── tsconfig.json
+├── index.ts                       # Exports all functions
 │
-├── src/
-│   ├── index.ts                       # Cloud Function entry point
-│   │
-│   ├── flows/                         # Genkit flows
-│   │   ├── transaction-analysis.ts    # Analyze transaction data
-│   │   ├── receipt-parsing.ts         # Parse receipt images
-│   │   ├── insights-generation.ts     # Generate financial insights
-│   │   ├── price-comparison.ts        # Price intelligence
-│   │   ├── budget-optimization.ts     # Budget recommendations
-│   │   └── coaching.ts                # Financial coaching
-│   │
-│   ├── agents/                        # ADK agents
-│   │   ├── orchestrator.ts            # Main coordinator
-│   │   ├── financial-analyst.ts
-│   │   ├── receipt-parser.ts
-│   │   ├── price-intelligence.ts
-│   │   ├── context-agent.ts
-│   │   ├── extractor.ts
-│   │   ├── validator.ts
-│   │   └── pattern-learner.ts
-│   │
-│   ├── tools/                         # Shared tools
-│   │   ├── firestore-tools.ts         # Database access
-│   │   ├── ml-kit-tools.ts            # OCR processing
-│   │   ├── price-api-tools.ts         # Price comparison APIs
-│   │   ├── exchange-rate-tools.ts     # Currency conversion
-│   │   └── notification-tools.ts      # Push notifications
-│   │
-│   ├── mcp/                           # MCP servers
-│   │   ├── financial-tools-server.ts
-│   │   └── custom-mcp-tools.ts
-│   │
-│   ├── services/
-│   │   ├── firestore.service.ts
-│   │   ├── storage.service.ts
-│   │   └── auth.service.ts
-│   │
-│   └── utils/
-│       ├── prompts.ts                 # Prompt templates
-│       ├── validation.ts
-│       └── helpers.ts
+├── scheduled/
+│   ├── daily-money-story.ts       # 9 PM daily
+│   ├── weekly-analysis.ts         # Sunday 8 PM
+│   ├── budget-alerts.ts           # 8 AM daily
+│   └── subscription-detection.ts  # Weekly
 │
-└── functions/                         # Additional Cloud Functions
-    ├── scheduled/
-    │   ├── daily-insights.ts          # Generate daily insights
-    │   ├── budget-alerts.ts           # Check budget thresholds
-    │   └── price-monitoring.ts        # Monitor wishlist prices
-    └── triggers/
-        ├── on-transaction-create.ts   # Auto-categorize
-        └── on-user-signup.ts          # Initialize user data
+├── triggers/
+│   ├── on-transaction-create.ts   # Anomaly detection
+│   ├── on-budget-update.ts        # Smart nudges
+│   └── on-user-signup.ts          # Initialize user
+│
+├── services/
+│   ├── firestore.service.ts
+│   ├── ai.service.ts
+│   └── notification.service.ts
+│
+└── utils/
+    ├── prompts.ts                 # Agent system prompts
+    └── helpers.ts
 ```
 
-#### Example Genkit Flow
+### Cloud Function Examples
 
 ```typescript
-// flows/transaction-analysis.ts
-import { defineFlow, runFlow } from '@genkit-ai/flow';
-import { gemini25Flash } from '@genkit-ai/googleai';
-import { z } from 'zod';
+// scheduled/daily-money-story.ts
+import * as functions from 'firebase-functions';
+import { GenerativeModel } from '@google-cloud/vertexai';
+import { getFirestore } from 'firebase-admin/firestore';
 
-// Input/Output schemas
-const TransactionInputSchema = z.object({
-  userId: z.string(),
-  description: z.string(),
-  context: z.object({
-    recentTransactions: z.array(z.any()).optional(),
-    userPreferences: z.record(z.any()).optional(),
-  }).optional(),
-});
+export const generateMoneyStory = functions.pubsub
+  .schedule('0 21 * * *')           // 9 PM daily
+  .timeZone('America/New_York')
+  .onRun(async (context) => {
+    const db = getFirestore();
+    const users = await getActiveUsers();
 
-const TransactionOutputSchema = z.object({
-  amount: z.number(),
-  category: z.string(),
-  merchant: z.string().nullable(),
-  date: z.string(),
-  paymentMethod: z.string().nullable(),
-  confidence: z.number(),
-  needsClarification: z.array(z.string()).optional(),
-});
-
-// Define the flow
-export const analyzeTransactionFlow = defineFlow(
-  {
-    name: 'analyzeTransaction',
-    inputSchema: TransactionInputSchema,
-    outputSchema: TransactionOutputSchema,
-  },
-  async (input) => {
-    // Step 1: Extract transaction data using Extractor Agent
-    const extractedData = await runFlow(extractDataSubFlow, {
-      description: input.description,
-      context: input.context,
+    const model = new GenerativeModel({
+      model: 'gemini-2.5-flash',
+      systemInstruction: ANALYST_AGENT_PROMPT,
     });
 
-    // Step 2: Validate extracted data using Validator Agent
-    const validation = await runFlow(validateDataSubFlow, {
-      data: extractedData,
-      userId: input.userId,
+    for (const user of users) {
+      // Get today's transactions
+      const txns = await db
+        .collection('transactions')
+        .where('userId', '==', user.id)
+        .where('date', '>=', getTodayStart())
+        .get();
+
+      // Generate Money Story
+      const story = await model.generateContent({
+        contents: [{
+          role: 'user',
+          parts: [{
+            text: `Generate Money Story for: ${JSON.stringify(txns)}`
+          }]
+        }]
+      });
+
+      // Send notification
+      await sendNotification(user.id, {
+        title: 'Today\'s Money Story 📖',
+        body: story.response.text(),
+      });
+    }
+  });
+
+// triggers/on-transaction-create.ts
+export const detectAnomalies = functions.firestore
+  .document('transactions/{transactionId}')
+  .onCreate(async (snap, context) => {
+    const txn = snap.data();
+    const db = getFirestore();
+
+    // Get user's transaction history (last 30 days)
+    const history = await db
+      .collection('transactions')
+      .where('userId', '==', txn.userId)
+      .where('date', '>=', getLast30Days())
+      .get();
+
+    const model = new GenerativeModel({
+      model: 'gemini-2.5-flash',
+      systemInstruction: ANALYST_AGENT_PROMPT,
     });
 
-    // Step 3: Enrich with historical context using Context Agent
-    const enrichedData = await runFlow(enrichDataSubFlow, {
-      data: validation.data,
-      userId: input.userId,
-    });
-
-    // Step 4: Learn patterns using Pattern Learner Agent
-    await runFlow(learnPatternsSubFlow, {
-      userId: input.userId,
-      transaction: enrichedData,
-    });
-
-    return enrichedData;
-  }
-);
-
-// Sub-flow: Extract transaction data
-const extractDataSubFlow = defineFlow(
-  {
-    name: 'extractData',
-    inputSchema: z.object({
-      description: z.string(),
-      context: z.any().optional(),
-    }),
-    outputSchema: TransactionOutputSchema,
-  },
-  async (input) => {
-    const prompt = `Extract transaction details from this description:
-
-    "${input.description}"
-
-    Context: ${JSON.stringify(input.context || {})}
-
-    Extract: amount, category, merchant, date, payment method.
-    Return JSON matching the schema.`;
-
-    const response = await gemini25Flash.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    // Detect anomalies
+    const analysis = await model.generateContent({
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: `Check for anomalies:\nNew: ${JSON.stringify(txn)}\nHistory: ${JSON.stringify(history)}`
+        }]
+      }],
       generationConfig: {
-        temperature: 0.2,
         responseMimeType: 'application/json',
-      },
+      }
     });
 
-    const result = JSON.parse(response.response.text());
-    return result;
-  }
-);
-```
+    const result = JSON.parse(analysis.response.text());
 
-### Google ADK Multi-Agent System
-
-#### Agent Configuration
-
-```python
-# agents/orchestrator.py
-from google_adk import Agent, Tool
-from google_adk.models import GeminiModel
-
-# Define tools
-def analyze_spending(user_id: str, period: str) -> dict:
-    """Analyze user spending for a given period."""
-    # Query Firestore, calculate metrics
-    return {...}
-
-def categorize_transaction(description: str) -> str:
-    """Determine the appropriate category for a transaction."""
-    # Use ML model or rules
-    return "category"
-
-def get_user_context(user_id: str) -> dict:
-    """Get user's financial context and preferences."""
-    # Load from Firestore
-    return {...}
-
-# Define Orchestrator Agent
-orchestrator = Agent(
-    name="Orchestrator",
-    model=GeminiModel("gemini-2.5-pro"),
-    system_prompt="""
-    You are the Orchestrator agent for Fin Copilot, a personal finance app.
-    Your role is to coordinate specialized agents to fulfill user requests.
-
-    You have access to these agents as tools:
-    - Financial Analyst: Deep financial analysis and insights
-    - Receipt Parser: Extract data from receipt images
-    - Price Intelligence: Find best prices and deals
-    - Context Agent: Understand user preferences and history
-
-    Route requests to the appropriate agent(s) and synthesize results.
-    Always provide clear, actionable responses to users.
-    """,
-    tools=[
-        "financial_analyst_agent",  # Agent as tool
-        "receipt_parser_agent",
-        "price_intelligence_agent",
-        "context_agent",
-        analyze_spending,
-        categorize_transaction,
-        get_user_context,
-    ],
-)
-
-# Define Financial Analyst Agent
-financial_analyst = Agent(
-    name="Financial Analyst",
-    model=GeminiModel("gemini-2.5-pro"),
-    system_prompt="""
-    You are a financial analyst specializing in personal finance.
-    Analyze spending patterns, identify trends, and provide actionable insights.
-
-    Use provided tools to access transaction data, budget information, and historical trends.
-    Generate clear, data-driven recommendations.
-    """,
-    tools=[
-        analyze_spending,
-        get_user_context,
-        # Firestore access tools
-    ],
-)
-
-# Enable Agent-to-Agent communication
-from google_adk import enable_a2a
-
-enable_a2a([
-    orchestrator,
-    financial_analyst,
-    receipt_parser,
-    price_intelligence,
-    context_agent,
-    extractor,
-    validator,
-    pattern_learner,
-])
+    if (result.anomalyDetected) {
+      await sendAlert(txn.userId, {
+        title: 'Unusual Transaction',
+        body: result.message,
+      });
+    }
+  });
 ```
 
 ---
 
 ## AI Infrastructure
 
-### Model Selection Strategy
+### Agent Configuration
 
-| Use Case | Model | Reasoning |
-|----------|-------|-----------|
-| Quick chat responses | Gemini 2.5 Flash-Lite | Ultra-fast, low cost, 50% fewer tokens |
-| Transaction extraction | Gemini 2.5 Flash | Good accuracy, fast, JSON mode |
-| Financial analysis | Gemini 2.5 Pro | Deep reasoning, complex calculations |
-| Receipt OCR | ML Kit + Gemini 2.5 Flash | On-device OCR + AI parsing |
-| Price predictions | Gemini 2.5 Pro | Multi-step reasoning, trend analysis |
-| Coaching tips | Gemini 2.5 Flash | Contextual, conversational |
-| Sensitive calculations | Gemini Nano (on-device) | Privacy-preserving |
+| Agent | Model | Temperature | Max Tokens | Use Case |
+|-------|-------|-------------|------------|----------|
+| Financial Copilot | Gemini 2.5 Flash | 0.7 | 512 | Main chat, extraction, advice |
+| Vision | Gemini 2.5 Flash-Lite | 0.2 | 2048 | Receipt OCR |
+| Analyst | Gemini 2.5 Flash | 0.4 | 1024 | Background analysis |
 
-### Hybrid Processing Decision Tree
+### Function Calling (Financial Copilot Agent)
 
+```typescript
+// Available functions for Financial Copilot Agent
+const functionDeclarations = [
+  {
+    name: 'saveTransaction',
+    description: 'Save a transaction to Firestore',
+    parameters: {
+      type: 'object',
+      properties: {
+        amount: { type: 'number', description: 'Transaction amount' },
+        merchant: { type: 'string', description: 'Merchant name' },
+        category: { type: 'string', description: 'Category' },
+        date: { type: 'string', description: 'ISO date string' },
+        description: { type: 'string', description: 'Optional notes' },
+      },
+      required: ['amount', 'category', 'date']
+    }
+  },
+  {
+    name: 'getTransactions',
+    description: 'Query transactions',
+    parameters: {
+      type: 'object',
+      properties: {
+        startDate: { type: 'string' },
+        endDate: { type: 'string' },
+        category: { type: 'string' },
+      },
+      required: ['startDate', 'endDate']
+    }
+  },
+  {
+    name: 'getBudget',
+    description: 'Get budget info for category',
+    parameters: {
+      type: 'object',
+      properties: {
+        category: { type: 'string' }
+      },
+      required: ['category']
+    }
+  },
+  {
+    name: 'getCurrentBalance',
+    description: 'Get current cash balance',
+    parameters: {
+      type: 'object',
+      properties: {}
+    }
+  },
+  {
+    name: 'getPredictedCashFlow',
+    description: 'Get cash flow prediction',
+    parameters: {
+      type: 'object',
+      properties: {}
+    }
+  },
+  {
+    name: 'getSpendingPatterns',
+    description: 'Get spending patterns',
+    parameters: {
+      type: 'object',
+      properties: {
+        category: { type: 'string' },
+        timeframe: { type: 'string', enum: ['week', 'month'] }
+      },
+      required: ['category', 'timeframe']
+    }
+  }
+];
 ```
-User Request
-    ↓
-Is data sensitive? (PINs, passwords, etc.)
-    ├─ YES → On-Device (Gemini Nano)
-    └─ NO  → Continue
-              ↓
-Is immediate response needed? (<1s)
-    ├─ YES → On-Device if model available
-    │         ↓ (or fallback)
-    │        Cloud (Gemini Flash-Lite)
-    └─ NO  → Continue
-              ↓
-Is complex reasoning required?
-    ├─ YES → Cloud (Gemini 2.5 Pro)
-    └─ NO  → Cloud (Gemini 2.5 Flash)
+
+### Flutter AI Service
+
+```dart
+// lib/services/ai/financial_copilot_service.dart
+import 'package:firebase_ai/firebase_ai.dart';
+
+class FinancialCopilotService {
+  late final GenerativeModel _model;
+
+  FinancialCopilotService() {
+    _model = FirebaseAI.googleAI().generativeModel(
+      model: 'gemini-2.5-flash',
+      systemInstruction: Content.system(COPILOT_SYSTEM_PROMPT),
+      tools: [
+        Tool(functionDeclarations: [
+          FunctionDeclaration(
+            name: 'saveTransaction',
+            description: 'Save a transaction to Firestore',
+            parameters: {...}
+          ),
+          // ... other function declarations
+        ])
+      ],
+      generationConfig: GenerationConfig(
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 512,
+      ),
+    );
+  }
+
+  Future<String> sendMessage(String userMessage, ChatHistory history) async {
+    // Build conversation with history
+    final contents = [
+      ...history.map((msg) => Content.text(msg)),
+      Content.text(userMessage),
+    ];
+
+    // Generate response (may include function calls)
+    final response = await _model.generateContent(contents);
+
+    // Handle function calls if any
+    if (response.functionCalls != null) {
+      for (final call in response.functionCalls!) {
+        await _executeFunctionCall(call);
+      }
+    }
+
+    return response.text ?? '';
+  }
+
+  Future<void> _executeFunctionCall(FunctionCall call) async {
+    switch (call.name) {
+      case 'saveTransaction':
+        await _firestoreService.saveTransaction(call.args);
+        break;
+      case 'getTransactions':
+        final txns = await _firestoreService.getTransactions(call.args);
+        // Return to model for next turn
+        break;
+      // ... other functions
+    }
+  }
+}
 ```
 
 ---
 
 ## Data Flow
 
-### Transaction Entry Flow (Voice Input Example)
+### Transaction Entry via Voice
 
 ```
-User taps microphone
+User taps microphone button
     ↓
-Flutter: speech_to_text starts listening
+Flutter: speech_to_text starts
     ↓
-User speaks: "I spent 50 dollars on groceries"
+User: "I spent $15 on lunch at Chipotle"
     ↓
-Flutter: STT converts to text
+Flutter: Convert speech → text
     ↓
-Flutter: Send text to Financial Copilot chat
+Call FinancialCopilotService.sendMessage()
     ↓
-Chat Service: Call Genkit flow analyzeTransaction()
+Firebase AI: Gemini 2.5 Flash receives message
     ↓
-Genkit Flow: Orchestrator Agent receives request
+Copilot Agent:
+  - Extracts: amount=$15, merchant=Chipotle, category=Dining
+  - Validates: all required fields present
+  - Calls saveTransaction() function
     ↓
-Orchestrator: Route to Extractor Agent
+Flutter: Executes function call → Save to Firestore
     ↓
-Extractor: Parse natural language → structured data
-    {amount: 50, category: "groceries", date: "today"}
+Copilot Agent: Generates response
+  "Got it! $15 for lunch at Chipotle 🌯 That's $45 on dining this week"
     ↓
-Orchestrator: Route to Validator Agent
+Flutter: Display response in chat
     ↓
-Validator: Check completeness, validate ranges
+Done (1 agent, <1 second)
+```
+
+### Receipt Scanning
+
+```
+User taps "Scan Receipt"
     ↓
-Orchestrator: Route to Context Agent
+Flutter: Open camera (image_picker)
     ↓
-Context: Enhance with user history (usual grocery store, etc.)
+User captures receipt photo
     ↓
-Genkit Flow: Return enriched transaction data
+Call VisionService.scanReceipt(imageBytes)
     ↓
-Flutter: Display confirmation UI
+Vision Agent (Gemini 2.5 Flash-Lite):
+  - OCR extracts all items, prices, merchant, date
+  - Returns JSON
     ↓
-User: Confirms
+Call FinancialCopilotService.analyzeReceipt(receiptData)
     ↓
-Flutter: Save to Firestore
+Copilot Agent:
+  - Compares prices to market averages
+  - Generates insights
+  "You paid $4.99 for milk - $1.20 more than Trader Joe's"
     ↓
-Firestore Trigger: on-transaction-create
+Flutter: Display receipt breakdown + price analysis
     ↓
-Cloud Function: Update budgets, generate insights
+Done (2 agents, <5 seconds)
+```
+
+### SMS Auto-Parsing
+
+```
+Bank sends SMS: "Charged $5.50 at STARBUCKS on 10/22"
     ↓
-Flutter: Real-time update via Firestore listener
+Android: SMS received (SmsReceiver)
     ↓
-UI updates: transaction list, budget progress, insights
+SmsParserService:
+  - Detect bank SMS format
+  - Extract: amount=$5.50, merchant=Starbucks, date=10/22
+    ↓
+Call FinancialCopilotService.confirmTransaction(parsedData)
+    ↓
+Copilot Agent:
+  - Auto-categorizes: Coffee
+  - Generates confirmation message
+    ↓
+Show notification: "☕ $5.50 at Starbucks - Coffee? [YES] [NO]"
+    ↓
+User taps YES
+    ↓
+Save to Firestore
+    ↓
+Done (80% automatic, <2 seconds)
+```
+
+### Daily Money Story (Background)
+
+```
+9 PM daily (Cloud Function scheduled)
+    ↓
+generateMoneyStory() function runs
+    ↓
+For each active user:
+  - Query today's transactions from Firestore
+  - Call Analyst Agent (Gemini 2.5 Flash)
+  - Generate narrative Money Story
+  - Send push notification
+    ↓
+User receives notification:
+  "Today's Money Story 📖
+   You spent $87 today
+   • $5.50 - Coffee ☕ Starbucks
+   • $15 - Lunch 🌯 Chipotle
+   • $66.50 - Groceries 🛒 Whole Foods
+
+   Top category: Groceries ($66.50)
+   This week: $342
+
+   You're $58 under budget this week! Keep it up! 🎉"
+    ↓
+Done (background, doesn't block user)
 ```
 
 ---
@@ -809,51 +712,34 @@ UI updates: transaction list, budget progress, insights
 
 ### Authentication Flow
 
-```
 1. User opens app
-2. Check for existing session (Firebase Auth persistence)
-3. If no session → Navigate to Sign In screen
-4. User chooses sign-in method:
-   - Email/Password
-   - Google Sign-In (OAuth)
-   - Apple Sign-In (OAuth)
-   - Biometric (after initial setup)
-
-5. Firebase Authentication validates credentials
+2. Check Firebase Auth session
+3. If no session → Sign In screen
+4. User chooses: Email/Password, Google, Apple, or Biometric
+5. Firebase Auth validates
 6. On success:
-   - Receive ID token
-   - Store securely in flutter_secure_storage
-   - Set up Firestore listeners with authenticated user ID
+   - Store ID token in flutter_secure_storage
+   - Set up Firestore listeners
    - Navigate to Dashboard
-
-7. Token refresh:
-   - Firebase SDK auto-refreshes tokens
-   - Handle refresh errors (re-authenticate)
-```
 
 ### Data Encryption
 
 **At Rest:**
-- Firestore: Encrypted by default (AES-256)
-- Firebase Storage: Encrypted by default
+- Firestore: AES-256 (default)
+- Firebase Storage: AES-256 (default)
 - Local storage: flutter_secure_storage (platform Keychain/Keystore)
-- Sensitive fields: Additional AES-256 encryption layer
 
 **In Transit:**
-- All Firebase connections: TLS 1.3
-- Cloud Function calls: HTTPS only
-- Gemini API calls: HTTPS with API key auth
+- All connections: TLS 1.3
+- Firebase AI calls: HTTPS with API key auth
 
-### Access Control
-
-**Firestore Security Rules:**
+### Firestore Security Rules
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -862,12 +748,10 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Users collection
     match /users/{userId} {
       allow read, write: if isOwner(userId);
     }
 
-    // Transactions collection
     match /transactions/{transactionId} {
       allow read: if isOwner(resource.data.userId);
       allow create: if isAuthenticated() &&
@@ -875,19 +759,17 @@ service cloud.firestore {
       allow update, delete: if isOwner(resource.data.userId);
     }
 
-    // Budgets collection
     match /budgets/{budgetId} {
       allow read, write: if isOwner(resource.data.userId);
     }
 
-    // Watchlist collection
-    match /watchlist/{itemId} {
-      allow read, write: if isOwner(resource.data.userId);
+    match /money_stories/{storyId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if false; // Only Cloud Functions
     }
 
-    // User preferences
-    match /user_preferences/{userId} {
-      allow read, write: if isOwner(userId);
+    match /subscriptions/{subscriptionId} {
+      allow read, write: if isOwner(resource.data.userId);
     }
   }
 }
@@ -895,184 +777,113 @@ service cloud.firestore {
 
 ---
 
-## Deployment Strategy
+## Performance Targets
 
-### Development Environment
-
-```yaml
-Firebase Project: fin-copilot-dev
-Cloud Functions: dev region (us-central1)
-Firestore: Dev database
-Gemini: Developer API (free tier)
-
-Build Configuration:
-  - Debug mode
-  - Verbose logging
-  - Test data seeding
-  - Local emulators
-```
-
-### Staging Environment
-
-```yaml
-Firebase Project: fin-copilot-staging
-Cloud Functions: us-central1
-Firestore: Staging database
-Gemini: Vertex AI (with quotas)
-
-Build Configuration:
-  - Release mode
-  - Limited logging
-  - Real data (sanitized)
-  - Performance monitoring
-```
-
-### Production Environment
-
-```yaml
-Firebase Project: fin-copilot-prod
-Cloud Functions: Multi-region (us-central1, europe-west1)
-Firestore: Production database (multi-region)
-Gemini: Vertex AI (production quotas)
-CDN: Firebase Hosting
-
-Build Configuration:
-  - Release mode (obfuscated)
-  - Error-only logging
-  - Real data
-  - Full monitoring & alerting
-  - Rate limiting
-  - DDoS protection (Cloud Armor)
-```
-
-### CI/CD Pipeline
-
-```yaml
-GitHub Actions Workflow:
-
-1. On Pull Request:
-   - Run Flutter analyze
-   - Run unit tests
-   - Run widget tests
-   - Run integration tests
-   - Check code coverage (>80%)
-   - Build APK/IPA (dev flavor)
-
-2. On Merge to main:
-   - Run all tests
-   - Build release APK/IPA
-   - Deploy Cloud Functions to staging
-   - Run E2E tests against staging
-   - Generate release notes
-
-3. On Tag (v*):
-   - Build production artifacts
-   - Deploy Cloud Functions to production
-   - Deploy Genkit flows
-   - Deploy ADK agents
-   - Submit to App Stores (manual approval)
-   - Create GitHub release
-```
-
----
-
-## Scalability & Performance
-
-### Performance Targets
-
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| App Launch Time | <2s | Firebase Performance |
-| Transaction List Load | <1s for 100 txns | Firebase Performance |
-| AI Response (simple) | <1s | Cloud Trace |
-| AI Response (complex) | <3s | Cloud Trace |
-| Receipt OCR | <5s | Cloud Trace |
-| Firestore Query | <500ms | Firebase Console |
+| Metric | Target | How Measured |
+|--------|--------|--------------|
+| App Launch | <2 sec | Firebase Performance |
+| AI Response (simple) | <1 sec | Cloud Trace |
+| Voice Input Processing | <3 sec | Custom trace |
+| Receipt OCR | <5 sec | Cloud Trace |
+| SMS Auto-Parse | <2 sec | Custom trace |
+| Transaction List Load | <1 sec (100 items) | Firebase Performance |
+| Firestore Query | <500 ms | Firebase Console |
 | API Success Rate | >99.5% | Cloud Monitoring |
 | Crash Rate | <0.5% | Firebase Crashlytics |
 
-### Scaling Strategies
+### Optimization Strategies
 
 **Frontend:**
-- Lazy loading of routes
+- Lazy loading routes (go_router)
+- Pagination (50 items/page)
 - Image caching (cached_network_image)
-- Pagination for large lists (50 items per page)
-- Virtual scrolling (ListView.builder)
-- Local caching with expiration
+- ListView.builder for virtual scrolling
+- Local cache with expiration (1 hour)
 
 **Backend:**
-- Cloud Functions auto-scale (0 to 1000s of instances)
-- Firestore auto-shards at high load
-- Genkit flows containerized for horizontal scaling
-- Redis cache for frequently accessed data (future)
-- CDN for static assets
-
-**Database:**
-- Composite indexes for common queries
+- Cloud Functions auto-scale
+- Firestore composite indexes
 - Denormalization for read-heavy data
-- Batch writes (max 500 per batch)
-- Pagination with cursors
-- Delete old data (retention policy)
+- Batch writes (max 500)
 
 **AI:**
-- Request batching where possible
+- Function calling reduces round trips
 - Response caching (1-hour TTL)
-- Fallback to simpler models under load
-- Rate limiting per user
-- On-device processing for simple tasks
+- Rate limiting (10 requests/min per user)
 
 ---
 
-## Monitoring & Observability
+## Deployment Strategy
 
-### Monitoring Stack
+### Environments
+
+| Environment | Firebase Project | Gemini API | Purpose |
+|-------------|------------------|------------|---------|
+| Development | fin-copilot-dev | Developer API (free) | Local testing |
+| Staging | fin-copilot-staging | Vertex AI (quota) | Pre-production |
+| Production | fin-copilot-prod | Vertex AI (full) | Live users |
+
+### CI/CD Pipeline
+
+**On Pull Request:**
+- `flutter analyze`
+- Unit tests
+- Widget tests
+- Build APK (dev flavor)
+
+**On Merge to main:**
+- All tests
+- Deploy Cloud Functions → staging
+- E2E tests
+- Generate release notes
+
+**On Tag (v*):**
+- Build production artifacts
+- Deploy Cloud Functions → production
+- Submit to App Stores (manual approval)
+- Create GitHub release
+
+---
+
+## Monitoring
 
 ```yaml
 Application Performance:
   - Firebase Performance Monitoring
   - Custom traces for critical paths
-  - Network request monitoring
-  - Screen rendering metrics
 
 Error Tracking:
   - Firebase Crashlytics
   - Cloud Error Reporting
-  - Custom error boundaries
-  - User feedback integration
 
 Logging:
-  - Cloud Logging (structured logs)
+  - Cloud Logging (structured)
   - Log levels: DEBUG, INFO, WARN, ERROR
-  - User action logs (anonymized)
-
-Tracing:
-  - Cloud Trace for backend
-  - Genkit built-in tracing
-  - End-to-end request tracing
 
 Analytics:
-  - Firebase Analytics (user behavior)
-  - Custom events
-  - Conversion funnels
+  - Firebase Analytics
+  - Custom events (transaction_created, receipt_scanned, etc.)
   - Retention cohorts
 
 Alerts:
-  - Error rate spikes
-  - Latency degradation
-  - Quota exceeded
-  - Security anomalies
+  - Error rate >1%
+  - Latency >3s (95th percentile)
+  - Crash rate >0.5%
+  - AI quota exceeded
 ```
 
 ---
 
-## Document Control
+## Summary
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 2025-10-21 | Claude (AI Research) | Initial architecture document |
+**v3 Architecture Improvements:**
 
-**Next Steps:** Review architecture with engineering team, validate technology choices, begin implementation.
-
----
+| Aspect | v2 (Old) | v3 (New) | Improvement |
+|--------|----------|----------|-------------|
+| Agents | 9 agents | 3 agents | 5x cost reduction |
+| Response Time | 3-5 sec | <1 sec | 3x faster |
+| Cost per Transaction | $0.004 | $0.0008 | 5x cheaper |
+| Code Complexity | High (ADK/Genkit) | Low (Direct Firebase AI) | Simpler maintenance |
+| SMS Auto-Capture | None | 80% automatic | Killer feature |
 
 **End of Architecture Document**

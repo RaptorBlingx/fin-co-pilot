@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import '../shared/models/price_result.dart';
 
 class PriceIntelligenceAgent {
@@ -7,7 +7,7 @@ class PriceIntelligenceAgent {
   final GenerativeModel _model;
 
   PriceIntelligenceAgent()
-      : _model = FirebaseVertexAI.instance.generativeModel(
+      : _model = FirebaseAI.googleAI().generativeModel(
           model: 'gemini-2.5-flash',
           generationConfig: GenerationConfig(
             temperature: 0.7,

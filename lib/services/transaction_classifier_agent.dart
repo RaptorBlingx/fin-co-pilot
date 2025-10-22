@@ -1,11 +1,11 @@
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import 'dart:convert';
 
 class TransactionClassifierAgent {
   late final GenerativeModel _model;
-  
+
   TransactionClassifierAgent() {
-    _model = FirebaseVertexAI.instance.generativeModel(
+    _model = FirebaseAI.googleAI().generativeModel(
       model: 'gemini-2.5-flash-lite',
       generationConfig: GenerationConfig(
         temperature: 0.1,

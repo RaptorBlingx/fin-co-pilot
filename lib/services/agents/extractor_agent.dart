@@ -1,4 +1,4 @@
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import 'dart:convert';
 import '../../features/add_transaction/models/transaction_data.dart';
 
@@ -8,8 +8,7 @@ class ExtractorAgent {
   late final GenerativeModel _model;
 
   ExtractorAgent() {
-    // ignore: deprecated_member_use
-    _model = FirebaseVertexAI.instance.generativeModel(
+    _model = FirebaseAI.googleAI().generativeModel(
       model: 'gemini-2.5-flash',
     );
   }

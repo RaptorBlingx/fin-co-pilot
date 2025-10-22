@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import '../shared/models/transaction.dart' as model;
 
 class ReportGeneratorAgent {
@@ -7,7 +7,7 @@ class ReportGeneratorAgent {
   final GenerativeModel _model;
 
   ReportGeneratorAgent()
-      : _model = FirebaseVertexAI.instance.generativeModel(
+      : _model = FirebaseAI.googleAI().generativeModel(
           model: 'gemini-2.5-flash',
           generationConfig: GenerationConfig(
             temperature: 0.3,

@@ -1,4 +1,4 @@
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import '../../features/add_transaction/models/transaction_data.dart';
 import 'extractor_agent.dart';
 import 'validator_agent.dart';
@@ -19,8 +19,7 @@ class OrchestratorAgent {
   })  : _extractorAgent = extractorAgent,
         _validatorAgent = validatorAgent,
         _contextAgent = contextAgent {
-    // ignore: deprecated_member_use
-    _model = FirebaseVertexAI.instance.generativeModel(
+    _model = FirebaseAI.googleAI().generativeModel(
       model: 'gemini-2.5-flash',
     );
   }

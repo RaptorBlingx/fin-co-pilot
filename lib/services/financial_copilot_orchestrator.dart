@@ -1,4 +1,4 @@
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
@@ -9,9 +9,8 @@ class FinancialCopilotOrchestrator {
   factory FinancialCopilotOrchestrator() => _instance;
   FinancialCopilotOrchestrator._internal();
 
-  // ignore: deprecated_member_use
-  final GenerativeModel _model = FirebaseVertexAI.instance.generativeModel(
-    model: 'gemini-2.0-flash-exp',
+  final GenerativeModel _model = FirebaseAI.googleAI().generativeModel(
+    model: 'gemini-2.5-flash',
   );
 
   /// Classify user intent and route to appropriate handler

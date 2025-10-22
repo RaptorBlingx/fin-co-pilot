@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import '../shared/models/transaction.dart';
 import '../shared/models/coaching_tip.dart';
 
 class ProactiveCoachAgent {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GenerativeModel _model = FirebaseVertexAI.instance.generativeModel(
+  final GenerativeModel _model = FirebaseAI.googleAI().generativeModel(
     model: 'gemini-2.5-pro',
     generationConfig: GenerationConfig(
       temperature: 0.7,

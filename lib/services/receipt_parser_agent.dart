@@ -1,13 +1,13 @@
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import 'dart:convert';
 import 'dart:io';
 
 class ReceiptParserAgent {
   late final GenerativeModel _model;
-  
+
   ReceiptParserAgent() {
     // Use Gemini 2.5 Flash-Lite for cost-effective receipt OCR
-    _model = FirebaseVertexAI.instance.generativeModel(
+    _model = FirebaseAI.googleAI().generativeModel(
       model: 'gemini-2.5-flash-lite',
       generationConfig: GenerationConfig(
         temperature: 0.2,

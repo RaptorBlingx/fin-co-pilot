@@ -1,4 +1,4 @@
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import 'dart:typed_data';
 import 'dart:convert';
 
@@ -12,8 +12,7 @@ class ReceiptAgent {
     // Use Gemini 2.5 Flash-Lite for fast, cost-effective receipt OCR
     // Gemini 2.5 Flash-Lite: Optimized for low-latency, high-volume OCR tasks
     // Supports image analysis with text extraction at lower cost
-    // ignore: deprecated_member_use
-    _visionModel = FirebaseVertexAI.instance.generativeModel(
+    _visionModel = FirebaseAI.googleAI().generativeModel(
       model: 'gemini-2.5-flash-lite',
     );
   }

@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -21,9 +21,8 @@ class EnhancedPriceService {
   EnhancedPriceService._internal();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  // ignore: deprecated_member_use
-  final GenerativeModel _model = FirebaseVertexAI.instance.generativeModel(
-    model: 'gemini-2.0-flash-exp',
+  final GenerativeModel _model = FirebaseAI.googleAI().generativeModel(
+    model: 'gemini-2.5-flash',
   );
 
   /// Search product by barcode/UPC

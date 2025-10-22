@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import '../models/transaction_data.dart';
 import '../../../services/agents/orchestrator_agent.dart';
 import '../../../services/agents/extractor_agent.dart';
@@ -21,9 +21,8 @@ class RobustAIService {
   final bool _useAgentSwarm;
 
   RobustAIService({bool useAgentSwarm = true}) : _useAgentSwarm = useAgentSwarm {
-    // Initialize Gemini 2.5 Flash using Firebase Vertex AI
-    // ignore: deprecated_member_use
-    _model = FirebaseVertexAI.instance.generativeModel(
+    // Initialize Gemini 2.5 Flash using Firebase AI
+    _model = FirebaseAI.googleAI().generativeModel(
       model: 'gemini-2.5-flash',
     );
 

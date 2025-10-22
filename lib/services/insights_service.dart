@@ -1,6 +1,6 @@
 import '../shared/models/transaction.dart' as model;
 import '../shared/models/spending_insights.dart';
-import 'package:firebase_vertexai/firebase_vertexai.dart';
+import 'package:firebase_ai/firebase_ai.dart';
 import 'dart:convert';
 
 class InsightsService {
@@ -111,7 +111,7 @@ class InsightsService {
     if (transactions.isEmpty) return [];
 
     try {
-      final model = FirebaseVertexAI.instance.generativeModel(
+      final model = FirebaseAI.googleAI().generativeModel(
         model: 'gemini-2.5-pro', // Use Pro for deep analysis
       );
 
