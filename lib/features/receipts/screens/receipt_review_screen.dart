@@ -29,7 +29,8 @@ class ReceiptReviewScreen extends StatefulWidget {
 
 class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
   final AuthService _authService = AuthService();
-  final PriceIntelligenceService _priceService = PriceIntelligenceService();
+  // COMMENTED OUT: Tier 2 V2.0 feature - Price Intelligence
+  // final PriceIntelligenceService _priceService = PriceIntelligenceService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   late TextEditingController _merchantController;
@@ -454,14 +455,15 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
         },
       });
 
+      // COMMENTED OUT: Tier 2 V2.0 feature - Price Intelligence watchlist
       // Add items to watchlist for price tracking
-      await _priceService.addReceiptItemsToWatchlist(
-        userId: user.uid,
-        items: _items,
-        merchant: _merchantController.text,
-        transactionId: docRef.id,
-        date: DateTime.parse(widget.receiptData.date),
-      );
+      // await _priceService.addReceiptItemsToWatchlist(
+      //   userId: user.uid,
+      //   items: _items,
+      //   merchant: _merchantController.text,
+      //   transactionId: docRef.id,
+      //   date: DateTime.parse(widget.receiptData.date),
+      // );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

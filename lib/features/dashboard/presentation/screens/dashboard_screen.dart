@@ -16,12 +16,12 @@ import '../../widgets/ai_insight_card.dart';
 import '../../widgets/compact_transaction_card.dart';
 import '../../widgets/quick_action_button.dart';
 import '../../widgets/financial_health_score_card.dart';
-import '../../widgets/sms_pending_transactions_card.dart';
+// REMOVED: import '../../widgets/sms_pending_transactions_card.dart'; // Tier 3 - Deleted
 import '../../../../core/utils/haptic_utils.dart';
 import '../../../../core/navigation/page_transitions.dart';
 import '../../../cash_flow/widgets/cash_flow_card.dart';
-import '../../../nudges/widgets/smart_nudge_banner.dart';
-import '../../../insights/widgets/insights_card.dart';
+// REMOVED: import '../../../nudges/widgets/smart_nudge_banner.dart'; // Tier 2/3 - Deleted
+// REMOVED: import '../../../insights/widgets/insights_card.dart'; // Tier 2 - Deleted
 import '../../../money_story/widgets/money_story_card.dart';
 import '../../../subscriptions/widgets/subscription_summary_card.dart';
 import '../../../coaching_tips/widgets/coaching_tips_dashboard_card.dart';
@@ -277,8 +277,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               const SizedBox(height: 24),
 
-              // Smart Nudge Banner (Week 4 Feature)
-              const SmartNudgeBanner(),
+              // REMOVED: Smart Nudge Banner - Tier 2 V2.0 feature
+              // REMOVED: SMS Pending Transactions - Tier 3 deleted feature
+              // REMOVED: Enhanced Insights Card - Tier 2 V2.0 feature
 
               const SizedBox(height: 16),
 
@@ -294,22 +295,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24),
                 child: FinancialHealthScoreCard(),
-              ),
-
-              const SizedBox(height: 16),
-
-              // SMS Pending Transactions Card (Week 2 Feature)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: SmsPendingTransactionsCard(),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Enhanced Insights Card (Week 6 Feature)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: InsightsCard(),
               ),
 
               const SizedBox(height: 16),

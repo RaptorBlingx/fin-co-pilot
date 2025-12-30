@@ -27,7 +27,7 @@ import 'features/reports/presentation/screens/reports_screen.dart';
 import 'features/notifications/presentation/screens/notifications_screen.dart';
 import 'features/settings/presentation/screens/notification_settings_screen.dart';
 import 'features/receipts/screens/receipt_capture_screen.dart';
-import 'features/receipts/screens/price_watchlist_screen.dart';
+// REMOVED: import 'features/receipts/screens/price_watchlist_screen.dart'; // Tier 2 - V2.0 feature
 import 'core/navigation/app_navigation.dart';
 
 // Riverpod provider for theme management
@@ -182,10 +182,7 @@ final _router = GoRouter(
       path: AppConstants.routeReceiptCapture,
       builder: (context, state) => const ReceiptCaptureScreen(),
     ),
-    GoRoute(
-      path: AppConstants.routeWatchlist,
-      builder: (context, state) => const PriceWatchlistScreen(),
-    ),
+    // REMOVED: routeWatchlist - Tier 2 V2.0 feature (Price Intelligence)
   ],
 );
 

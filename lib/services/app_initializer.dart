@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'sms/sms_listener_service.dart';
+// REMOVED: import 'sms/sms_listener_service.dart'; // Tier 3 - Deleted
 import 'notification_service.dart';
 
 /// App Initializer Service
@@ -18,7 +18,7 @@ class AppInitializer {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final SmsListenerService _smsService = SmsListenerService();
+  // REMOVED: final SmsListenerService _smsService = SmsListenerService(); // Tier 3 - Deleted
   final NotificationService _notificationService = NotificationService();
 
   bool _isInitialized = false;
@@ -80,8 +80,8 @@ class AppInitializer {
       final smsPermissionGranted = userData['onboarding']?['smsPermissionGranted'] as bool? ?? false;
 
       if (smsEnabled && smsPermissionGranted) {
-        print('AppInitializer: Initializing SMS listener for user ${user.uid}');
-        await _initializeSmsListener(user.uid);
+        print('AppInitializer: SMS parsing disabled - Tier 3 feature removed');
+        // COMMENTED OUT: await _initializeSmsListener(user.uid);
       } else {
         print('AppInitializer: SMS parsing disabled or permission not granted');
       }
@@ -90,6 +90,8 @@ class AppInitializer {
     }
   }
 
+  /*
+  // COMMENTED OUT: SMS listener initialization - Tier 3 deleted
   /// Initialize SMS listener service
   Future<void> _initializeSmsListener(String userId) async {
     try {
@@ -113,13 +115,14 @@ class AppInitializer {
       print('AppInitializer: Error initializing SMS listener: $e');
     }
   }
+  */
 
   /// Cleanup user-specific services on sign out
   Future<void> _cleanupForUser() async {
     try {
-      // Stop SMS listener
-      await _smsService.stopListening();
-      print('AppInitializer: SMS listener stopped');
+      // COMMENTED OUT: Stop SMS listener - Tier 3 deleted
+      // await _smsService.stopListening();
+      print('AppInitializer: User cleanup completed (SMS listener disabled)');
     } catch (e) {
       print('AppInitializer: Error during cleanup: $e');
     }
@@ -138,8 +141,8 @@ class AppInitializer {
         'onboarding.smsPermissionGranted': true,
       });
 
-      // Initialize SMS listener
-      await _initializeSmsListener(user.uid);
+      // COMMENTED OUT: Initialize SMS listener - Tier 3 deleted
+      // await _initializeSmsListener(user.uid);
 
       return true;
     } catch (e) {
@@ -154,8 +157,8 @@ class AppInitializer {
     if (user == null) return false;
 
     try {
-      // Stop SMS listener
-      await _smsService.stopListening();
+      // COMMENTED OUT: Stop SMS listener - Tier 3 deleted
+      // await _smsService.stopListening();
 
       // Update user preferences
       await _firestore.collection('users').doc(user.uid).update({
