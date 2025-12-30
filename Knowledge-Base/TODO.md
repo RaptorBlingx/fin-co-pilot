@@ -2,7 +2,7 @@
 
 **Start Date:** December 30, 2025  
 **Target Launch:** February 14, 2026 (6 weeks)  
-**Current Status:** 🚀 Week 1 In Progress - Foundation Cleanup
+**Current Status:** � Week 2 Starting - Fix Core Features
 
 ---
 
@@ -11,13 +11,13 @@
 | Week | Phase | Status | Completion |
 |------|-------|--------|------------|
 | Week 1 | Foundation Cleanup | ✅ COMPLETE | 100% |
-| Week 2 | Fix Core Features | ⏳ NOT STARTED | 0% |
+| Week 2 | Fix Core Features | 🔄 IN PROGRESS | 25% |
 | Week 3 | Feature Simplification | ⏳ NOT STARTED | 0% |
 | Week 4 | Polish & Testing | ⏳ NOT STARTED | 0% |
 | Week 5 | Beta Testing | ⏳ NOT STARTED | 0% |
 | Week 6 | Launch Prep | ⏳ NOT STARTED | 0% |
 
-**Overall Progress:** 10/60 tasks completed (17%)
+**Overall Progress:** 12/60 tasks completed (20%)
 
 ---
 
@@ -131,24 +131,24 @@
 
 ## 🔧 WEEK 2: FIX CORE FEATURES (Jan 4 - Jan 10)
 **Goal:** Fix conversational transactions, improve receipt parsing, simplify coaching  
-**Status:** ⏳ NOT STARTED
+**Status:** 🔄 IN PROGRESS
 
 ### Day 8-9: Conversational Transaction Input
-- [ ] **Task 2.1:** Create simplified `TransactionParserService`
-  - [ ] Create file: `lib/services/ai/transaction_parser_service.dart`
-  - [ ] Implement single-turn parse using Firebase AI
-  - [ ] Define structured output schema for transaction
-  - [ ] Test with sample inputs: "Spent $50 on groceries", "Got paid $2000"
-  - **Status:** ⏳ NOT STARTED
-  - **Notes:** _Will update when done_
+- [x] **Task 2.1:** Create simplified `TransactionParserService`
+  - [x] Create file: `lib/services/ai/transaction_parser_service.dart`
+  - [x] Implement single-turn parse using Firebase AI
+  - [x] Define structured output schema for transaction
+  - [x] Test with sample inputs: "Spent $50 on groceries", "Got paid $2000"
+  - **Status:** ✅ COMPLETE
+  - **Notes:** Created simplified parser with Gemini 2.5 Flash, structured JSON output, manual + regex fallback parsing. Test script: scripts/test_transaction_parser.dart
 
-- [ ] **Task 2.2:** Add confirmation screen
-  - [ ] Create screen: `lib/screens/transaction/confirm_transaction_screen.dart`
-  - [ ] Show parsed fields: amount, category, description, date
-  - [ ] Allow user to edit before saving
-  - [ ] Add "Save" and "Cancel" buttons
-  - **Status:** ⏳ NOT STARTED
-  - **Notes:** _Will update when done_
+- [x] **Task 2.2:** Add confirmation screen
+  - [x] Create screen: `lib/screens/transaction/confirm_transaction_screen.dart`
+  - [x] Show parsed fields: amount, category, description, date
+  - [x] Allow user to edit before saving
+  - [x] Add "Save" and "Cancel" buttons
+  - **Status:** ✅ COMPLETE
+  - **Notes:** Clean, simple UI with editable fields, confidence indicator, date picker, saves via TransactionService
 
 - [ ] **Task 2.3:** Test conversational input end-to-end
   - [ ] Test 20+ different input phrases
