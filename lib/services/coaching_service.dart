@@ -1,4 +1,4 @@
-import 'dart:math';
+﻿import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -27,7 +27,7 @@ class CoachingService {
       
       final existingTip = await _firestore
           .collection('coaching_tips_sent')
-          .where('userId', isEqualTo: user.uid)
+          .where('user_id', isEqualTo: user.uid)
           .where('date', isEqualTo: todayString)
           .get();
 
@@ -72,7 +72,7 @@ class CoachingService {
       final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
       final transactionsSnapshot = await _firestore
           .collection('transactions')
-          .where('userId', isEqualTo: user.uid)
+          .where('user_id', isEqualTo: user.uid)
           .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(thirtyDaysAgo))
           .get();
 
@@ -282,7 +282,7 @@ class CoachingService {
     try {
       final transactionsSnapshot = await _firestore
           .collection('transactions')
-          .where('userId', isEqualTo: user.uid)
+          .where('user_id', isEqualTo: user.uid)
           .where('type', isEqualTo: 'expense')
           .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
           .where('date', isLessThan: Timestamp.fromDate(end))
@@ -312,7 +312,7 @@ class CoachingService {
       // Get user's goals
       final goalsSnapshot = await _firestore
           .collection('goals')
-          .where('userId', isEqualTo: user.uid)
+          .where('user_id', isEqualTo: user.uid)
           .where('active', isEqualTo: true)
           .get();
 

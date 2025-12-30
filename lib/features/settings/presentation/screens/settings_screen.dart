@@ -6,7 +6,7 @@ import '../../../../core/utils/currency_utils.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/haptic_utils.dart';
-import '../../../../shared/widgets/loading_button.dart';
+
 import '../../../../main.dart' show themeProvider;
 
 class SettingsScreen extends ConsumerStatefulWidget {

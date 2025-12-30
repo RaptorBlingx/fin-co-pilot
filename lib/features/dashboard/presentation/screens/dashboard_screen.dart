@@ -5,7 +5,7 @@ import '../../../../services/analytics_service.dart';
 import '../../../../services/transaction_service.dart';
 import '../../../../services/insights_service.dart';
 import '../../../../shared/models/transaction.dart' as model;
-import '../../../../shared/models/spending_insights.dart';
+
 import '../../../transactions/presentation/screens/transactions_screen.dart';
 import '../../../transactions/presentation/screens/transaction_detail_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
@@ -15,8 +15,16 @@ import '../../widgets/hero_spending_card.dart';
 import '../../widgets/ai_insight_card.dart';
 import '../../widgets/compact_transaction_card.dart';
 import '../../widgets/quick_action_button.dart';
+import '../../widgets/financial_health_score_card.dart';
+import '../../widgets/sms_pending_transactions_card.dart';
 import '../../../../core/utils/haptic_utils.dart';
 import '../../../../core/navigation/page_transitions.dart';
+import '../../../cash_flow/widgets/cash_flow_card.dart';
+import '../../../nudges/widgets/smart_nudge_banner.dart';
+import '../../../insights/widgets/insights_card.dart';
+import '../../../money_story/widgets/money_story_card.dart';
+import '../../../subscriptions/widgets/subscription_summary_card.dart';
+import '../../../coaching_tips/widgets/coaching_tips_dashboard_card.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -265,6 +273,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: AIInsightCard(insights: insights),
                   );
                 },
+              ),
+
+              const SizedBox(height: 24),
+
+              // Smart Nudge Banner (Week 4 Feature)
+              const SmartNudgeBanner(),
+
+              const SizedBox(height: 16),
+
+              // Cash Flow Card (Week 5 Feature)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: CashFlowCard(),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Financial Health Score Card (Week 3 Feature)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: FinancialHealthScoreCard(),
+              ),
+
+              const SizedBox(height: 16),
+
+              // SMS Pending Transactions Card (Week 2 Feature)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: SmsPendingTransactionsCard(),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Enhanced Insights Card (Week 6 Feature)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: InsightsCard(),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Money Story Card (Week 7 Feature)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: MoneyStoryCard(),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Subscription Summary Card (Week 8 Feature)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: SubscriptionSummaryCard(),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Coaching Tips Card (Week 9 Feature)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: CoachingTipsDashboardCard(),
               ),
 
               const SizedBox(height: 32),

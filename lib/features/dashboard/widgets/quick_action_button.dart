@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_constants.dart';
 
 class QuickActionButton extends StatelessWidget {
   final String title;
@@ -77,32 +79,68 @@ class QuickActionGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: QuickActionButton(
-            title: 'Reports',
-            icon: Icons.analytics_rounded,
-            onTap: () {
-              Navigator.pushNamed(context, '/reports');
-            },
-            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            iconColor: Theme.of(context).colorScheme.primary,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: QuickActionButton(
+                title: 'Scan Receipt',
+                icon: Icons.receipt_long,
+                onTap: () {
+                  context.push(AppConstants.routeReceiptCapture);
+                },
+                backgroundColor: Colors.purple.withOpacity(0.1),
+                iconColor: Colors.purple,
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            Expanded(
+              child: QuickActionButton(
+                title: 'Reports',
+                icon: Icons.analytics_rounded,
+                onTap: () {
+                  context.push(AppConstants.routeReports);
+                },
+                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                iconColor: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ],
         ),
-        
-        const SizedBox(width: 12),
-        
-        Expanded(
-          child: QuickActionButton(
-            title: 'Shopping',
-            icon: Icons.shopping_bag_rounded,
-            onTap: () {
-              Navigator.pushNamed(context, '/shopping');
-            },
-            backgroundColor: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
-            iconColor: Theme.of(context).colorScheme.secondary,
-          ),
+
+        const SizedBox(height: 12),
+
+        Row(
+          children: [
+            Expanded(
+              child: QuickActionButton(
+                title: 'Shopping',
+                icon: Icons.shopping_bag_rounded,
+                onTap: () {
+                  context.push(AppConstants.routeShopping);
+                },
+                backgroundColor: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                iconColor: Theme.of(context).colorScheme.secondary,
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            Expanded(
+              child: QuickActionButton(
+                title: 'Watchlist',
+                icon: Icons.remove_red_eye,
+                onTap: () {
+                  context.push(AppConstants.routeWatchlist);
+                },
+                backgroundColor: Colors.green.withOpacity(0.1),
+                iconColor: Colors.green,
+              ),
+            ),
+          ],
         ),
       ],
     );

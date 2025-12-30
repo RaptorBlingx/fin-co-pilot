@@ -7,25 +7,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/preferences_service.dart';
-import 'services/notification_service.dart';
+
 import 'services/budget_monitoring_service.dart';
 import 'services/coaching_service.dart';
 import 'services/price_alert_service.dart';
+import 'services/app_initializer.dart';
 import 'core/constants/app_constants.dart';
-import 'core/theme/app_theme.dart';
+
 import 'core/theme/theme_provider.dart';
-import 'core/navigation/app_navigation.dart';
+
 import 'features/auth/presentation/screens/sign_in_screen.dart';
 import 'features/onboarding/presentation/screens/welcome_screen.dart';
 import 'features/onboarding/presentation/screens/currency_setup_screen.dart';
 import 'features/onboarding/presentation/screens/complete_screen.dart';
-import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/settings/presentation/screens/settings_screen.dart';
 import 'features/coaching/presentation/screens/coaching_screen.dart';
 import 'features/shopping/presentation/screens/shopping_screen.dart';
 import 'features/reports/presentation/screens/reports_screen.dart';
 import 'features/notifications/presentation/screens/notifications_screen.dart';
 import 'features/settings/presentation/screens/notification_settings_screen.dart';
+import 'features/receipts/screens/receipt_capture_screen.dart';
+import 'features/receipts/screens/price_watchlist_screen.dart';
+import 'core/navigation/app_navigation.dart';
 
 // Riverpod provider for theme management
 final themeProvider = ChangeNotifierProvider<ThemeProvider>((ref) {
@@ -39,12 +42,12 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
+
   // Initialize SharedPreferences
   await PreferencesService.init();
-  
-  // Initialize Notification Service
-  await NotificationService().initialize();
+
+  // Initialize App Services (includes Notification Service, SMS Listener)
+  await AppInitializer().initialize();
 
   // Initialize Price Alert Service
   await PriceAlertService().initialize();
@@ -87,9 +90,10 @@ class FinCopilotApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeNotifier = ref.watch(themeProvider);
-    
-    return MaterialApp(
-      title: AppConstants.appName,
+
+    return MaterialApp.router(
+      title: 'Fin Copilot',
+      debugShowCheckedModeBanner: false,
       theme: themeNotifier.lightTheme.copyWith(
         textTheme: GoogleFonts.interTextTheme(themeNotifier.lightTheme.textTheme).apply(
           displayColor: themeNotifier.lightTheme.colorScheme.onSurface,
@@ -103,15 +107,7 @@ class FinCopilotApp extends ConsumerWidget {
         ),
       ),
       themeMode: themeNotifier.themeMode,
-      home: const AppNavigation(),
-      routes: {
-        '/reports': (context) => const ReportsScreen(),
-        '/shopping': (context) => const ShoppingScreen(),
-        '/coach': (context) => const CoachingScreen(),
-        '/settings/account': (context) => const SettingsScreen(),
-        '/settings/notifications': (context) => const NotificationSettingsScreen(),
-        '/settings/appearance': (context) => const SettingsScreen(),
-      },
+      routerConfig: _router,
     );
   }
 }
@@ -156,7 +152,7 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: AppConstants.routeDashboard,
-      builder: (context, state) => const DashboardScreen(),
+      builder: (context, state) => const AppNavigation(),
     ),
     GoRoute(
       path: AppConstants.routeSettings,
@@ -181,6 +177,14 @@ final _router = GoRouter(
     GoRoute(
       path: AppConstants.routeNotificationSettings,
       builder: (context, state) => const NotificationSettingsScreen(),
+    ),
+    GoRoute(
+      path: AppConstants.routeReceiptCapture,
+      builder: (context, state) => const ReceiptCaptureScreen(),
+    ),
+    GoRoute(
+      path: AppConstants.routeWatchlist,
+      builder: (context, state) => const PriceWatchlistScreen(),
     ),
   ],
 );

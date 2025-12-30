@@ -80,7 +80,7 @@ class _FinancialCopilotScreenState extends State<FinancialCopilotScreen> with Ti
       // Get real transaction count
       final transactionsSnapshot = await _firestore
           .collection('transactions')
-          .where('userId', isEqualTo: user.uid)
+          .where('user_id', isEqualTo: user.uid)
           .limit(1)
           .get();
       final transactionCount = transactionsSnapshot.docs.length;
@@ -90,7 +90,7 @@ class _FinancialCopilotScreenState extends State<FinancialCopilotScreen> with Ti
       final currentMonth = '${now.year}-${now.month.toString().padLeft(2, '0')}';
       final budgetsSnapshot = await _firestore
           .collection('budgets')
-          .where('userId', isEqualTo: user.uid)
+          .where('user_id', isEqualTo: user.uid)
           .where('month', isEqualTo: currentMonth)
           .limit(1)
           .get();
@@ -326,11 +326,13 @@ class _FinancialCopilotScreenState extends State<FinancialCopilotScreen> with Ti
         _scrollToBottom();
         HapticUtils.success();
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('ERROR saving transaction: $e');
+      print('Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
           _messages.add(ChatMessage(
-            text: '❌ Sorry, I couldn\'t save the transaction. Please try again.',
+            text: '❌ Sorry, I couldn\'t save the transaction. Error: $e',
             isUser: false,
             timestamp: DateTime.now(),
           ));

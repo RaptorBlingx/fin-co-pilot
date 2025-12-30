@@ -234,7 +234,7 @@ class TransactionService {
       // Find the budget for this category and month
       final budgetQuery = await _firestore
           .collection('budgets')
-          .where('userId', isEqualTo: userId)
+          .where('user_id', isEqualTo: userId)
           .where('category', isEqualTo: category)
           .where('month', isEqualTo: month)
           .limit(1)

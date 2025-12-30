@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -96,7 +96,7 @@ class PriceAlertService {
       // Get all watchlist items with alerts enabled
       final snapshot = await _firestore
           .collection('watchlist')
-          .where('userId', isEqualTo: userId)
+          .where('user_id', isEqualTo: userId)
           .where('alertEnabled', isEqualTo: true)
           .get();
 
@@ -391,7 +391,7 @@ class PriceAlertService {
       // Get all watchlist items for user
       final watchlistSnapshot = await _firestore
           .collection('watchlist')
-          .where('userId', isEqualTo: userId)
+          .where('user_id', isEqualTo: userId)
           .get();
 
       final itemIds = watchlistSnapshot.docs.map((doc) => doc.id).toList();
@@ -436,7 +436,7 @@ class PriceAlertService {
       // Get all watchlist items for user
       final watchlistSnapshot = await _firestore
           .collection('watchlist')
-          .where('userId', isEqualTo: userId)
+          .where('user_id', isEqualTo: userId)
           .get();
 
       final itemIds = watchlistSnapshot.docs.map((doc) => doc.id).toList();

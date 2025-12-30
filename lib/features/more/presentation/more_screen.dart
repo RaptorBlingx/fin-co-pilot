@@ -5,6 +5,7 @@ import '../../settings/presentation/screens/settings_screen.dart';
 import '../../settings/presentation/screens/notification_settings_screen.dart';
 import '../../price_finder/presentation/enhanced_price_finder_home.dart';
 import '../../budget/presentation/screens/budget_screen.dart';
+import '../../couples/screens/couples_pairing_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -24,6 +25,17 @@ class MoreScreen extends StatelessWidget {
             context,
             title: 'Features',
             items: [
+              _MenuItem(
+                icon: Icons.favorite,
+                title: 'Couples Dashboard',
+                subtitle: 'Share finances with your partner',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CouplesPairingScreen()),
+                  );
+                },
+              ),
               _MenuItem(
                 icon: Icons.account_balance_wallet,
                 title: 'Budget Manager',

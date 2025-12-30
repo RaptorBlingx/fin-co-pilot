@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -80,7 +80,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     try {
       final doc = await _firestore
           .collection('watchlist')
-          .where('userId', isEqualTo: user.uid)
+          .where('user_id', isEqualTo: user.uid)
           .where('productId', isEqualTo: widget.product.id)
           .limit(1)
           .get();
@@ -102,7 +102,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         // Remove from watchlist
         final doc = await _firestore
             .collection('watchlist')
-            .where('userId', isEqualTo: user.uid)
+            .where('user_id', isEqualTo: user.uid)
             .where('productId', isEqualTo: widget.product.id)
             .limit(1)
             .get();

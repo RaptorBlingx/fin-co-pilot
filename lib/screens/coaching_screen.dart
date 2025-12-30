@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../shared/models/coaching_tip.dart';
 import '../services/proactive_coach_agent.dart';
@@ -115,7 +115,7 @@ class _CoachingScreenState extends State<CoachingScreen>
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('coaching_tips')
-            .where('userId', isEqualTo: 'current-user-id')
+            .where('user_id', isEqualTo: 'current-user-id')
             .orderBy('createdAt', descending: true)
             .limit(20)
             .snapshots(),

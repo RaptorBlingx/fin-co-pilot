@@ -1,3 +1,14 @@
+buildscript {
+    ext.kotlin_version = '1.9.22'
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
 allprojects {
     repositories {
         google()
@@ -29,6 +40,29 @@ subprojects { subproject ->
                 targetSdkVersion: Integer.parseInt(flutterProperties.getProperty('flutter.targetSdkVersion', '35')),
                 ndkVersion: flutterProperties.getProperty('flutter.ndkVersion', '25.1.8937393')
             ]
+        }
+        
+        // Force newer Kotlin version for all plugins
+        subproject.buildscript {
+            ext.kotlin_version = '1.9.22'
+            repositories {
+                google()
+                mavenCentral()
+            }
+            dependencies {
+                classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+            }
+        }
+        
+        // Add namespace for plugins that don't have it (like sms_advanced)
+        subproject.afterEvaluate {
+            if (subproject.plugins.hasPlugin('com.android.library')) {
+                android {
+                    if (namespace == null) {
+                        namespace "com.${subproject.name}"
+                    }
+                }
+            }
         }
     }
 }

@@ -5,7 +5,7 @@ import '../../../../services/transaction_service.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/preferences_service.dart';
 import 'voice_input_screen.dart';
-import '../../../../core/utils/haptic_utils.dart';
+
 import '../../../../shared/widgets/loading_button.dart';
 
 class AddTransactionScreen extends StatefulWidget {

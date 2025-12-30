@@ -196,3 +196,102 @@ extension NavigationExtension on BuildContext {
     );
   }
 }
+
+// Bounce transition (playful and delightful)
+class BounceRoute<T> extends PageRouteBuilder<T> {
+  final Widget page;
+
+  BounceRoute({required this.page})
+      : super(
+          pageBuilder: (context, animation, secondaryAnimation) => page,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return ScaleTransition(
+              scale: CurvedAnimation(
+                parent: animation,
+                curve: Curves.elasticOut,
+              ),
+              child: FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 800),
+        );
+}
+
+// Rotation transition
+class RotationRoute<T> extends PageRouteBuilder<T> {
+  final Widget page;
+
+  RotationRoute({required this.page})
+      : super(
+          pageBuilder: (context, animation, secondaryAnimation) => page,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            var rotateTween = Tween(begin: 0.0, end: 1.0).chain(
+              CurveTween(curve: Curves.easeInOut),
+            );
+
+            return RotationTransition(
+              turns: animation.drive(rotateTween),
+              child: ScaleTransition(
+                scale: animation,
+                child: child,
+              ),
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 500),
+        );
+}
+
+// Slide from right (iOS-style)
+class SlideRightRoute<T> extends PageRouteBuilder<T> {
+  final Widget page;
+
+  SlideRightRoute({required this.page})
+      : super(
+          pageBuilder: (context, animation, secondaryAnimation) => page,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            const begin = Offset(1.0, 0.0);
+            const end = Offset.zero;
+            const curve = Curves.easeInOutCubic;
+
+            var tween = Tween(begin: begin, end: end).chain(
+              CurveTween(curve: curve),
+            );
+
+            return SlideTransition(
+              position: animation.drive(tween),
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 350),
+        );
+}
+
+// Zoom + Fade (dialog-style)
+class ZoomRoute<T> extends PageRouteBuilder<T> {
+  final Widget page;
+
+  ZoomRoute({required this.page})
+      : super(
+          pageBuilder: (context, animation, secondaryAnimation) => page,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return ScaleTransition(
+              scale: Tween<double>(begin: 0.5, end: 1.0).animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                ),
+              ),
+              child: FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+            );
+          },
+          opaque: false,
+          barrierColor: Colors.black54,
+          transitionDuration: const Duration(milliseconds: 300),
+        );
+}

@@ -23,4 +23,6 @@ class AppConstants {
   static const String routeReports = '/reports';
   static const String routeNotifications = '/notifications';
   static const String routeNotificationSettings = '/settings/notifications';
+  static const String routeReceiptCapture = '/receipt-capture';
+  static const String routeWatchlist = '/watchlist';
 }

@@ -57,7 +57,7 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
       text: widget.transaction.notes ?? '',
     );
     _selectedCategory = widget.transaction.category;
-    _selectedPaymentMethod = widget.transaction.paymentMethod ?? 'cash';
+    _selectedPaymentMethod = widget.transaction.paymentMethod;
     _selectedDate = widget.transaction.transactionDate;
   }
 

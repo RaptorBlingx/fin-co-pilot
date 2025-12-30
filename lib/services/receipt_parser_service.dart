@@ -62,16 +62,21 @@ class ReceiptParserService {
       category: receiptData['category'] ?? 'Other',
       merchant: receiptData['merchant'] ?? 'Unknown Merchant',
       date: date,
-      receiptImageUrl: receiptImageUrl,
       notes: _buildNotes(receiptData),
-      metadata: {
-        'parsedData': receiptData,
-        'confidence': receiptData['confidence'] ?? 0.0,
-        'items': receiptData['items'] ?? [],
-        'tax': receiptData['tax'] ?? 0.0,
-        'tip': receiptData['tip'] ?? 0.0,
-        'paymentMethod': receiptData['paymentMethod'],
-      },
+      paymentMethod: receiptData['paymentMethod']?.toString(),
+      receipt: receiptImageUrl != null
+          ? ReceiptInfo(
+              imageUrl: receiptImageUrl,
+              uploadedAt: DateTime.now(),
+              parsedData: ReceiptData.fromMap(receiptData),
+            )
+          : null,
+      metadata: TransactionMetadata(
+        source: 'receipt',
+        verified: false,
+        edited: false,
+        confidence: (receiptData['confidence'] as num?)?.toDouble() ?? 0.0,
+      ),
     );
   }
 

@@ -11,8 +11,6 @@ void main() {
     });
 
     test('Fallback extraction works for "Coffee \$5"', () async {
-      final currentData = const TransactionData();
-
       // Test the fallback extraction logic directly
       final result = aiService._extractFromUserInput('Coffee \$5');
 
@@ -22,8 +20,6 @@ void main() {
     });
 
     test('Fallback extraction works for "Lunch at McDonald\'s for \$15"', () async {
-      final currentData = const TransactionData();
-
       // Test the fallback extraction logic
       final result = aiService._extractFromUserInput('Lunch at McDonald\'s for \$15');
 

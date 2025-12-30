@@ -61,7 +61,6 @@ dependencies:
   fl_chart: ^0.68.0
   flutter_secure_storage: ^9.2.2  # Secure token storage
   local_auth: ^2.3.0  # Biometric authentication
-  # telephony: ^0.2.0  # SMS monitoring - DISCONTINUED, needs replacement with sms_advanced or similar
   url_launcher: ^6.2.5
   pdf: ^3.10.8
   csv: ^6.0.0
@@ -77,6 +76,7 @@ dependencies:
   shimmer: ^3.0.0
   lottie: ^3.1.2
   flutter_animate: ^4.5.0
+  table_calendar: ^3.1.2
 
 
 dev_dependencies:

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../core/utils/haptic_utils.dart';
@@ -42,7 +42,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
           return StreamBuilder<QuerySnapshot>(
             stream: _firestore
                 .collection('budgets')
-                .where('userId', isEqualTo: user.uid)
+                .where('user_id', isEqualTo: user.uid)
                 .where('month', isEqualTo: currentMonth)
                 .snapshots(),
             builder: (context, snapshot) {

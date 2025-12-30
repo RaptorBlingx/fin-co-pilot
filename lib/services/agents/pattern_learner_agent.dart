@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 import '../../features/add_transaction/models/transaction_data.dart';
 
@@ -192,12 +192,8 @@ class PatternLearnerAgent {
       );
 
       // Ask AI to interpret
-      final response = await _model.generateContent([Content.text(prompt)]);
-      final responseText = response.text ?? '';
-
-      // Parse interpretation
-      // This would return structured data based on user's history
-      // For now, return null to indicate no special interpretation needed
+      await _model.generateContent([Content.text(prompt)]);
+      // Parse interpretation - currently returns null to indicate no special interpretation needed
       return null;
     } catch (e) {
       print('Pattern interpretation error: $e');
@@ -304,7 +300,7 @@ class PatternLearnerAgent {
   Future<List<Map<String, dynamic>>> getUpcomingNeeds(String userId) async {
     final tracked = await _firestore
         .collection('tracked_items')
-        .where('userId', isEqualTo: userId)
+        .where('user_id', isEqualTo: userId)
         .get();
 
     final predictions = <Map<String, dynamic>>[];
@@ -332,7 +328,7 @@ class PatternLearnerAgent {
   Future<List<Map<String, dynamic>>> _getPurchaseHistory(String userId, String itemName) async {
     final txns = await _firestore
         .collection('transactions')
-        .where('userId', isEqualTo: userId)
+        .where('user_id', isEqualTo: userId)
         .orderBy('transactionDate')
         .get();
 

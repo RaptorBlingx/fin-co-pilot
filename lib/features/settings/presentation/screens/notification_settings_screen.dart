@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/notification_service.dart';
@@ -379,7 +379,7 @@ class _NotificationHistoryScreen extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('notifications')
-            .where('userId', isEqualTo: userId)
+            .where('user_id', isEqualTo: userId)
             .orderBy('timestamp', descending: true)
             .limit(50)
             .snapshots(),

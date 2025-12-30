@@ -23,7 +23,7 @@ class TransactionRepository {
     try {
       final querySnapshot = await _firestore
           .collection(_collection)
-          .where('userId', isEqualTo: userId)
+          .where('user_id', isEqualTo: userId)
           .orderBy('date', descending: true)
           .get();
 
@@ -44,7 +44,7 @@ class TransactionRepository {
     try {
       final querySnapshot = await _firestore
           .collection(_collection)
-          .where('userId', isEqualTo: userId)
+          .where('user_id', isEqualTo: userId)
           .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
           .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
           .orderBy('date', descending: true)
@@ -66,7 +66,7 @@ class TransactionRepository {
     try {
       final querySnapshot = await _firestore
           .collection(_collection)
-          .where('userId', isEqualTo: userId)
+          .where('user_id', isEqualTo: userId)
           .where('category', isEqualTo: category)
           .orderBy('date', descending: true)
           .get();
@@ -82,10 +82,31 @@ class TransactionRepository {
   /// Update transaction
   Future<void> updateTransaction(models.Transaction transaction) async {
     try {
+      final updatedTransaction = models.Transaction(
+        id: transaction.id,
+        userId: transaction.userId,
+        amount: transaction.amount,
+        currency: transaction.currency,
+        category: transaction.category,
+        type: transaction.type,
+        merchant: transaction.merchant,
+        description: transaction.description,
+        notes: transaction.notes,
+        tags: transaction.tags,
+        date: transaction.date,
+        time: transaction.time,
+        paymentMethod: transaction.paymentMethod,
+        paymentDetails: transaction.paymentDetails,
+        receipt: transaction.receipt,
+        metadata: transaction.metadata,
+        createdAt: transaction.createdAt,
+        updatedAt: DateTime.now(),
+      );
+      
       await _firestore
           .collection(_collection)
           .doc(transaction.id)
-          .update(transaction.copyWith(updatedAt: DateTime.now()).toFirestore());
+          .update(updatedTransaction.toFirestore());
     } catch (e) {
       throw Exception('Failed to update transaction: $e');
     }
@@ -129,7 +150,7 @@ class TransactionRepository {
     try {
       Query query = _firestore
           .collection(_collection)
-          .where('userId', isEqualTo: userId);
+          .where('user_id', isEqualTo: userId);
 
       if (startDate != null) {
         query = query.where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
@@ -164,7 +185,7 @@ class TransactionRepository {
     try {
       Query query = _firestore
           .collection(_collection)
-          .where('userId', isEqualTo: userId);
+          .where('user_id', isEqualTo: userId);
 
       if (startDate != null) {
         query = query.where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
@@ -191,7 +212,7 @@ class TransactionRepository {
   Stream<List<models.Transaction>> streamUserTransactions(String userId) {
     return _firestore
         .collection(_collection)
-        .where('userId', isEqualTo: userId)
+        .where('user_id', isEqualTo: userId)
         .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs

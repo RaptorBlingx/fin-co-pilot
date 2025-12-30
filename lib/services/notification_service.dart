@@ -122,6 +122,13 @@ class NotificationService {
         description: 'Achievements and milestone notifications.',
         importance: Importance.defaultImportance,
       ),
+      const AndroidNotificationChannel(
+        'sms_transactions',
+        'SMS Transaction Confirmations',
+        description: 'One-tap confirmations for SMS-detected transactions.',
+        importance: Importance.high,
+        sound: RawResourceAndroidNotificationSound('notification'),
+      ),
     ];
 
     for (final channel in channels) {
@@ -264,6 +271,8 @@ class NotificationService {
         return 'price_alerts';
       case 'milestone':
         return 'milestones';
+      case 'sms_confirmation':
+        return 'sms_transactions';
       default:
         return 'high_importance_channel';
     }
@@ -286,11 +295,46 @@ class NotificationService {
   }
 
   /// Handle notification tap
-  void _onNotificationTapped(NotificationResponse response) {
+  void _onNotificationTapped(NotificationResponse response) async {
+    // Handle SMS confirmation actions
+    if (response.actionId == 'confirm_sms_transaction' ||
+        response.actionId == 'reject_sms_transaction') {
+      await _handleSmsAction(response.actionId!, response.payload!);
+      return;
+    }
+
     if (response.payload != null) {
       final Map<String, dynamic> data = jsonDecode(response.payload!);
       _handleNotificationAction(data);
     }
+  }
+
+  /// Handle SMS confirmation action (YES/NO buttons)
+  Future<void> _handleSmsAction(String actionId, String payload) async {
+    try {
+      final Map<String, dynamic> data = jsonDecode(payload);
+      final String smsTransactionId = data['smsTransactionId'] as String;
+
+      // Import and use SmsListenerService
+      final smsService = await _getSmsService();
+
+      if (actionId == 'confirm_sms_transaction') {
+        await smsService.confirmTransaction(smsTransactionId);
+      } else if (actionId == 'reject_sms_transaction') {
+        await smsService.rejectTransaction(smsTransactionId);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error handling SMS action: $e');
+      }
+    }
+  }
+
+  /// Get SMS listener service instance
+  Future<dynamic> _getSmsService() async {
+    // Late import to avoid circular dependency
+    // This will be implemented when the service is fully integrated
+    throw UnimplementedError('SMS service integration pending');
   }
 
   /// Handle notification tap from Firebase messaging
@@ -580,6 +624,144 @@ class NotificationService {
 
   /// Check if service is initialized
   bool get isInitialized => _isInitialized;
+
+  /// Show SMS transaction confirmation notification (Week 2 feature)
+  /// One-tap confirmation: [YES] [NO] buttons
+  Future<void> showSmsConfirmation({
+    required int id,
+    required String title,
+    required String body,
+    required String smsTransactionId,
+  }) async {
+    try {
+      await _localNotifications.show(
+        id,
+        title,
+        body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'sms_transactions',
+            'SMS Transaction Confirmations',
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: '@mipmap/ic_launcher',
+            styleInformation: BigTextStyleInformation(body),
+            actions: <AndroidNotificationAction>[
+              const AndroidNotificationAction(
+                'confirm_sms_transaction',
+                'YES',
+                showsUserInterface: true,
+                cancelNotification: true,
+              ),
+              const AndroidNotificationAction(
+                'reject_sms_transaction',
+                'NO',
+                showsUserInterface: false,
+                cancelNotification: true,
+              ),
+            ],
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        payload: jsonEncode({
+          'type': 'sms_confirmation',
+          'smsTransactionId': smsTransactionId,
+        }),
+      );
+
+      if (kDebugMode) {
+        print('SMS confirmation notification shown: $smsTransactionId');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error showing SMS confirmation: $e');
+      }
+    }
+  }
+
+  /// Show transaction saved success notification
+  Future<void> showTransactionSaved({
+    required String merchant,
+    required double amount,
+  }) async {
+    try {
+      final notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      await _localNotifications.show(
+        notificationId,
+        'Transaction Saved',
+        '\$$amount at $merchant added to your transactions',
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'sms_transactions',
+            'SMS Transaction Confirmations',
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+            icon: '@mipmap/ic_launcher',
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: false,
+            presentSound: false,
+          ),
+        ),
+      );
+
+      if (kDebugMode) {
+        print('Transaction saved notification shown');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error showing transaction saved notification: $e');
+      }
+    }
+  }
+
+  /// Show general notification (for Smart Nudges, etc.)
+  Future<void> showGeneral({
+    required int id,
+    required String title,
+    required String body,
+    Map<String, dynamic>? payload,
+    String channelId = 'high_importance_channel',
+  }) async {
+    try {
+      await _localNotifications.show(
+        id,
+        title,
+        body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            channelId,
+            channelId == 'high_importance_channel'
+                ? 'High Importance Notifications'
+                : 'General Notifications',
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: '@mipmap/ic_launcher',
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        payload: payload != null ? jsonEncode(payload) : null,
+      );
+
+      if (kDebugMode) {
+        print('General notification shown: $title');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error showing general notification: $e');
+      }
+    }
+  }
 
   /// Cancel all notifications
   Future<void> cancelAllNotifications() async {

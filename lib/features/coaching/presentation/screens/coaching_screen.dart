@@ -3,9 +3,9 @@ import '../../../../services/proactive_coach_agent.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../shared/models/coaching_tip.dart';
 import '../../../../shared/widgets/shimmer_loading.dart';
-import '../../../../shared/widgets/empty_state.dart';
+
 import '../../../../core/utils/haptic_utils.dart';
-import '../../../../shared/widgets/loading_button.dart';
+
 
 class CoachingScreen extends StatefulWidget {
   const CoachingScreen({super.key});

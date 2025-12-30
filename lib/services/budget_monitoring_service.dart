@@ -1,8 +1,6 @@
-import 'dart:math';
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import '../models/transaction.dart';
 import 'notification_service.dart';
 
 class BudgetMonitoringService {
@@ -27,7 +25,7 @@ class BudgetMonitoringService {
 
       final budgetsSnapshot = await _firestore
           .collection('budgets')
-          .where('userId', isEqualTo: user.uid)
+          .where('user_id', isEqualTo: user.uid)
           .where('month', isEqualTo: '${now.year}-${now.month.toString().padLeft(2, '0')}')
           .get();
 
@@ -70,7 +68,7 @@ class BudgetMonitoringService {
     try {
       final transactionsSnapshot = await _firestore
           .collection('transactions')
-          .where('userId', isEqualTo: user.uid)
+          .where('user_id', isEqualTo: user.uid)
           .where('category', isEqualTo: category)
           .where('type', isEqualTo: 'expense')
           .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
@@ -174,7 +172,7 @@ class BudgetMonitoringService {
     try {
       final transactionsSnapshot = await _firestore
           .collection('transactions')
-          .where('userId', isEqualTo: user.uid)
+          .where('user_id', isEqualTo: user.uid)
           .where('type', isEqualTo: 'expense')
           .get();
 
@@ -267,7 +265,7 @@ class BudgetMonitoringService {
       // Check if user has a savings goal
       final savingsGoalDoc = await _firestore
           .collection('goals')
-          .where('userId', isEqualTo: user.uid)
+          .where('user_id', isEqualTo: user.uid)
           .where('type', isEqualTo: 'monthly_savings')
           .where('month', isEqualTo: '${now.year}-${now.month.toString().padLeft(2, '0')}')
           .limit(1)
@@ -308,7 +306,7 @@ class BudgetMonitoringService {
     try {
       final transactionsSnapshot = await _firestore
           .collection('transactions')
-          .where('userId', isEqualTo: user.uid)
+          .where('user_id', isEqualTo: user.uid)
           .where('type', isEqualTo: type)
           .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
           .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
@@ -382,7 +380,7 @@ class BudgetMonitoringService {
 
       final transactionsSnapshot = await _firestore
           .collection('transactions')
-          .where('userId', isEqualTo: user.uid)
+          .where('user_id', isEqualTo: user.uid)
           .where('type', isEqualTo: 'expense')
           .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
           .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
