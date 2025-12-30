@@ -11,13 +11,13 @@
 | Week | Phase | Status | Completion |
 |------|-------|--------|------------|
 | Week 1 | Foundation Cleanup | ✅ COMPLETE | 100% |
-| Week 2 | Fix Core Features | 🔄 IN PROGRESS | 62% |
+| Week 2 | Fix Core Features | 🔄 IN PROGRESS | 75% |
 | Week 3 | Feature Simplification | ⏳ NOT STARTED | 0% |
 | Week 4 | Polish & Testing | ⏳ NOT STARTED | 0% |
 | Week 5 | Beta Testing | ⏳ NOT STARTED | 0% |
 | Week 6 | Launch Prep | ⏳ NOT STARTED | 0% |
 
-**Overall Progress:** 15/60 tasks completed (25%)
+**Overall Progress:** 16/60 tasks completed (27%)
 
 ---
 
@@ -176,14 +176,14 @@
   - **Notes:** Added comprehensive validation: confidence checks, total validation, non-receipt detection, multi-item handling, currency/date validation, items-vs-total verification. Returns warnings array with actionable messages.
 
 ### Day 12-13: Coaching Service Simplification
-- [ ] **Task 2.6:** Simplify coaching to tip-of-day + Q&A
-  - [ ] Open `lib/services/ai/coaching_service.dart`
-  - [ ] Create `getDailyTip()` method (one tip per day)
-  - [ ] Create `answerQuestion(String question)` method
-  - [ ] Remove proactive scheduling/notifications
-  - [ ] Test with sample questions
-  - **Status:** ⏳ NOT STARTED
-  - **Notes:** _Will update when done_
+- [x] **Task 2.6:** Simplify coaching to tip-of-day + Q&A
+  - [x] Open `lib/services/ai/coaching_service.dart`
+  - [x] Create `getDailyTip()` method (one tip per day)
+  - [x] Create `answerQuestion(String question)` method
+  - [x] Remove proactive scheduling/notifications
+  - [x] Test with sample questions
+  - **Status:** ✅ COMPLETE
+  - **Notes:** Created coaching_service_simplified.dart (237 lines vs 414 lines original). Removed: complex scheduling, proactive notifications, pattern analysis. Kept: daily tips from library, Q&A with context (spending patterns, budgets). Added Q&A history logging.
 
 ### Day 14: Week 2 Testing & Checkpoint
 - [ ] **Task 2.7:** Test all core features work
