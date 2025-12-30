@@ -1,4 +1,18 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+﻿// =============================================================================
+// TIER 2 FEATURE - DISABLED FOR V1.0 LAUNCH
+// =============================================================================
+// This service is part of V2.0 Enhanced Insights features.
+// Feature Flag: FeaturesConfig.enableEnhancedInsights = false
+// 
+// To re-enable for V2.0:
+// 1. Set FeaturesConfig.enableEnhancedInsights = true in features_config.dart
+// 2. Uncomment the code below
+// 3. Test thoroughly
+// =============================================================================
+
+/* COMMENTED OUT FOR V1.0 - UNCOMMENT FOR V2.0
+
+import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../models/transaction.dart' as models;
 import '../models/user_pattern.dart';
 import '../models/insight.dart';
@@ -517,3 +531,5 @@ class EnhancedInsightsService {
         .update({'status': InsightStatus.dismissed.name});
   }
 }
+
+*/ // END OF TIER 2 DISABLED CODE - Enhanced Insights Service

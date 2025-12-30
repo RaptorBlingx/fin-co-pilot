@@ -1,4 +1,18 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+﻿// =============================================================================
+// TIER 2 FEATURE - DISABLED FOR V1.0 LAUNCH
+// =============================================================================
+// This service is part of V2.0 Price Intelligence features.
+// Feature Flag: FeaturesConfig.enablePriceIntelligence = false
+// 
+// To re-enable:
+// 1. Set FeaturesConfig.enablePriceIntelligence = true
+// 2. Uncomment the code below
+// 3. Test thoroughly
+// =============================================================================
+
+/* COMMENTED OUT FOR V1.0 - UNCOMMENT FOR V2.0
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/receipt_ocr_service.dart';
 import '../models/watchlist_item.dart';
 
@@ -347,3 +361,5 @@ class PriceComparison {
     }
   }
 }
+
+*/ // END OF TIER 2 DISABLED CODE - Price Intelligence Service

@@ -1,4 +1,18 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+﻿// =============================================================================
+// TIER 2 FEATURE - DISABLED FOR V1.0 LAUNCH
+// =============================================================================
+// This service is part of V2.0 Pattern Learning features.
+// Feature Flag: FeaturesConfig.enablePatternLearning = false
+// 
+// To re-enable for V2.0:
+// 1. Set FeaturesConfig.enablePatternLearning = true in features_config.dart
+// 2. Uncomment the code below
+// 3. Test thoroughly
+// =============================================================================
+
+/* COMMENTED OUT FOR V1.0 - UNCOMMENT FOR V2.0
+
+import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../models/transaction.dart' as models;
 import '../models/user_pattern.dart';
 import 'dart:math' as math;
@@ -478,3 +492,5 @@ class PatternLearnerService {
     );
   }
 }
+
+*/ // END OF TIER 2 DISABLED CODE - Pattern Learner Service

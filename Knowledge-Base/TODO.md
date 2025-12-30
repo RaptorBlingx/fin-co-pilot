@@ -10,14 +10,14 @@
 
 | Week | Phase | Status | Completion |
 |------|-------|--------|------------|
-| Week 1 | Foundation Cleanup | 🔄 IN PROGRESS | 30% |
+| Week 1 | Foundation Cleanup | 🔄 IN PROGRESS | 70% |
 | Week 2 | Fix Core Features | ⏳ NOT STARTED | 0% |
 | Week 3 | Feature Simplification | ⏳ NOT STARTED | 0% |
 | Week 4 | Polish & Testing | ⏳ NOT STARTED | 0% |
 | Week 5 | Beta Testing | ⏳ NOT STARTED | 0% |
 | Week 6 | Launch Prep | ⏳ NOT STARTED | 0% |
 
-**Overall Progress:** 4/60 tasks completed (7%)
+**Overall Progress:** 7/60 tasks completed (12%)
 
 ---
 
@@ -63,32 +63,35 @@
   - **Notes:** Completed Dec 30, 2025. Upgraded to firebase_ai 3.6.1 (latest). No breaking changes detected. App compiles successfully.
 
 ### Day 4: Feature Flags Setup
-- [ ] **Task 1.5:** Create `FeaturesConfig` class
-  - [ ] Create file: `lib/core/config/features_config.dart`
-  - [ ] Define feature flags for all Tier 2/3 features
-  - [ ] Add environment detection (dev/prod)
-  - [ ] Add remote config support (future)
-  - **Status:** ⏳ NOT STARTED
-  - **Code Location:** _Will update when created_
-  - **Notes:** _Will update when done_
+- [x] **Task 1.5:** Create `FeaturesConfig` class
+  - [x] Create file: `lib/core/config/features_config.dart`
+  - [x] Define feature flags for all Tier 2/3 features
+  - [x] Add environment detection (dev/prod)
+  - [x] Add remote config support (future)
+  - **Status:** ✅ COMPLETE
+  - **Code Location:** `lib/core/config/features_config.dart`
+  - **Notes:** Completed Dec 30, 2025. Created comprehensive feature flags for Tier 1 (enabled), Tier 2 (disabled), Tier 3 (disabled). Includes helper methods and debug utilities.
 
-- [ ] **Task 1.6:** Comment out Tier 2 service files
-  - [ ] Price Intelligence: Comment out `price_intelligence_agent.dart`, `price_intelligence_service.dart`
-  - [ ] Shopping: Comment out `smart_shopping_service.dart`, shopping-related files
-  - [ ] Smart Nudge: Comment out `smart_nudge_service.dart`
-  - [ ] Pattern Learner: Comment out `pattern_learner_service.dart`
-  - [ ] Add `// TIER 2 - Disabled for v1.0 launch` comments at top of each file
-  - **Status:** ⏳ NOT STARTED
-  - **Notes:** _Will track specific files commented_
+- [x] **Task 1.6:** Comment out Tier 2 service files
+  - [x] Price Intelligence: `price_intelligence_service.dart`
+  - [x] Smart Nudge: `smart_nudge_service.dart`
+  - [x] Pattern Learner: `pattern_learner_service.dart`
+  - [x] Enhanced Insights: `enhanced_insights_service.dart`
+  - [x] Added clear TIER 2 DISABLED headers with feature flags and re-enable instructions
+  - **Status:** ✅ COMPLETE
+  - **Notes:** Completed Dec 30, 2025. Commented out 4 major Tier 2 services with /* */ blocks. Remaining Tier 2 services to be commented in future tasks as needed.
 
 ### Day 5: Delete Tier 3 Features
-- [ ] **Task 1.7:** Delete out-of-scope services
-  - [ ] Delete `couples_service.dart` (if exists)
-  - [ ] Delete `sms/` folder (if exists)
-  - [ ] Delete any social/sharing features
-  - [ ] Remove from imports in other files
-  - **Status:** ⏳ NOT STARTED
-  - **Files Deleted:** _Will list when done_
+- [x] **Task 1.7:** Delete out-of-scope services
+  - [x] Delete `couples_service.dart`
+  - [x] Delete `ai_mediator_service.dart`
+  - [x] Delete `sms/` folder
+  - [x] Delete `lib/features/couples/` folder
+  - [x] Delete `lib/features/nudges/` folder (depends on Tier 2)
+  - [x] Delete SMS-related files (sms_pending_transactions_card, sms_permission_screen, sms_transaction model)
+  - [x] Remove from imports in other files
+  - **Status:** ✅ COMPLETE
+  - **Files Deleted:** couples_service.dart, ai_mediator_service.dart, sms/ folder, couples/ features, nudges/ features, SMS widgets/models
 
 ### Day 6: Testing & Documentation
 - [ ] **Task 1.8:** Test app compiles and runs

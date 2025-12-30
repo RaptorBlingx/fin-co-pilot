@@ -1,4 +1,18 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+﻿// =============================================================================
+// TIER 2 FEATURE - DISABLED FOR V1.0 LAUNCH
+// =============================================================================
+// This service is part of V2.0 Smart Nudges & Pattern Learning features.
+// Feature Flag: FeaturesConfig.enableSmartNudges = false
+// 
+// To re-enable for V2.0:
+// 1. Set FeaturesConfig.enableSmartNudges = true in features_config.dart
+// 2. Uncomment the code below
+// 3. Test thoroughly
+// =============================================================================
+
+/* COMMENTED OUT FOR V1.0 - UNCOMMENT FOR V2.0
+
+import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../models/smart_nudge.dart';
 import '../models/transaction.dart' as models;
 import '../models/budget.dart';
@@ -546,3 +560,5 @@ class SmartNudgeService {
     return snapshot.docs.isNotEmpty;
   }
 }
+
+*/ // END OF TIER 2 DISABLED CODE - Smart Nudge Service
