@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/ai/transaction_parser_service.dart';
-import '../screens/transaction/confirm_transaction_screen.dart';
+import '../../services/ai/transaction_parser_service.dart';
+import 'confirm_transaction_screen.dart';
 
 /// Simple transaction input screen demonstrating the new flow
 /// Parse → Confirm → Save

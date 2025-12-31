@@ -68,10 +68,10 @@ void main() async {
       
       if (result.success) {
         final amountMatch = test.expectedAmount == null || 
-                           (result.amount != null && (result.amount! - test.expectedAmount).abs() < 0.01);
+                           (result.amount != null && (result.amount! - (test.expectedAmount ?? 0)).abs() < 0.01);
         final categoryMatch = test.expectedCategory == null || result.category == test.expectedCategory;
         final merchantMatch = test.expectedMerchant == null || 
-                             (result.merchant?.toLowerCase().contains(test.expectedMerchant.toLowerCase()) ?? false);
+                             (result.merchant?.toLowerCase().contains(test.expectedMerchant?.toLowerCase() ?? '') ?? false);
         
         if (amountMatch && categoryMatch && merchantMatch) {
           print('  ✅ PASS');

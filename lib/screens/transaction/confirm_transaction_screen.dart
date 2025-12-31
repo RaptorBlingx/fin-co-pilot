@@ -22,7 +22,7 @@ class ConfirmTransactionScreen extends StatefulWidget {
 
 class _ConfirmTransactionScreenState extends State<ConfirmTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
-  static const _transactionService = TransactionService();
+  final _transactionService = TransactionService();
   
   late TextEditingController _amountController;
   late TextEditingController _merchantController;

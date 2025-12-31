@@ -4,6 +4,7 @@ import '../../../services/auth_service.dart';
 // REMOVED: import '../../../services/receipt_ocr_service.dart'; // unused
 // REMOVED: import '../../../services/price_intelligence_service.dart'; // unused
 import '../../../models/transaction.dart' as models;
+import '../../../models/transaction.dart' show ReceiptData; // For receipt_review_screen
 
 /// Receipt Review Screen (Week 10 Feature)
 ///

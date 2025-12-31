@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../services/auth_service.dart';
-import '../../../services/receipt_ocr_service.dart';
-import 'receipt_review_screen.dart';
+// REMOVED: import '../../../services/receipt_ocr_service.dart'; // Tier 2 - backed up for V2.0
+// REMOVED: import 'receipt_review_screen.dart'; // Tier 2 feature - broken, moved to backup
 
 /// Receipt Capture Screen (Week 10 Feature)
 ///
@@ -15,6 +15,8 @@ import 'receipt_review_screen.dart';
 /// - Navigate to review screen for confirmation
 ///
 /// Target: Works with wrinkled/folded receipts
+///
+/// NOTE: V1.0 shows placeholder - full feature coming in V2.0
 class ReceiptCaptureScreen extends StatefulWidget {
   const ReceiptCaptureScreen({super.key});
 
@@ -24,7 +26,7 @@ class ReceiptCaptureScreen extends StatefulWidget {
 
 class _ReceiptCaptureScreenState extends State<ReceiptCaptureScreen> {
   final ImagePicker _picker = ImagePicker();
-  final ReceiptOCRService _ocrService = ReceiptOCRService();
+  // final ReceiptOCRService _ocrService = ReceiptOCRService(); // Tier 2 - disabled for V1.0
   final AuthService _authService = AuthService();
 
   File? _imageFile;
@@ -310,22 +312,37 @@ class _ReceiptCaptureScreenState extends State<ReceiptCaptureScreen> {
       _updateProgress(0.3, 'Analyzing receipt...');
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Process with OCR
-      final receiptData = await _ocrService.processReceipt(
-        imageFile: _imageFile!,
-        userId: user.uid,
-      );
+      // TIER 2 DISABLED: Process with OCR (coming in V2.0)
+      // final receiptData = await _ocrService.processReceipt(
+      //   imageFile: _imageFile!,
+      //   userId: user.uid,
+      // );
 
       _updateProgress(0.9, 'Extracting items...');
       await Future.delayed(const Duration(milliseconds: 500));
 
       _updateProgress(1.0, 'Complete!');
 
+      // V1.0: Show placeholder message instead of processing
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Receipt scanning coming in V2.0!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        Navigator.pop(context);
+        return;
+      }
+
+      // COMMENTED OUT: ReceiptData processing and navigation (Tier 2 - V2.0)
+      /*
       if (receiptData == null) {
         throw Exception('Could not extract data from receipt');
       }
 
-      // Navigate to review screen
+      // COMMENTED OUT: Navigation to ReceiptReviewScreen (Tier 2 - broken in V1.0)
+      // Will be restored in V2.0 with proper ReceiptData model
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -336,6 +353,7 @@ class _ReceiptCaptureScreenState extends State<ReceiptCaptureScreen> {
           ),
         );
       }
+      */
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
