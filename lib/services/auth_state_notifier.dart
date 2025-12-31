@@ -10,9 +10,11 @@ class AuthStateNotifier extends ChangeNotifier {
   
   AuthStateNotifier(this._authService) {
     _currentUser = _authService.currentUser;
+    print('🔍 AUTH NOTIFIER: Initialized with user: ${_currentUser?.uid ?? "null"}');
     
     // Listen to auth state changes
     _authService.authStateChanges.listen((User? user) {
+      print('🔄 AUTH STATE CHANGED: ${user?.uid ?? "null"} (was: ${_currentUser?.uid ?? "null"})');
       _currentUser = user;
       notifyListeners(); // Notify router to refresh
     });

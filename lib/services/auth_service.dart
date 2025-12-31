@@ -35,6 +35,7 @@ class AuthService {
       await _initializeNotificationsForUser(userCredential.user!);
       
       // Existing users skip onboarding
+      print('🔍 AUTH: Email sign-in, setting onboarding complete');
       await PreferencesService.setOnboardingComplete(true);
       
       return userCredential;
@@ -104,7 +105,10 @@ class AuthService {
       
       // Set onboarding complete for existing users (new users go through onboarding)
       if (!isNewUser) {
+        print('🔍 AUTH: Existing Google user detected, setting onboarding complete');
         await PreferencesService.setOnboardingComplete(true);
+      } else {
+        print('🆕 AUTH: New Google user, will go through onboarding');
       }
       
       return userCredential;

@@ -12,10 +12,14 @@ class PreferencesService {
   // Onboarding
   static Future<void> setOnboardingComplete(bool value) async {
     await _prefs?.setBool(AppConstants.keyOnboardingComplete, value);
+    print('✅ PREFS: Set onboarding complete = $value');
+    print('📝 PREFS: Verification read = ${_prefs?.getBool(AppConstants.keyOnboardingComplete)}');
   }
   
   static bool isOnboardingComplete() {
-    return _prefs?.getBool(AppConstants.keyOnboardingComplete) ?? false;
+    final result = _prefs?.getBool(AppConstants.keyOnboardingComplete) ?? false;
+    print('🔍 PREFS: Check onboarding complete = $result');
+    return result;
   }
   
   // Currency

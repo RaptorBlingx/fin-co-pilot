@@ -127,17 +127,29 @@ final _router = GoRouter(
     final isLoggedIn = _authStateNotifier.isLoggedIn;
     final isOnboardingComplete = PreferencesService.isOnboardingComplete();
     
+    print('🔄 ROUTER: location=${state.matchedLocation}, isLoggedIn=$isLoggedIn, onboarding=$isOnboardingComplete');
+    
     // If not logged in, go to sign in
     if (!isLoggedIn) {
+      print('➡️ ROUTER: Not logged in → Sign In screen');
       return AppConstants.routeSignIn;
+    }
+    
+    // If logged in and onboarding complete, redirect away from onboarding/sign-in to dashboard
+    if (isOnboardingComplete && 
+        (state.matchedLocation.startsWith('/onboarding') || state.matchedLocation == AppConstants.routeSignIn)) {
+      print('➡️ ROUTER: Already onboarded → Dashboard');
+      return AppConstants.routeDashboard;
     }
     
     // If logged in but onboarding not complete, go to onboarding
     if (!isOnboardingComplete && !state.matchedLocation.startsWith('/onboarding')) {
+      print('➡️ ROUTER: Logged in but no onboarding → Onboarding screen');
       return AppConstants.routeOnboarding;
     }
     
     // If logged in and onboarding complete, allow navigation
+    print('✅ ROUTER: All checks passed → Allow navigation');
     return null;
   },
   routes: [
