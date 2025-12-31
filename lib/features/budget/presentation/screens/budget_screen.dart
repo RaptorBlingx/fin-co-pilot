@@ -167,7 +167,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 ),
               ),
               IconButton(
-                onPressed: () => _showSetMonthlyBudgetDialog(userId, currentMonth, totalMonthlyBudget),
+                onPressed: () async {
+                  await _showSetMonthlyBudgetDialog(userId, currentMonth, totalMonthlyBudget);
+                  if (mounted) setState(() {});
+                },
                 icon: Icon(
                   hasMonthlyBudget ? Icons.edit : Icons.add_circle_outline,
                   color: Colors.white,
@@ -284,7 +287,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
             ),
             const SizedBox(height: 32),
             FilledButton.icon(
-              onPressed: () => _showSetMonthlyBudgetDialog(userId, currentMonth, 0),
+              onPressed: () async {
+                await _showSetMonthlyBudgetDialog(userId, currentMonth, 0);
+                if (mounted) setState(() {});
+              },
               icon: const Icon(Icons.account_balance_wallet),
               label: const Text('Set Monthly Budget'),
             ),
@@ -333,12 +339,12 @@ class _BudgetScreenState extends State<BudgetScreen> {
     );
   }
 
-  void _showSetMonthlyBudgetDialog(String userId, String currentMonth, double currentBudget) {
+  Future<void> _showSetMonthlyBudgetDialog(String userId, String currentMonth, double currentBudget) async {
     final TextEditingController budgetController = TextEditingController(
       text: currentBudget > 0 ? currentBudget.toString() : '',
     );
 
-    showDialog(
+    await showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(currentBudget > 0 ? 'Edit Monthly Budget' : 'Set Monthly Budget'),
@@ -408,7 +414,8 @@ class _BudgetScreenState extends State<BudgetScreen> {
                     .collection('monthly_budgets')
                     .doc('${userId}_$currentMonth')
                     .set({
-                  'userId': userId,
+                  'user_id': userId,  // Fixed: was 'userId', rules expect 'user_id'
+                  'userId': userId,    // Keep both for compatibility
                   'month': currentMonth,
                   'totalBudget': budget,
                   'createdAt': FieldValue.serverTimestamp(),
@@ -681,7 +688,8 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
                 try {
                   await _firestore.collection('budgets').add({
-                    'userId': userId,
+                    'user_id': userId,  // Fixed: was 'userId', rules expect 'user_id'
+                    'userId': userId,    // Keep both for compatibility
                     'category': selectedCategory,
                     'amount': amount,
                     'month': month,

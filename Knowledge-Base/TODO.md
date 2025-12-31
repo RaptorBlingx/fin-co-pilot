@@ -311,7 +311,55 @@
   - **Bugs Fixed:** _Will list when done_
 
 ### Day 24: Performance Optimization
-- [ ] **Task 4.2:** Profile app performance
+- [x] **Task 4.2:** Auth & Onboarding Performance Issues ✅ COMPLETE
+  - [x] **4.2.1:** Persist auth state (avoid re-login every time) ✅ COMPLETE
+    - [x] Check Firebase Auth persistence settings
+    - [x] Verify auth state is cached locally
+    - [x] Test: Close app → Reopen → Should stay logged in
+    - **Issue:** User must sign in with Google every time app opens
+    - **Expected:** Auth state should persist between app sessions
+    - **Status:** ✅ COMPLETE
+    - **Solution Implemented:**
+      - Created `AuthStateNotifier` (ChangeNotifier) to listen to Firebase authStateChanges
+      - Refactored GoRouter to use `refreshListenable: _authStateNotifier`
+      - Replaced synchronous `currentUser` checks with stream-based state management
+      - Firebase Auth now properly persists between sessions
+      - Router automatically refreshes when auth state changes
+  
+  - [x] **4.2.2:** Skip onboarding for existing users ✅ COMPLETE
+    - [x] Create SharedPreferences flag: `hasCompletedOnboarding`
+    - [x] Set flag to true after completing welcome/currency screens
+    - [x] Check flag on app start → Skip to Dashboard if true
+    - [x] Only show onboarding for first-time users
+    - **Issue:** Existing users go through welcome/currency selection every time
+    - **Expected:** Only new users see onboarding, returning users go straight to Dashboard
+    - **Status:** ✅ COMPLETE
+    - **Solution Implemented:**
+      - Added `PreferencesService.setOnboardingComplete(true)` to all sign-in methods
+      - `signInWithGoogle()`: Sets flag for existing users (isNewUser check)
+      - `signInWithEmail()`: Sets flag for all sign-ins (existing users)
+      - `signInAnonymously()`: Sets flag for existing anonymous users
+      - New users: Go through onboarding → flag set in `OnboardingCompleteScreen`
+      - Existing users: Flag set immediately after successful auth → Skip to Dashboard
+  
+  - [ ] **4.2.3:** Optimize Google Sign-In speed
+    - [ ] Profile Google Sign-In flow (measure time)
+    - [ ] Check if unnecessary API calls happening
+    - [ ] Optimize user document creation (batch writes)
+    - [ ] Add loading indicators with progress feedback
+    - [ ] Test on multiple devices/networks
+    - **Issue:** Google Sign-In takes 3-5 seconds (slower than other apps)
+    - **Expected:** Sign-in should complete in <1.5 seconds
+    - **Target:** Match speed of other apps on same device
+    - **Status:** ⏳ NOT STARTED
+  
+  - [ ] **4.2.4:** Add auth state caching
+    - [ ] Cache user profile data locally (SharedPreferences)
+    - [ ] Show cached dashboard immediately while syncing
+    - [ ] Implement offline-first approach for better UX
+    - **Status:** ⏳ NOT STARTED
+
+- [ ] **Task 4.3:** App startup performance
   - [ ] Measure startup time (target: <2s)
   - [ ] Check memory usage
   - [ ] Test 60 FPS animations
@@ -319,27 +367,27 @@
   - **Status:** ⏳ NOT STARTED
   - **Metrics:** _Will document_
 
-- [ ] **Task 4.3:** Optimize images and assets
+- [ ] **Task 4.4:** Optimize images and assets
   - [ ] Compress large images
   - [ ] Use appropriate image formats (WebP)
   - [ ] Lazy load where possible
   - **Status:** ⏳ NOT STARTED
 
 ### Day 25: UI Polish
-- [ ] **Task 4.4:** Consistent spacing and padding
+- [ ] **Task 4.5:** Consistent spacing and padding
   - [ ] Review all screens for consistency
   - [ ] Use design tokens (8px grid)
   - [ ] Check dark mode support
   - **Status:** ⏳ NOT STARTED
 
-- [ ] **Task 4.5:** Smooth animations
+- [ ] **Task 4.6:** Smooth animations
   - [ ] Add micro-interactions
   - [ ] Test animation performance
   - [ ] Ensure 60 FPS throughout
   - **Status:** ⏳ NOT STARTED
 
 ### Day 26: Error Handling
-- [ ] **Task 4.6:** Improve error handling
+- [ ] **Task 4.7:** Improve error handling
   - [ ] Add try-catch blocks to all API calls
   - [ ] Show user-friendly error messages
   - [ ] Add retry mechanisms
@@ -347,7 +395,7 @@
   - **Status:** ⏳ NOT STARTED
 
 ### Day 27: Documentation
-- [ ] **Task 4.7:** Write user guide/help section
+- [ ] **Task 4.8:** Write user guide/help section
   - [ ] How to add transactions (manual, conversational, receipt)
   - [ ] How to create budgets
   - [ ] How to use AI coaching
@@ -356,7 +404,7 @@
   - **Location:** _Will specify_
 
 ### Day 28: Security Review
-- [ ] **Task 4.8:** Security audit
+- [ ] **Task 4.9:** Security audit
   - [ ] Check API key exposure (should be in .env)
   - [ ] Review Firebase security rules
   - [ ] Test authentication flows
@@ -364,7 +412,7 @@
   - **Status:** ⏳ NOT STARTED
   - **Issues Found:** _Will document_
 
-- [ ] **Task 4.9:** Commit Week 4 changes
+- [ ] **Task 4.10:** Commit Week 4 changes
   ```bash
   git add .
   git commit -m "Week 4 Complete: Bug fixes, performance, polish"

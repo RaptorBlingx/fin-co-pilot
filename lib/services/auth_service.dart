@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'analytics_service.dart';
 import 'notification_service.dart';
 import 'budget_monitoring_service.dart';
+import 'preferences_service.dart';
 import 'dart:io' show Platform;
 
 class AuthService {
@@ -32,6 +33,9 @@ class AuthService {
       
       // Initialize notifications after successful login
       await _initializeNotificationsForUser(userCredential.user!);
+      
+      // Existing users skip onboarding
+      await PreferencesService.setOnboardingComplete(true);
       
       return userCredential;
     } catch (e) {
@@ -84,7 +88,8 @@ class AuthService {
       final userCredential = await _auth.signInWithCredential(credential);
       
       // Track analytics
-      if (userCredential.additionalUserInfo?.isNewUser ?? false) {
+      final isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
+      if (isNewUser) {
         await AnalyticsService.logSignUp('google');
         await _createUserDocument(userCredential.user!);
       } else {
@@ -96,6 +101,11 @@ class AuthService {
       
       // Initialize notifications after successful login
       await _initializeNotificationsForUser(userCredential.user!);
+      
+      // Set onboarding complete for existing users (new users go through onboarding)
+      if (!isNewUser) {
+        await PreferencesService.setOnboardingComplete(true);
+      }
       
       return userCredential;
     } catch (e) {
@@ -127,6 +137,31 @@ class AuthService {
       // Create user document if first time
       if (userCredential.additionalUserInfo?.isNewUser ?? false) {
         await _createUserDocument(userCredential.user!);
+      }
+      
+      return userCredential;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Sign in anonymously (for testing/demo)
+  Future<UserCredential> signInAnonymously() async {
+    try {
+      final userCredential = await _auth.signInAnonymously();
+      
+      // Create basic user document for anonymous users
+      final isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
+      if (isNewUser) {
+        await _createUserDocument(userCredential.user!);
+      }
+      
+      // Initialize notifications
+      await _initializeNotificationsForUser(userCredential.user!);
+      
+      // Existing anonymous users skip onboarding
+      if (!isNewUser) {
+        await PreferencesService.setOnboardingComplete(true);
       }
       
       return userCredential;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../services/auth_service.dart';
+import '../../../../services/transaction_service.dart';
 import '../../../../services/financial_copilot_orchestrator.dart';
 import '../../../../core/utils/haptic_utils.dart';
 import '../../../../core/utils/currency_utils.dart';
@@ -25,6 +26,7 @@ class _FinancialCopilotScreenState extends State<FinancialCopilotScreen> with Ti
   final FinancialCopilotOrchestrator _orchestrator = FinancialCopilotOrchestrator();
   final AuthService _authService = AuthService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final TransactionService _transactionService = TransactionService();
 
   final List<ChatMessage> _messages = [];
   bool _isProcessing = false;
@@ -310,6 +312,14 @@ class _FinancialCopilotScreenState extends State<FinancialCopilotScreen> with Ti
       );
 
       await _firestore.collection('transactions').add(transaction.toFirestore());
+
+      // Update budget spending
+      await _transactionService.updateBudgetSpendingPublic(
+        userId: user.uid,
+        category: transaction.category,
+        amount: transaction.amount,
+        transactionDate: transaction.transactionDate,
+      );
 
       if (mounted) {
         setState(() {

@@ -231,6 +231,8 @@ class TransactionService {
       // Get the month of the transaction
       final month = '${transactionDate.year}-${transactionDate.month.toString().padLeft(2, '0')}';
 
+      print('🔍 UPDATE BUDGET: userId=$userId, category=$category, amount=$amount, month=$month');
+
       // Find the budget for this category and month
       final budgetQuery = await _firestore
           .collection('budgets')
@@ -240,20 +242,43 @@ class TransactionService {
           .limit(1)
           .get();
 
+      print('🔍 BUDGET QUERY: Found ${budgetQuery.docs.length} budgets');
+
       if (budgetQuery.docs.isNotEmpty) {
         final budgetDoc = budgetQuery.docs.first;
         final currentSpending = (budgetDoc.data()['currentSpending'] as num?)?.toDouble() ?? 0;
         final newSpending = currentSpending + amount;
+
+        print('✅ UPDATING BUDGET: ${budgetDoc.id} from $currentSpending to $newSpending');
 
         // Update the budget
         await _firestore.collection('budgets').doc(budgetDoc.id).update({
           'currentSpending': newSpending,
           'lastUpdated': FieldValue.serverTimestamp(),
         });
+
+        print('✅ BUDGET UPDATED SUCCESSFULLY');
+      } else {
+        print('⚠️ NO BUDGET FOUND for category: $category in month: $month');
       }
     } catch (e) {
       // Log error but don't fail the transaction
-      print('Error updating budget spending: $e');
+      print('❌ Error updating budget spending: $e');
     }
+  }
+
+  /// Public method to update budget spending (for use by other screens)
+  Future<void> updateBudgetSpendingPublic({
+    required String userId,
+    required String category,
+    required double amount,
+    required DateTime transactionDate,
+  }) async {
+    await _updateBudgetSpending(
+      userId: userId,
+      category: category,
+      amount: amount,
+      transactionDate: transactionDate,
+    );
   }
 }

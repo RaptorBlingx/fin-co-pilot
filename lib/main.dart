@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
+import 'services/auth_state_notifier.dart';
 import 'services/preferences_service.dart';
 
 import 'services/budget_monitoring_service.dart';
@@ -35,6 +36,9 @@ final themeProvider = ChangeNotifierProvider<ThemeProvider>((ref) {
   return ThemeProvider();
 });
 
+// Global auth state notifier (initialized after Firebase)
+late final AuthStateNotifier _authStateNotifier;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -45,6 +49,9 @@ void main() async {
 
   // Initialize SharedPreferences
   await PreferencesService.init();
+  
+  // Initialize auth state notifier
+  _authStateNotifier = AuthStateNotifier(AuthService());
 
   // Initialize App Services (includes Notification Service, SMS Listener)
   await AppInitializer().initialize();
@@ -112,12 +119,12 @@ class FinCopilotApp extends ConsumerWidget {
   }
 }
 
-// Router configuration
+// Router configuration with auth state management
 final _router = GoRouter(
   initialLocation: AppConstants.routeSignIn,
+  refreshListenable: _authStateNotifier, // Listen to auth changes
   redirect: (context, state) {
-    final authService = AuthService();
-    final isLoggedIn = authService.currentUser != null;
+    final isLoggedIn = _authStateNotifier.isLoggedIn;
     final isOnboardingComplete = PreferencesService.isOnboardingComplete();
     
     // If not logged in, go to sign in
