@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../services/auth_service.dart';
-import '../../../services/receipt_ocr_service.dart';
-import '../../../services/price_intelligence_service.dart';
+// REMOVED: import '../../../services/receipt_ocr_service.dart'; // unused
+// REMOVED: import '../../../services/price_intelligence_service.dart'; // unused
 import '../../../models/transaction.dart' as models;
 
 /// Receipt Review Screen (Week 10 Feature)
@@ -437,7 +437,7 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
       );
 
       // Save to Firestore
-      final docRef = await _firestore.collection('transactions').add({
+      await _firestore.collection('transactions').add({
         'user_id': transaction.userId,
         'amount': transaction.amount,
         'currency': transaction.currency,

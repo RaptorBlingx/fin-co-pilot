@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:fl_chart/fl_chart.dart';
+// REMOVED: import 'package:fl_chart/fl_chart.dart'; // unused
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../services/agents/item_tracker_agent.dart';
@@ -1132,6 +1132,7 @@ class _PriceIntelligenceScreenState extends ConsumerState<PriceIntelligenceScree
     );
   }
 
+  /* UNUSED - Kept for V2.0 features
   Widget _buildComingSoonFeature(String emoji, String feature) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),

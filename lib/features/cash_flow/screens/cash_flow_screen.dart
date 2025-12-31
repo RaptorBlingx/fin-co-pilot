@@ -910,6 +910,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
     }
   }
 
+  /* UNUSED - Kept for future category icon feature
   IconData _getCategoryIcon(String category) {
     switch (category.toLowerCase()) {
       case 'subscriptions':
@@ -930,6 +931,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
         return Icons.receipt;
     }
   }
+  */
 
   String _getFrequencyLabel(int intervalDays) {
     if (intervalDays <= 7) {

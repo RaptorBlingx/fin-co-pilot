@@ -210,6 +210,7 @@ Important:
   }
 
   /// Get confidence score for OCR result
+  /* UNUSED - Kept for future confidence scoring
   double _calculateConfidence(ReceiptData data) {
     double score = 1.0;
 

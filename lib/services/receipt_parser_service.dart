@@ -81,6 +81,7 @@ class ReceiptParserService {
   }
 
   /// Validate and clean parsed data
+  /* UNUSED - Kept for future validation
   Map<String, dynamic> _validateAndCleanData(Map<String, dynamic> data) {
     return {
       'merchant': data['merchant']?.toString(),

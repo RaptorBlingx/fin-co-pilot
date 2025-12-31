@@ -19,6 +19,7 @@ class CoachingServiceSimplified {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late final GenerativeModel _model;
 
+  // ignore: unused_element
   CoachingServiceSimplified._() {
     _model = FirebaseAI.googleAI().generativeModel(
       model: 'gemini-2.5-flash',
