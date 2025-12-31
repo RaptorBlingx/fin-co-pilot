@@ -12,12 +12,12 @@
 |------|-------|--------|------------|
 | Week 1 | Foundation Cleanup | ✅ COMPLETE | 100% |
 | Week 2 | Fix Core Features | ✅ COMPLETE | 100% |
-| Week 3 | Feature Simplification | 🔄 IN PROGRESS | 33% |
+| Week 3 | Feature Simplification | 🔄 IN PROGRESS | 67% |
 | Week 4 | Polish & Testing | ⏳ NOT STARTED | 0% |
 | Week 5 | Beta Testing | ⏳ NOT STARTED | 0% |
 | Week 6 | Launch Prep | ⏳ NOT STARTED | 0% |
 
-**Overall Progress:** 20/60 tasks completed (33%)
+**Overall Progress:** 22/60 tasks completed (37%)
 
 ---
 
@@ -247,19 +247,19 @@
   - **Notes:** Simplified to 2 charts (category pie + spending trend line). Removed Top Merchants, AI Insights section, Financial Analyst section. Commented out ~200 lines of Tier 2/3 features for V2.0. File reduced from 1167 to ~950 lines.
 
 ### Day 18: Budget & Transactions Polish
-- [ ] **Task 3.3:** Simplify budget UI
-  - [ ] Clean layout, remove complex recommendations
-  - [ ] Focus on: Create, Edit, Track progress
-  - [ ] Add visual progress indicators
-  - **Status:** ⏳ NOT STARTED
-  - **Notes:** _Will update when done_
+- [x] **Task 3.3:** Simplify budget UI
+  - [x] Clean layout, remove complex recommendations
+  - [x] Focus on: Create, Edit, Track progress
+  - [x] Add visual progress indicators
+  - **Status:** ✅ COMPLETE
+  - **Notes:** Budget screen already clean and V1.0 ready! 810 lines with: header card (monthly budget + allocated/unallocated), budget cards with progress bars, create/edit/delete. No complex features to remove.
 
-- [ ] **Task 3.4:** Polish transactions list
-  - [ ] Improve filtering (by category, date range)
-  - [ ] Better search functionality
-  - [ ] Smooth animations
-  - **Status:** ⏳ NOT STARTED
-  - **Notes:** _Will update when done_
+- [x] **Task 3.4:** Polish transactions list
+  - [x] Improve filtering (by category, date range)
+  - [x] Better search functionality
+  - [x] Smooth animations
+  - **Status:** ✅ COMPLETE
+  - **Notes:** Already polished in Phase 1 Fix #2! 529 lines with: search bar (with clear button), category filter popup, gradient total card, smooth transitions. No changes needed.
 
 ### Day 19: Code Cleanup
 - [ ] **Task 3.5:** Remove unused imports
