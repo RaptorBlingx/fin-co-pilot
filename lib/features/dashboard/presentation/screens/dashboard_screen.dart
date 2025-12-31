@@ -15,16 +15,13 @@ import '../../widgets/hero_spending_card.dart';
 import '../../widgets/ai_insight_card.dart';
 import '../../widgets/compact_transaction_card.dart';
 import '../../widgets/quick_action_button.dart';
-import '../../widgets/financial_health_score_card.dart';
-// REMOVED: import '../../widgets/sms_pending_transactions_card.dart'; // Tier 3 - Deleted
+// REMOVED for V1.0 simplification:
+// import '../../widgets/financial_health_score_card.dart';
 import '../../../../core/utils/haptic_utils.dart';
 import '../../../../core/navigation/page_transitions.dart';
 import '../../../cash_flow/widgets/cash_flow_card.dart';
-// REMOVED: import '../../../nudges/widgets/smart_nudge_banner.dart'; // Tier 2/3 - Deleted
-// REMOVED: import '../../../insights/widgets/insights_card.dart'; // Tier 2 - Deleted
-import '../../../money_story/widgets/money_story_card.dart';
-import '../../../subscriptions/widgets/subscription_summary_card.dart';
-import '../../../coaching_tips/widgets/coaching_tips_dashboard_card.dart';
+// REMOVED: Smart nudge, SMS, insights cards (Tier 2/3)
+// REMOVED: Money story, subscriptions, coaching cards (V2.0 features)
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -277,13 +274,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               const SizedBox(height: 24),
 
-              // REMOVED: Smart Nudge Banner - Tier 2 V2.0 feature
-              // REMOVED: SMS Pending Transactions - Tier 3 deleted feature
-              // REMOVED: Enhanced Insights Card - Tier 2 V2.0 feature
-
-              const SizedBox(height: 16),
-
-              // Cash Flow Card (Week 5 Feature)
+              // Task 3.1: Dashboard Simplification - Keep only 3-4 key cards
+              // KEPT: Cash Flow Card (shows income vs expenses)
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24),
                 child: CashFlowCard(),
@@ -291,35 +283,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               const SizedBox(height: 16),
 
-              // Financial Health Score Card (Week 3 Feature)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: FinancialHealthScoreCard(),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Money Story Card (Week 7 Feature)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: MoneyStoryCard(),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Subscription Summary Card (Week 8 Feature)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: SubscriptionSummaryCard(),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Coaching Tips Card (Week 9 Feature)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: CoachingTipsDashboardCard(),
-              ),
+              // REMOVED for V1.0 simplification:
+              // - FinancialHealthScoreCard (complex scoring, V2.0)
+              // - MoneyStoryCard (AI storytelling, V2.0)
+              // - SubscriptionSummaryCard (subscription detection, V2.0)
+              // - CoachingTipsDashboardCard (moved to separate coaching screen)
 
               const SizedBox(height: 32),
 
