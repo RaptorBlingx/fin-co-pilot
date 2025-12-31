@@ -2,18 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../services/insights_service.dart';
-import '../../../../services/financial_analyst_agent.dart';
+// REMOVED for V1.0 simplification: financial_analyst_agent, financial_insight
 import '../../../../services/auth_service.dart';
 import '../../../../shared/models/transaction.dart' as model;
 import '../../../../shared/models/spending_insights.dart';
-import '../../../../shared/models/financial_insight.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../shared/widgets/shimmer_loading.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../core/utils/haptic_utils.dart';
 
-/// Enhanced Insights Screen with Time Period Selection
-/// Combines existing AI insights with new time-based analytics
+/// Simplified Insights Screen for V1.0
+/// Shows only 3 core charts:
+/// 1. Spending by Category (Pie Chart)
+/// 2. Spending Trend (Line Chart)
+/// 3. Income vs Expenses (Bar Chart)
+///
+/// REMOVED for V1.0: AI Insights, Financial Analyst, Top Merchants (defer to V2.0)
 class InsightsScreen extends StatefulWidget {
   const InsightsScreen({super.key});
 
@@ -23,15 +27,14 @@ class InsightsScreen extends StatefulWidget {
 
 class _InsightsScreenState extends State<InsightsScreen> {
   final AuthService _authService = AuthService();
-  final FinancialAnalystAgent _financialAnalyst = FinancialAnalystAgent();
   
-  // Existing AI features
-  bool _isLoadingAI = false;
-  List<String> _aiInsights = [];
-  bool _isLoadingFinancialAnalyst = false;
-  List<FinancialInsight> _financialInsights = [];
+  // REMOVED for V1.0: AI Insights & Financial Analyst features
+  // bool _isLoadingAI = false;
+  // List<String> _aiInsights = [];
+  // bool _isLoadingFinancialAnalyst = false;
+  // List<FinancialInsight> _financialInsights = [];
 
-  // NEW: Time period selection
+  // Time period selection
   String _selectedPeriod = 'month'; // 'week', 'month', 'year'
 
   /// Get transactions stream based on selected time period
@@ -130,7 +133,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                // Time period selector with improved styling
+                // Time period selector
                 _PeriodSelector(
                   selectedPeriod: _selectedPeriod,
                   onPeriodChanged: (period) {
@@ -141,7 +144,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
 
                 const SizedBox(height: 16),
 
-                // Summary card with dynamic period
+                // Summary card
                 _SummaryCard(
                   insights: insights,
                   currency: currency,
@@ -150,33 +153,22 @@ class _InsightsScreenState extends State<InsightsScreen> {
                 
                 const SizedBox(height: 24),
 
-                // Category breakdown
+                // Chart 1: Category Breakdown (Pie Chart)
                 _CategoryBreakdownChart(insights: insights, currency: currency),
 
                 const SizedBox(height: 24),
 
-                // Top merchants
-                _TopMerchants(insights: insights, currency: currency),
+                // Chart 2: Spending Trend (Line Chart)
+                _SpendingTrendChart(transactions: transactions, currency: currency),
 
-                const SizedBox(height: 24),
+                // REMOVED for V1.0: Chart 3 - Income vs Expenses
+                // (SpendingInsights model doesn't track income separately)
+                // Will be added in V2.0 when income tracking is enhanced
 
-                // AI Insights (Legacy)
-                _AIInsightsSection(
-                  insights: insights,
-                  transactions: transactions,
-                  aiInsights: _aiInsights,
-                  isLoading: _isLoadingAI,
-                  onGenerate: () => _generateAIInsights(transactions, insights),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Financial Analyst Agent Insights (New)
-                _FinancialAnalystSection(
-                  insights: _financialInsights,
-                  isLoading: _isLoadingFinancialAnalyst,
-                  onGenerate: () => _generateFinancialInsights(user.uid),
-                ),
+                // REMOVED for V1.0 simplification:
+                // - Top Merchants (defer to V2.0)
+                // - AI Insights Section (Tier 2 feature)
+                // - Financial Analyst Section (Tier 2 feature)
               ],
             ),
           );
@@ -185,60 +177,8 @@ class _InsightsScreenState extends State<InsightsScreen> {
     );
   }
 
-  Future<void> _generateAIInsights(
-    List<model.Transaction> transactions,
-    SpendingInsights insights,
-  ) async {
-    setState(() => _isLoadingAI = true);
-
-    try {
-      final aiInsights = await InsightsService.generateAIInsights(
-        transactions,
-        insights,
-      );
-
-      setState(() {
-        _aiInsights = aiInsights;
-        _isLoadingAI = false;
-      });
-    } catch (e) {
-      setState(() => _isLoadingAI = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error generating insights: ${e.toString()}')),
-        );
-      }
-    }
-  }
-
-  /// Generate comprehensive financial insights using the Financial Analyst Agent
-  Future<void> _generateFinancialInsights(String userId) async {
-    setState(() => _isLoadingFinancialAnalyst = true);
-
-    try {
-      final now = DateTime.now();
-      final startOfMonth = DateTime(now.year, now.month, 1);
-      final endOfMonth = DateTime(now.year, now.month + 1, 0);
-
-      final insights = await _financialAnalyst.analyzeSpending(
-        userId: userId,
-        startDate: startOfMonth,
-        endDate: endOfMonth,
-      );
-
-      setState(() {
-        _financialInsights = insights;
-        _isLoadingFinancialAnalyst = false;
-      });
-    } catch (e) {
-      setState(() => _isLoadingFinancialAnalyst = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error generating financial insights: ${e.toString()}')),
-        );
-      }
-    }
-  }
+  // REMOVED for V1.0: _generateAIInsights() and _generateFinancialInsights()
+  // These Tier 2 features will return in V2.0
 }
 
 class _SummaryCard extends StatelessWidget {
@@ -491,6 +431,305 @@ class _CategoryBreakdownChart extends StatelessWidget {
     );
   }
 }
+
+/// Spending Trend Chart - Simple line chart showing daily spending over period
+class _SpendingTrendChart extends StatelessWidget {
+  final List<model.Transaction> transactions;
+  final String currency;
+
+  const _SpendingTrendChart({
+    required this.transactions,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Group transactions by date and sum amounts
+    final Map<DateTime, double> dailySpending = {};
+    
+    for (final transaction in transactions) {
+      // All positive amounts are expenses
+      if (transaction.amount > 0) {
+        final date = DateTime(
+          transaction.transactionDate.year,
+          transaction.transactionDate.month,
+          transaction.transactionDate.day,
+        );
+        dailySpending[date] = (dailySpending[date] ?? 0) + transaction.amount;
+      }
+    }
+
+    // Sort by date
+    final sortedDates = dailySpending.keys.toList()..sort();
+    
+    if (sortedDates.isEmpty) {
+      return Card(
+        elevation: 2,
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Spending Trend',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 40),
+              Center(
+                child: Text(
+                  'No expense data available',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ),
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Create chart spots
+    final spots = <FlSpot>[];
+    for (int i = 0; i < sortedDates.length; i++) {
+      spots.add(FlSpot(i.toDouble(), dailySpending[sortedDates[i]]!));
+    }
+
+    final maxY = dailySpending.values.reduce((a, b) => a > b ? a : b);
+
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Spending Trend',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 200,
+              child: LineChart(
+                LineChartData(
+                  minY: 0,
+                  maxY: maxY * 1.2,
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: spots,
+                      isCurved: true,
+                      color: Colors.blue,
+                      barWidth: 3,
+                      dotData: const FlDotData(show: true),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: Colors.blue.withOpacity(0.1),
+                      ),
+                    ),
+                  ],
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 50,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            CurrencyUtils.formatAmount(value, currency),
+                            style: const TextStyle(fontSize: 10),
+                          );
+                        },
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: (sortedDates.length / 4).ceilToDouble(),
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index < 0 || index >= sortedDates.length) {
+                            return const Text('');
+                          }
+                          final date = sortedDates[index];
+                          return Text(
+                            '${date.month}/${date.day}',
+                            style: const TextStyle(fontSize: 10),
+                          );
+                        },
+                      ),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: maxY / 4,
+                  ),
+                  borderData: FlBorderData(show: false),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/* COMMENTED OUT - Income tracking not yet implemented in V1.0
+/// Income vs Expenses Chart - Simple bar chart comparing income to expenses
+class _IncomeVsExpensesChart extends StatelessWidget {
+  final SpendingInsights insights;
+  final String currency;
+
+  const _IncomeVsExpensesChart({
+    required this.insights,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final income = insights.totalIncome;
+    final expenses = insights.totalSpent;
+    final maxValue = income > expenses ? income : expenses;
+
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Income vs Expenses',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 200,
+              child: BarChart(
+                BarChartData(
+                  maxY: maxValue * 1.2,
+                  barGroups: [
+                    BarChartGroupData(
+                      x: 0,
+                      barRods: [
+                        BarChartRodData(
+                          toY: income,
+                          color: Colors.green,
+                          width: 40,
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                        ),
+                      ],
+                    ),
+                    BarChartGroupData(
+                      x: 1,
+                      barRods: [
+                        BarChartRodData(
+                          toY: expenses,
+                          color: Colors.red,
+                          width: 40,
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                        ),
+                      ],
+                    ),
+                  ],
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 50,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            CurrencyUtils.formatAmount(value, currency),
+                            style: const TextStyle(fontSize: 10),
+                          );
+                        },
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          switch (value.toInt()) {
+                            case 0:
+                              return const Text('Income', style: TextStyle(fontSize: 12));
+                            case 1:
+                              return const Text('Expenses', style: TextStyle(fontSize: 12));
+                            default:
+                              return const Text('');
+                          }
+                        },
+                      ),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                  ),
+                  borderData: FlBorderData(show: false),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Summary
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildSummaryItem('Income', income, Colors.green, currency),
+                _buildSummaryItem('Expenses', expenses, Colors.red, currency),
+                _buildSummaryItem(
+                  'Net',
+                  income - expenses,
+                  income > expenses ? Colors.green : Colors.red,
+                  currency,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem(String label, double amount, Color color, String currency) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          CurrencyUtils.formatAmount(amount, currency),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+}
+END COMMENTED OUT */
+
+// REMOVED for V1.0 simplification:
+// - class _TopMerchants (defer to V2.0)
+// - class _AIInsightsSection (Tier 2 feature)
+// - class _FinancialAnalystSection (Tier 2 feature)
+
+/* COMMENTED OUT - TIER 2/3 FEATURES FOR V2.0
 
 class _TopMerchants extends StatelessWidget {
   final SpendingInsights insights;
@@ -1083,6 +1322,8 @@ class _FinancialAnalystSection extends StatelessWidget {
     }
   }
 }
+
+END OF COMMENTED OUT TIER 2/3 FEATURES */
 
 /// Improved Period Selector Widget with better styling
 class _PeriodSelector extends StatelessWidget {

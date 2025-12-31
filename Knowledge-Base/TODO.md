@@ -12,12 +12,12 @@
 |------|-------|--------|------------|
 | Week 1 | Foundation Cleanup | ✅ COMPLETE | 100% |
 | Week 2 | Fix Core Features | ✅ COMPLETE | 100% |
-| Week 3 | Feature Simplification | 🔄 IN PROGRESS | 17% |
+| Week 3 | Feature Simplification | 🔄 IN PROGRESS | 33% |
 | Week 4 | Polish & Testing | ⏳ NOT STARTED | 0% |
 | Week 5 | Beta Testing | ⏳ NOT STARTED | 0% |
 | Week 6 | Launch Prep | ⏳ NOT STARTED | 0% |
 
-**Overall Progress:** 19/60 tasks completed (32%)
+**Overall Progress:** 20/60 tasks completed (33%)
 
 ---
 
@@ -238,13 +238,13 @@
   - **Notes:** Reduced from 7+ cards to 3 key cards: HeroSpendingCard (balance + weekly chart), AIInsightCard (dynamic insights), CashFlowCard (income vs expenses), + Recent Transactions list (3 items). Removed 5 complex cards for V2.0.
 
 ### Day 17: Insights Simplification
-- [ ] **Task 3.2:** Keep only 3 basic charts
-  - [ ] Spending by category (pie chart)
-  - [ ] Spending trend over time (line chart)
-  - [ ] Income vs expenses (bar chart)
-  - [ ] Remove: Predictions, comparisons, advanced analytics
-  - **Status:** ⏳ NOT STARTED
-  - **Notes:** _Will update when done_
+- [x] **Task 3.2:** Keep only 3 basic charts
+  - [x] Spending by category (pie chart) - KEPT
+  - [x] Spending trend over time (line chart) - ADDED NEW
+  - [ ] Income vs expenses (bar chart) - DEFERRED (model doesn't track income yet)
+  - [x] Remove: Predictions, comparisons, advanced analytics
+  - **Status:** ✅ COMPLETE
+  - **Notes:** Simplified to 2 charts (category pie + spending trend line). Removed Top Merchants, AI Insights section, Financial Analyst section. Commented out ~200 lines of Tier 2/3 features for V2.0. File reduced from 1167 to ~950 lines.
 
 ### Day 18: Budget & Transactions Polish
 - [ ] **Task 3.3:** Simplify budget UI
