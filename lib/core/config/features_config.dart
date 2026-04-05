@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Feature flags configuration for FinCoPilot
 /// 
 /// This class manages all feature toggles to enable/disable functionality
@@ -97,7 +99,7 @@ class FeaturesConfig {
   static const bool enableCashFlowPrediction = false;
   
   /// Financial health score and gamification
-  static const bool enableHealthScore = false;
+  static const bool enableHealthScore = true;
   
   /// Money stories and narratives
   static const bool enableMoneyStories = false;
@@ -105,26 +107,26 @@ class FeaturesConfig {
   // --- Subscriptions ---
   
   /// Auto-detect recurring subscriptions
-  static const bool enableSubscriptionDetection = false;
+  static const bool enableSubscriptionDetection = true;
   
   /// Subscription management dashboard
-  static const bool enableSubscriptionManagement = false;
+  static const bool enableSubscriptionManagement = true;
   
   // --- Export Features ---
   
   /// Export transactions to CSV
-  static const bool enableCsvExport = false;
+  static const bool enableCsvExport = true;
   
   /// Export reports to PDF
-  static const bool enablePdfExport = false;
+  static const bool enablePdfExport = true;
   
   /// Report generation with AI
-  static const bool enableReportGenerator = false;
+  static const bool enableReportGenerator = true;
   
   // --- Coaching Tips Library ---
   
   /// Static coaching tips library (AI generates dynamically instead)
-  static const bool enableCoachingTipsLibrary = false;
+  static const bool enableCoachingTipsLibrary = true;
   
   /// Scheduled coaching notifications
   static const bool enableCoachingNotifications = false;
@@ -176,6 +178,7 @@ class FeaturesConfig {
   // ==========================================================================
   
   /// Whether remote config is initialized
+  // ignore: unused_field
   static bool _remoteConfigInitialized = false;
   
   /// Initialize remote config (Firebase Remote Config)
@@ -276,6 +279,7 @@ class FeaturesConfig {
   
   /// Print current configuration (for debugging)
   static void printConfig() {
+    if (!kDebugMode) return;
     print('=== FinCoPilot Feature Configuration ===');
     print('Environment: $environment');
     print('Development Mode: $isDevelopment');

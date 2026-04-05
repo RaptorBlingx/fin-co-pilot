@@ -32,7 +32,7 @@ class PriceAlertService {
     try {
       // Initialize local notifications
       const initializationSettings = InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings('ic_stat_fincopilot_transparent'),
         iOS: DarwinInitializationSettings(
           requestAlertPermission: true,
           requestBadgePermission: true,
@@ -332,16 +332,16 @@ class PriceAlertService {
         id,
         title,
         body,
-        NotificationDetails(
+        const NotificationDetails(
           android: AndroidNotificationDetails(
             'price_alerts',
             'Price Alerts',
             channelDescription: 'Notifications for price changes and deals',
             importance: Importance.high,
             priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
+            icon: 'ic_stat_fincopilot_transparent',
           ),
-          iOS: const DarwinNotificationDetails(
+          iOS: DarwinNotificationDetails(
             presentAlert: true,
             presentBadge: true,
             presentSound: true,

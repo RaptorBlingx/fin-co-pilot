@@ -169,7 +169,7 @@ class SubscriptionDetectionService {
       lastCharge: lastCharge.date,
       nextExpectedCharge: nextCharge,
       detectedAt: DateTime.now(),
-      transactions: largestGroup.map((t) => t.id).toList(),
+      transactions: largestGroup.map((t) => t.id ?? '').where((id) => id.isNotEmpty).toList(),
       status: SubscriptionStatus.active,
       userConfirmed: false,
       metadata: SubscriptionMetadata(

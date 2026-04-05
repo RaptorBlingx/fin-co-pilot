@@ -1,14 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../shared/models/transaction.dart' as model;
+import 'package:firebase_ai/firebase_ai.dart';
+import 'package:flutter/foundation.dart';
+import '../models/transaction.dart' as model;
 import 'receipt_parser_agent.dart';
-import 'transaction_classifier_agent.dart';
 import 'analytics_service.dart';
+import 'dart:convert';
 import 'dart:io';
 
 class TransactionService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ReceiptParserAgent _receiptParser = ReceiptParserAgent();
-  final TransactionClassifierAgent _classifier = TransactionClassifierAgent();
+  late final GenerativeModel _classifier = FirebaseAI.googleAI().generativeModel(
+    model: 'gemini-3.1-flash-lite-preview',
+    generationConfig: GenerationConfig(temperature: 0.2, maxOutputTokens: 1024),
+  );
 
   /// Add transaction from receipt photo
   Future<Map<String, dynamic>> addTransactionFromReceipt({
@@ -95,16 +100,26 @@ class TransactionService {
   }) async {
     try {
       // Classify transaction using AI
-      final classifyResult = await _classifier.classifyTransaction(description);
-      
-      if (!classifyResult['success']) {
-        return {
-          'success': false,
-          'error': classifyResult['error'],
+      final prompt = '''Extract transaction details from this text. Return ONLY valid JSON:
+{"amount": <number>, "category": "<Groceries|Dining|Transport|Entertainment|Shopping|Health|Bills|Education|Travel|Other>", "merchant": "<name or null>", "description": "<brief>", "confidence": <0.0-1.0>}
+
+Text: "$description"''';
+      final response = await _classifier.generateContent([Content.text(prompt)]);
+      final text = response.text ?? '';
+      final jsonStr = text.contains('{') ? text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1) : '';
+
+      Map<String, dynamic> classification;
+      if (jsonStr.isNotEmpty) {
+        classification = json.decode(jsonStr) as Map<String, dynamic>;
+      } else {
+        classification = {
+          'amount': 0.0,
+          'category': 'Other',
+          'merchant': null,
+          'description': description,
+          'confidence': 0.3,
         };
       }
-      
-      final classification = classifyResult['data'];
       
       // Create transaction
       final transaction = model.Transaction(
@@ -231,7 +246,7 @@ class TransactionService {
       // Get the month of the transaction
       final month = '${transactionDate.year}-${transactionDate.month.toString().padLeft(2, '0')}';
 
-      print('🔍 UPDATE BUDGET: userId=$userId, category=$category, amount=$amount, month=$month');
+      if (kDebugMode) print('🔍 UPDATE BUDGET: userId=$userId, category=$category, amount=$amount, month=$month');
 
       // Find the budget for this category and month
       final budgetQuery = await _firestore
@@ -242,14 +257,14 @@ class TransactionService {
           .limit(1)
           .get();
 
-      print('🔍 BUDGET QUERY: Found ${budgetQuery.docs.length} budgets');
+      if (kDebugMode) print('🔍 BUDGET QUERY: Found ${budgetQuery.docs.length} budgets');
 
       if (budgetQuery.docs.isNotEmpty) {
         final budgetDoc = budgetQuery.docs.first;
         final currentSpending = (budgetDoc.data()['currentSpending'] as num?)?.toDouble() ?? 0;
         final newSpending = currentSpending + amount;
 
-        print('✅ UPDATING BUDGET: ${budgetDoc.id} from $currentSpending to $newSpending');
+        if (kDebugMode) print('✅ UPDATING BUDGET: ${budgetDoc.id} from $currentSpending to $newSpending');
 
         // Update the budget
         await _firestore.collection('budgets').doc(budgetDoc.id).update({
@@ -257,13 +272,13 @@ class TransactionService {
           'lastUpdated': FieldValue.serverTimestamp(),
         });
 
-        print('✅ BUDGET UPDATED SUCCESSFULLY');
+        if (kDebugMode) print('✅ BUDGET UPDATED SUCCESSFULLY');
       } else {
-        print('⚠️ NO BUDGET FOUND for category: $category in month: $month');
+        if (kDebugMode) print('⚠️ NO BUDGET FOUND for category: $category in month: $month');
       }
     } catch (e) {
       // Log error but don't fail the transaction
-      print('❌ Error updating budget spending: $e');
+      if (kDebugMode) print('❌ Error updating budget spending: $e');
     }
   }
 

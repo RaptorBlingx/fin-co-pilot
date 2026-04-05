@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../../../services/auth_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../../core/providers/app_providers.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/design_tokens.dart';
 import '../../../../services/preferences_service.dart';
 import '../../../../services/analytics_service.dart';
-import '../../../../services/transaction_service.dart';
 import '../../../../services/insights_service.dart';
-import '../../../../shared/models/transaction.dart' as model;
+import '../../../../models/transaction.dart' as model;
 
 import '../../../transactions/presentation/screens/transactions_screen.dart';
 import '../../../transactions/presentation/screens/transaction_detail_screen.dart';
@@ -14,125 +17,125 @@ import '../../../budget/presentation/screens/budget_screen.dart';
 import '../../widgets/hero_spending_card.dart';
 import '../../widgets/ai_insight_card.dart';
 import '../../widgets/compact_transaction_card.dart';
-import '../../widgets/quick_action_button.dart';
-// REMOVED for V1.0 simplification:
-// import '../../widgets/financial_health_score_card.dart';
+import '../../widgets/smart_suggestions_section.dart';
 import '../../../../core/utils/haptic_utils.dart';
 import '../../../../core/navigation/page_transitions.dart';
+import '../../../../shared/widgets/shimmer_loading.dart';
+import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/staggered_animation.dart';
 import '../../../cash_flow/widgets/cash_flow_card.dart';
-// REMOVED: Smart nudge, SMS, insights cards (Tier 2/3)
-// REMOVED: Money story, subscriptions, coaching cards (V2.0 features)
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // Track dashboard screen view
     AnalyticsService.logScreenView('dashboard');
   }
 
-  /// Generate smart insights based on user's real transaction data
-  List<InsightData> _generateSmartInsights(List<model.Transaction> allTransactions) {
+  List<InsightData> _generateSmartInsights(
+      List<model.Transaction> allTransactions) {
     final now = DateTime.now();
     final startOfMonth = DateTime(now.year, now.month, 1);
     final startOfLastMonth = DateTime(now.year, now.month - 1, 1);
 
-    // Get this month's and last month's transactions
-    final thisMonthTransactions = allTransactions.where((t) =>
-      t.transactionDate.isAfter(startOfMonth.subtract(const Duration(days: 1)))
-    ).toList();
+    final thisMonthTransactions = allTransactions
+        .where((t) => t.transactionDate
+            .isAfter(startOfMonth.subtract(const Duration(days: 1))))
+        .toList();
 
-    final lastMonthTransactions = allTransactions.where((t) =>
-      t.transactionDate.isAfter(startOfLastMonth.subtract(const Duration(days: 1))) &&
-      t.transactionDate.isBefore(startOfMonth)
-    ).toList();
+    final lastMonthTransactions = allTransactions
+        .where((t) =>
+            t.transactionDate
+                .isAfter(startOfLastMonth.subtract(const Duration(days: 1))) &&
+            t.transactionDate.isBefore(startOfMonth))
+        .toList();
 
-    final thisMonthInsights = InsightsService.generateInsights(thisMonthTransactions);
-    final lastMonthInsights = InsightsService.generateInsights(lastMonthTransactions);
+    final thisMonthInsights =
+        InsightsService.generateInsights(thisMonthTransactions);
+    final lastMonthInsights =
+        InsightsService.generateInsights(lastMonthTransactions);
 
     final List<InsightData> insights = [];
 
-    // Insight 1: Spending trend comparison
+    // Spending trend comparison
     if (lastMonthInsights.totalSpent > 0) {
       final change = thisMonthInsights.totalSpent - lastMonthInsights.totalSpent;
-      final percentChange = (change / lastMonthInsights.totalSpent * 100).abs();
+      final percentChange =
+          (change / lastMonthInsights.totalSpent * 100).abs();
 
       if (change < 0) {
         insights.add(InsightData(
-          message: "You're spending ${percentChange.toStringAsFixed(0)}% less this month. Keep it up! 🎉",
+          message:
+              "You're spending ${percentChange.toStringAsFixed(0)}% less this month. Keep it up!",
           type: InsightType.achievement,
-          actionLabel: "View details",
+          actionLabel: 'View details',
           onActionTap: () {
             HapticUtils.light();
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const TransactionsScreen()),
-            );
+            context.pushWithFade(const TransactionsScreen());
           },
         ));
       } else if (change > lastMonthInsights.totalSpent * 0.2) {
         insights.add(InsightData(
-          message: "Spending is up ${percentChange.toStringAsFixed(0)}% this month. Consider reviewing your budget.",
+          message:
+              'Spending is up ${percentChange.toStringAsFixed(0)}% this month. Consider reviewing your budget.',
           type: InsightType.warning,
-          actionLabel: "Review spending",
+          actionLabel: 'Review spending',
           onActionTap: () {
             HapticUtils.light();
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const TransactionsScreen()),
-            );
+            context.pushWithFade(const TransactionsScreen());
           },
         ));
       }
     }
 
-    // Insight 2: Top category spending
+    // Top category spending
     if (thisMonthInsights.topCategory.isNotEmpty) {
-      final categorySpending = thisMonthInsights.byCategory[thisMonthInsights.topCategory] ?? 0;
-      final percentage = (categorySpending / thisMonthInsights.totalSpent * 100);
+      final categorySpending =
+          thisMonthInsights.byCategory[thisMonthInsights.topCategory] ?? 0;
+      final percentage =
+          (categorySpending / thisMonthInsights.totalSpent * 100);
 
       if (percentage > 40) {
         insights.add(InsightData(
-          message: "${thisMonthInsights.topCategory} is ${percentage.toStringAsFixed(0)}% of your spending. Consider setting a budget for this category.",
+          message:
+              '${thisMonthInsights.topCategory} is ${percentage.toStringAsFixed(0)}% of your spending. Consider setting a budget.',
           type: InsightType.tip,
-          actionLabel: "Set budget",
+          actionLabel: 'Set budget',
           onActionTap: () {
             HapticUtils.light();
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const BudgetScreen()),
-            );
+            context.pushWithFade(const BudgetScreen());
           },
         ));
       }
     }
 
-    // Insight 3: Category comparison with last month
-    if (lastMonthInsights.byCategory.isNotEmpty && thisMonthInsights.byCategory.isNotEmpty) {
+    // Category comparison with last month
+    if (lastMonthInsights.byCategory.isNotEmpty &&
+        thisMonthInsights.byCategory.isNotEmpty) {
       for (final category in thisMonthInsights.byCategory.keys) {
-        final thisMonthAmount = thisMonthInsights.byCategory[category] ?? 0;
-        final lastMonthAmount = lastMonthInsights.byCategory[category] ?? 0;
+        final thisMonthAmount =
+            thisMonthInsights.byCategory[category] ?? 0;
+        final lastMonthAmount =
+            lastMonthInsights.byCategory[category] ?? 0;
 
         if (lastMonthAmount > 0) {
           final savings = lastMonthAmount - thisMonthAmount;
           if (savings > 50) {
             insights.add(InsightData(
-              message: "You've saved \$${savings.toStringAsFixed(0)} in $category this month! 💰",
+              message:
+                  "You've saved \$${savings.toStringAsFixed(0)} in $category this month!",
               type: InsightType.pattern,
-              actionLabel: "See savings",
+              actionLabel: 'See savings',
               onActionTap: () {
                 HapticUtils.light();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const TransactionsScreen()),
-                );
+                context.pushWithFade(const TransactionsScreen());
               },
             ));
             break;
@@ -141,34 +144,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     }
 
-    // Insight 4: Transaction count pattern
-    if (thisMonthInsights.transactionCount > lastMonthInsights.transactionCount + 10) {
+    // Transaction count pattern
+    if (thisMonthInsights.transactionCount >
+        lastMonthInsights.transactionCount + 10) {
       insights.add(InsightData(
-        message: "You made ${thisMonthInsights.transactionCount - lastMonthInsights.transactionCount} more transactions this month. Consider consolidating purchases.",
+        message:
+            'You made ${thisMonthInsights.transactionCount - lastMonthInsights.transactionCount} more transactions this month. Consider consolidating purchases.',
         type: InsightType.tip,
-        actionLabel: "Learn more",
+        actionLabel: 'Learn more',
         onActionTap: () {
           HapticUtils.light();
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const TransactionsScreen()),
-          );
+          context.pushWithFade(const TransactionsScreen());
         },
       ));
     }
 
-    // Default insight if no specific patterns found
+    // Default insight
     if (insights.isEmpty && thisMonthInsights.transactionCount > 0) {
       insights.add(InsightData(
-        message: "You've made ${thisMonthInsights.transactionCount} transactions this month totaling \$${thisMonthInsights.totalSpent.toStringAsFixed(2)}",
+        message:
+            "You've made ${thisMonthInsights.transactionCount} transactions this month totaling \$${thisMonthInsights.totalSpent.toStringAsFixed(2)}",
         type: InsightType.pattern,
-        actionLabel: "View all",
+        actionLabel: 'View all',
         onActionTap: () {
           HapticUtils.light();
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const TransactionsScreen()),
-          );
+          context.pushWithFade(const TransactionsScreen());
         },
       ));
     }
@@ -178,243 +178,337 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authService = AuthService();
-    final user = authService.currentUser;
     final currency = PreferencesService.getCurrency() ?? 'USD';
+    final monthlyTransactions = ref.watch(currentMonthTransactionsProvider);
+    final allTransactions = ref.watch(transactionsProvider);
+    final monthlyBudget = ref.watch(monthlyBudgetProvider).valueOrNull ?? 0.0;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Fin Co-Pilot',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontFamily: 'Manrope',
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_rounded),
-            onPressed: () {
-              HapticUtils.light();
-              context.pushWithFade(const SettingsScreen());
-            },
-          ),
-        ],
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Hero Spending Card - 35% of screen height
-              StreamBuilder<List<model.Transaction>>(
-                stream: TransactionService().getCurrentMonthTransactions(user!.uid),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Container(
-                      height: MediaQuery.of(context).size.height * 0.35,
-                      margin: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.grey[300]!, Colors.grey[400]!],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: const Center(
-                        child: CircularProgressIndicator(color: Colors.white),
-                      ),
-                    );
-                  }
-
-                  final transactions = snapshot.data!;
-                  final totalSpent = transactions.fold<double>(0, (sum, t) => sum + t.amount);
-                  
-                  // Generate sample weekly spending data (last 7 days)
-                  final weeklySpending = List.generate(7, (index) => 
-                    (totalSpent / 30) * (0.8 + (index % 3) * 0.4)
-                  );
-                  
-                  // For demo: assuming monthly budget of $2000
-                  const monthlyBudget = 2000.0;
-
-                  return Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: HeroSpendingCard(
-                      monthlySpent: totalSpent,
-                      monthlyBudget: monthlyBudget,
-                      currency: currency,
-                      weeklySpending: weeklySpending,
-                    ),
-                  );
-                },
+        bottom: false,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          slivers: [
+            // App bar header
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.space20,
+                DesignTokens.space12,
+                DesignTokens.space20,
+                DesignTokens.space8,
               ),
-
-              // AI Insight Card - Dynamic insights based on real user data
-              StreamBuilder<List<model.Transaction>>(
-                stream: TransactionService().getTransactions(user.uid),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-
-                  final allTransactions = snapshot.data!;
-                  final insights = _generateSmartInsights(allTransactions);
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: AIInsightCard(insights: insights),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 24),
-
-              // Task 3.1: Dashboard Simplification - Keep only 3-4 key cards
-              // KEPT: Cash Flow Card (shows income vs expenses)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: CashFlowCard(),
-              ),
-
-              const SizedBox(height: 16),
-
-              // REMOVED for V1.0 simplification:
-              // - FinancialHealthScoreCard (complex scoring, V2.0)
-              // - MoneyStoryCard (AI storytelling, V2.0)
-              // - SubscriptionSummaryCard (subscription detection, V2.0)
-              // - CoachingTipsDashboardCard (moved to separate coaching screen)
-
-              const SizedBox(height: 32),
-
-              // Recent Transactions Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+              sliver: SliverToBoxAdapter(
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Recent Transactions',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontFamily: 'Manrope',
-                        fontWeight: FontWeight.w700,
-                      ),
+                      'Fin Co-Pilot',
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontFamily: 'Manrope',
+                                fontWeight: FontWeight.w800,
+                              ),
                     ),
-                    TextButton(
+                    const Spacer(),
+                    IconButton(
+                      icon: Icon(
+                        PhosphorIcons.gearSix(),
+                        size: DesignTokens.iconMD,
+                      ),
                       onPressed: () {
                         HapticUtils.light();
-                        context.pushWithFade(const TransactionsScreen());
+                        context.pushWithFade(const SettingsScreen());
                       },
-                      child: const Text('View All'),
                     ),
                   ],
                 ),
               ),
+            ),
 
-              const SizedBox(height: 16),
+            // Hero Spending Card
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.space20,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: monthlyTransactions.when(
+                  loading: () => const HeroCardSkeleton(),
+                  error: (e, _) => _ErrorCard(
+                    message: 'Unable to load spending data.',
+                    onRetry: () =>
+                        ref.invalidate(currentMonthTransactionsProvider),
+                  ),
+                  data: (transactions) {
+                    final totalSpent = transactions.fold<double>(
+                        0, (sum, t) => sum + t.amount);
+                    final now = DateTime.now();
+                    final weeklySpending = List.generate(7, (index) {
+                      final day = now.subtract(Duration(days: 6 - index));
+                      final dayStart =
+                          DateTime(day.year, day.month, day.day);
+                      final dayEnd =
+                          dayStart.add(const Duration(days: 1));
+                      return transactions
+                          .where((t) =>
+                              t.transactionDate.isAfter(
+                                  dayStart.subtract(
+                                      const Duration(seconds: 1))) &&
+                              t.transactionDate.isBefore(dayEnd))
+                          .fold<double>(0, (sum, t) => sum + t.amount);
+                    });
 
-              // Recent Transactions List - Show 3 most recent
-              StreamBuilder<List<model.Transaction>>(
-                stream: TransactionService().getTransactions(user.uid),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 24),
-                      child: Center(child: CircularProgressIndicator()),
+                    final budget = monthlyBudget > 0
+                        ? monthlyBudget
+                        : (totalSpent > 0 ? totalSpent : 1.0);
+
+                    return HeroSpendingCard(
+                      monthlySpent: totalSpent,
+                      monthlyBudget: budget,
+                      currency: currency,
+                      weeklySpending: weeklySpending,
                     );
-                  }
+                  },
+                ),
+              ),
+            ),
 
-                  final allTransactions = snapshot.data!;
-                  // Take only the first 3 transactions (most recent)
-                  final transactions = allTransactions.take(3).toList();
-                  
+            const SliverToBoxAdapter(
+              child: SizedBox(height: DesignTokens.space16),
+            ),
+
+            // AI Insight Card
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.space20,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: allTransactions.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (txns) {
+                    if (txns.isEmpty) return const SizedBox.shrink();
+                    final insights = _generateSmartInsights(txns);
+                    return AIInsightCard(insights: insights);
+                  },
+                ),
+              ),
+            ),
+
+            const SliverToBoxAdapter(
+              child: SizedBox(height: DesignTokens.space16),
+            ),
+
+            // Cash Flow Card
+            const SliverPadding(
+              padding: EdgeInsets.symmetric(
+                horizontal: DesignTokens.space20,
+              ),
+              sliver: SliverToBoxAdapter(child: CashFlowCard()),
+            ),
+
+            const SliverToBoxAdapter(
+              child: SizedBox(height: DesignTokens.space24),
+            ),
+
+            // Recent Transactions Section header
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.space20,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: _SectionHeader(
+                  title: 'Recent Transactions',
+                  onViewAll: () {
+                    HapticUtils.light();
+                    context.pushWithFade(const TransactionsScreen());
+                  },
+                ),
+              ),
+            ),
+
+            const SliverToBoxAdapter(
+              child: SizedBox(height: DesignTokens.space12),
+            ),
+
+            // Recent Transactions List
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.space20,
+              ),
+              sliver: allTransactions.when(
+                loading: () => SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => Padding(
+                      padding:
+                          const EdgeInsets.only(bottom: DesignTokens.space8),
+                      child: const TransactionTileSkeleton(),
+                    ),
+                    childCount: 3,
+                  ),
+                ),
+                error: (_, __) =>
+                    const SliverToBoxAdapter(child: SizedBox.shrink()),
+                data: (txns) {
+                  final transactions = txns.take(3).toList();
                   if (transactions.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.receipt_long_rounded,
-                                size: 48,
-                                color: Theme.of(context).colorScheme.outline,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No transactions yet',
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Add your first transaction to get started',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.outline,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    return const SliverToBoxAdapter(
+                      child: NoTransactionsEmpty(),
                     );
                   }
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      children: transactions.map((transaction) {
-                        return CompactTransactionCard(
-                          transaction: transaction,
-                          onTap: () {
-                            HapticUtils.light();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => TransactionDetailScreen(
+                  return SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final transaction = transactions[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(
+                              bottom: DesignTokens.space8),
+                          child: CompactTransactionCard(
+                            transaction: transaction,
+                            onTap: () {
+                              HapticUtils.light();
+                              context.pushWithSlideUp(
+                                TransactionDetailScreen(
                                   transaction: transaction,
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ).staggered(index),
                         );
-                      }).toList(),
+                      },
+                      childCount: transactions.length,
                     ),
                   );
                 },
               ),
+            ),
 
-              const SizedBox(height: 32),
+            const SliverToBoxAdapter(
+              child: SizedBox(height: DesignTokens.space24),
+            ),
 
-              // Quick Actions Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+            // Suggested for You header
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.space20,
+              ),
+              sliver: SliverToBoxAdapter(
                 child: Text(
-                  'Quick Actions',
+                  'Suggested for You',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontFamily: 'Manrope',
-                    fontWeight: FontWeight.w700,
-                  ),
+                        fontFamily: 'Manrope',
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
               ),
+            ),
 
-              const SizedBox(height: 16),
+            const SliverToBoxAdapter(
+              child: SizedBox(height: DesignTokens.space12),
+            ),
 
-              // Quick Actions Grid
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: QuickActionGrid(),
+            // Smart Suggestions
+            const SliverPadding(
+              padding: EdgeInsets.symmetric(
+                horizontal: DesignTokens.space20,
               ),
+              sliver: SliverToBoxAdapter(child: SmartSuggestionsSection()),
+            ),
 
-              const SizedBox(height: 32),
-            ],
-          ),
+            // Bottom padding for nav bar
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: DesignTokens.bottomNavHeight + DesignTokens.space32,
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final VoidCallback? onViewAll;
+
+  const _SectionHeader({required this.title, this.onViewAll});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontFamily: 'Manrope',
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        if (onViewAll != null)
+          GestureDetector(
+            onTap: onViewAll,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'View All',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.primaryIndigo,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Icon(
+                  PhosphorIcons.caretRight(),
+                  size: 14,
+                  color: AppTheme.primaryIndigo,
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorCard({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: DesignTokens.cardPaddingLarge,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
+        borderRadius: DesignTokens.borderRadiusXL,
+      ),
+      child: Column(
+        children: [
+          Icon(
+            PhosphorIcons.warning(),
+            size: DesignTokens.iconLG,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          const SizedBox(height: DesignTokens.space8),
+          Text(
+            message,
+            style: Theme.of(context).textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: DesignTokens.space12),
+          TextButton(
+            onPressed: onRetry,
+            child: const Text('Try Again'),
+          ),
+        ],
       ),
     );
   }

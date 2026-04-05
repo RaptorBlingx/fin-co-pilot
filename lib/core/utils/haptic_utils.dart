@@ -1,29 +1,37 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import '../../services/preferences_service.dart';
 
 class HapticUtils {
+  static bool get _enabled => PreferencesService.isHapticFeedbackEnabled();
+
   // Light impact - for selections, switches
   static void light() {
+    if (!_enabled) return;
     HapticFeedback.lightImpact();
   }
 
   // Medium impact - for button taps
   static void medium() {
+    if (!_enabled) return;
     HapticFeedback.mediumImpact();
   }
 
   // Heavy impact - for important actions
   static void heavy() {
+    if (!_enabled) return;
     HapticFeedback.heavyImpact();
   }
 
   // Selection click - for picker changes
   static void selection() {
+    if (!_enabled) return;
     HapticFeedback.selectionClick();
   }
 
   // Success feedback
   static void success() {
+    if (!_enabled) return;
     HapticFeedback.mediumImpact();
     Future.delayed(const Duration(milliseconds: 50), () {
       HapticFeedback.lightImpact();
@@ -32,6 +40,7 @@ class HapticUtils {
 
   // Error feedback
   static void error() {
+    if (!_enabled) return;
     HapticFeedback.heavyImpact();
     Future.delayed(const Duration(milliseconds: 50), () {
       HapticFeedback.heavyImpact();
@@ -40,6 +49,7 @@ class HapticUtils {
 
   // Warning feedback
   static void warning() {
+    if (!_enabled) return;
     HapticFeedback.mediumImpact();
   }
 }

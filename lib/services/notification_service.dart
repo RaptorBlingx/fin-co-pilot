@@ -61,7 +61,7 @@ class NotificationService {
   /// Initialize local notifications
   Future<void> _initializeLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('ic_stat_fincopilot_transparent');
 
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
@@ -89,26 +89,41 @@ class NotificationService {
 
   /// Create notification channels for Android
   Future<void> _createNotificationChannels() async {
+    final androidPlugin = _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin == null) return;
+
+    // Delete ALL old channels so they get recreated cleanly
+    // Android caches channel settings — stale channels won't update importance/sound
+    const allChannelIds = [
+      'high_importance_channel', 'budget_alerts', 'coaching_tips',
+      'price_alerts', 'milestones', 'sms_transactions',
+    ];
+    for (final id in allChannelIds) {
+      try {
+        await androidPlugin.deleteNotificationChannel(id);
+      } catch (_) {}
+    }
+
     final List<AndroidNotificationChannel> channels = [
       const AndroidNotificationChannel(
         'high_importance_channel',
         'High Importance Notifications',
         description: 'This channel is used for important notifications.',
         importance: Importance.high,
-        sound: RawResourceAndroidNotificationSound('notification'),
       ),
       const AndroidNotificationChannel(
         'budget_alerts',
         'Budget Alerts',
         description: 'Notifications for budget warnings and overages.',
         importance: Importance.high,
-        sound: RawResourceAndroidNotificationSound('notification'),
       ),
       const AndroidNotificationChannel(
         'coaching_tips',
         'Financial Coaching Tips',
         description: 'Daily tips and advice for better financial management.',
-        importance: Importance.defaultImportance,
+        importance: Importance.high,
       ),
       const AndroidNotificationChannel(
         'price_alerts',
@@ -120,22 +135,24 @@ class NotificationService {
         'milestones',
         'Spending Milestones',
         description: 'Achievements and milestone notifications.',
-        importance: Importance.defaultImportance,
+        importance: Importance.high,
       ),
       const AndroidNotificationChannel(
         'sms_transactions',
         'SMS Transaction Confirmations',
         description: 'One-tap confirmations for SMS-detected transactions.',
         importance: Importance.high,
-        sound: RawResourceAndroidNotificationSound('notification'),
       ),
     ];
 
     for (final channel in channels) {
-      await _localNotifications
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(channel);
+      try {
+        await androidPlugin.createNotificationChannel(channel);
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error creating notification channel ${channel.id}: $e');
+        }
+      }
     }
   }
 
@@ -176,6 +193,30 @@ class NotificationService {
               AndroidFlutterLocalNotificationsPlugin>()
           ?.requestNotificationsPermission();
     }
+  }
+
+  /// Check if notification permission is granted (Android 13+)
+  Future<bool> areNotificationsPermitted() async {
+    if (Platform.isAndroid) {
+      final granted = await _localNotifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.areNotificationsEnabled();
+      return granted ?? false;
+    }
+    return true;
+  }
+
+  /// Request notification permission again (returns true if granted)
+  Future<bool> requestPermissionAgain() async {
+    if (Platform.isAndroid) {
+      final granted = await _localNotifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+      return granted ?? false;
+    }
+    return true;
   }
 
   /// Get FCM token
@@ -247,7 +288,7 @@ class NotificationService {
             _getChannelName(channelId),
             importance: Importance.high,
             priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
+            icon: 'ic_stat_fincopilot_transparent',
           ),
           iOS: const DarwinNotificationDetails(
             presentAlert: true,
@@ -409,7 +450,7 @@ class NotificationService {
     try {
       // Save to Firestore
       await _firestore.collection('notifications').add({
-        'userId': user.uid,
+        'user_id': user.uid,
         'type': 'budget_alert',
         'title': title,
         'body': body,
@@ -453,7 +494,7 @@ class NotificationService {
     try {
       // Save to Firestore
       await _firestore.collection('notifications').add({
-        'userId': user.uid,
+        'user_id': user.uid,
         'type': 'coaching_tip',
         'title': title,
         'body': body,
@@ -497,7 +538,7 @@ class NotificationService {
     try {
       // Save to Firestore
       await _firestore.collection('notifications').add({
-        'userId': user.uid,
+        'user_id': user.uid,
         'type': 'price_alert',
         'title': title,
         'body': body,
@@ -542,7 +583,7 @@ class NotificationService {
     try {
       // Save to Firestore
       await _firestore.collection('notifications').add({
-        'userId': user.uid,
+        'user_id': user.uid,
         'type': 'milestone',
         'title': title,
         'body': body,
@@ -573,6 +614,13 @@ class NotificationService {
     }
   }
 
+  /// Ensure the notification plugin is initialized before displaying
+  Future<void> _ensureInitialized() async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+  }
+
   /// Display a local notification to the user
   Future<void> _displayLocalNotification({
     required String title,
@@ -581,6 +629,8 @@ class NotificationService {
     String? payload,
   }) async {
     try {
+      await _ensureInitialized();
+
       final int notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
       await _localNotifications.show(
@@ -591,13 +641,9 @@ class NotificationService {
           android: AndroidNotificationDetails(
             channelId,
             _getChannelName(channelId),
-            importance: channelId == 'budget_alerts' || channelId == 'price_alerts'
-                ? Importance.high
-                : Importance.defaultImportance,
-            priority: channelId == 'budget_alerts' || channelId == 'price_alerts'
-                ? Priority.high
-                : Priority.defaultPriority,
-            icon: '@mipmap/ic_launcher',
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: 'ic_stat_fincopilot_transparent',
             styleInformation: BigTextStyleInformation(body),
           ),
           iOS: const DarwinNotificationDetails(
@@ -625,6 +671,33 @@ class NotificationService {
   /// Check if service is initialized
   bool get isInitialized => _isInitialized;
 
+  /// Show a test notification directly — propagates errors for diagnostics
+  Future<void> showTestNotification() async {
+    await _ensureInitialized();
+
+    final int notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    await _localNotifications.show(
+      notificationId,
+      '🎉 Test Notification',
+      'Notifications are working correctly! Your FinCoPilot is ready to help you stay on track.',
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'high_importance_channel',
+          'High Importance Notifications',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: 'ic_stat_fincopilot_transparent',
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+    );
+  }
+
   /// Show SMS transaction confirmation notification (Week 2 feature)
   /// One-tap confirmation: [YES] [NO] buttons
   Future<void> showSmsConfirmation({
@@ -644,7 +717,7 @@ class NotificationService {
             'SMS Transaction Confirmations',
             importance: Importance.high,
             priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
+            icon: 'ic_stat_fincopilot_transparent',
             styleInformation: BigTextStyleInformation(body),
             actions: <AndroidNotificationAction>[
               const AndroidNotificationAction(
@@ -701,7 +774,7 @@ class NotificationService {
             'SMS Transaction Confirmations',
             importance: Importance.defaultImportance,
             priority: Priority.defaultPriority,
-            icon: '@mipmap/ic_launcher',
+            icon: 'ic_stat_fincopilot_transparent',
           ),
           iOS: DarwinNotificationDetails(
             presentAlert: true,
@@ -742,7 +815,7 @@ class NotificationService {
                 : 'General Notifications',
             importance: Importance.high,
             priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
+            icon: 'ic_stat_fincopilot_transparent',
           ),
           iOS: const DarwinNotificationDetails(
             presentAlert: true,

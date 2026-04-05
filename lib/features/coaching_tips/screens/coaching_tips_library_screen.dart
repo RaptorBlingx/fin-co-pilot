@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/navigation/page_transitions.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/coaching_tips_library_service.dart';
 import '../../../models/coaching_tip.dart' as library_model;
@@ -206,21 +207,11 @@ class _CoachingTipsLibraryScreenState extends State<CoachingTipsLibraryScreen>
   }
 
   void _showBookmarkedTips(BuildContext context, String userId) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => _BookmarkedTipsScreen(userId: userId),
-      ),
-    );
+    context.pushWithSlideUp(_BookmarkedTipsScreen(userId: userId));
   }
 
   void _showHighlyRatedTips(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const _HighlyRatedTipsScreen(),
-      ),
-    );
+    context.pushWithSlideUp(const _HighlyRatedTipsScreen());
   }
 
   Future<void> _handleBookmark(String tipId, String userId) async {

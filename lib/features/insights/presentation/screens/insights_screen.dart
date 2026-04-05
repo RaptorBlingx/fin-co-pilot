@@ -1,190 +1,196 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../../core/providers/app_providers.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/design_tokens.dart';
+import '../../../../core/constants/categories.dart';
 import '../../../../services/insights_service.dart';
-// REMOVED for V1.0 simplification: financial_analyst_agent, financial_insight
-import '../../../../services/auth_service.dart';
-import '../../../../shared/models/transaction.dart' as model;
+import '../../../../models/transaction.dart' as model;
 import '../../../../shared/models/spending_insights.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../shared/widgets/shimmer_loading.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../core/navigation/app_navigation.dart';
+import '../../../../shared/widgets/glass_card.dart';
+import '../../../../shared/widgets/chart_theme.dart';
+import '../../../../shared/widgets/animated_counter.dart';
+import '../../../../shared/widgets/premium_refresh_indicator.dart';
 import '../../../../core/utils/haptic_utils.dart';
 
-/// Simplified Insights Screen for V1.0
-/// Shows only 3 core charts:
-/// 1. Spending by Category (Pie Chart)
-/// 2. Spending Trend (Line Chart)
-/// 3. Income vs Expenses (Bar Chart)
-///
-/// REMOVED for V1.0: AI Insights, Financial Analyst, Top Merchants (defer to V2.0)
-class InsightsScreen extends StatefulWidget {
+class InsightsScreen extends ConsumerWidget {
   const InsightsScreen({super.key});
 
-  @override
-  State<InsightsScreen> createState() => _InsightsScreenState();
-}
-
-class _InsightsScreenState extends State<InsightsScreen> {
-  final AuthService _authService = AuthService();
-  
-  // REMOVED for V1.0: AI Insights & Financial Analyst features
-  // bool _isLoadingAI = false;
-  // List<String> _aiInsights = [];
-  // bool _isLoadingFinancialAnalyst = false;
-  // List<FinancialInsight> _financialInsights = [];
-
-  // Time period selection
-  String _selectedPeriod = 'month'; // 'week', 'month', 'year'
-
-  /// Get transactions stream based on selected time period
-  Stream<List<model.Transaction>> _getTransactionsStreamByPeriod(String userId) {
-    final now = DateTime.now();
-    DateTime startDate;
-    
-    switch (_selectedPeriod) {
-      case 'week':
-        startDate = now.subtract(const Duration(days: 7));
-        break;
-      case 'year':
-        startDate = DateTime(now.year, 1, 1);
-        break;
-      case 'month':
-      default:
-        startDate = DateTime(now.year, now.month, 1);
-    }
-
-    // Query Firestore for transactions in the selected period
-    // Using transaction_date field which should have existing indexes
-    return FirebaseFirestore.instance
-        .collection('transactions')
-        .where('user_id', isEqualTo: userId)
-        .where('transaction_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
-        .where('transaction_date', isLessThanOrEqualTo: Timestamp.fromDate(now))
-        .orderBy('transaction_date', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        return model.Transaction.fromMap(data, doc.id);
-      }).toList();
-    });
-  }
-
-  /// Get period display text for UI
-  String _getPeriodDisplayText() {
-    switch (_selectedPeriod) {
+  String _getPeriodDisplayText(String period) {
+    switch (period) {
       case 'week':
         return 'This Week';
       case 'year':
         return 'This Year';
-      case 'month':
       default:
         return 'This Month';
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    final user = _authService.currentUser;
-    if (user == null) {
-      return const Scaffold(body: Center(child: Text('Not logged in')));
-    }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedPeriod = ref.watch(selectedPeriodProvider);
+    final transactionsAsync = ref.watch(periodTransactionsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Insights'),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-      ),
-      body: StreamBuilder<List<model.Transaction>>(
-        stream: _getTransactionsStreamByPeriod(user.uid),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                const ChartSkeleton(),
-                const SizedBox(height: 24),
-                const CardSkeleton(),
-                const SizedBox(height: 24),
-                const CardSkeleton(),
-              ],
+      body: SafeArea(
+        bottom: false,
+        child: transactionsAsync.when(
+          loading: () => _InsightsShimmer(),
+          error: (e, _) => _ErrorState(
+            onRetry: () => ref.invalidate(periodTransactionsProvider),
+          ),
+          data: (transactions) {
+            if (transactions.isEmpty) return const NoInsightsEmpty();
+
+            final insights =
+                InsightsService.generateInsights(transactions);
+            final currency = transactions.first.currency;
+
+            return PremiumRefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(periodTransactionsProvider);
+              },
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                slivers: [
+                  // Header
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      DesignTokens.space20,
+                      DesignTokens.space12,
+                      DesignTokens.space20,
+                      DesignTokens.space8,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () => ref.read(selectedIndexProvider.notifier).state = 0,
+                            child: Icon(
+                              PhosphorIcons.arrowLeft(),
+                              size: DesignTokens.iconMD,
+                            ),
+                          ),
+                          const SizedBox(width: DesignTokens.space12),
+                          Text(
+                            'Insights',
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
+                                  fontFamily: 'Manrope',
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Period selector
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.space20,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: _PeriodSelector(
+                        selectedPeriod: selectedPeriod,
+                        onPeriodChanged: (period) {
+                          HapticUtils.light();
+                          ref
+                              .read(selectedPeriodProvider.notifier)
+                              .state = period;
+                        },
+                      ),
+                    ),
+                  ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: DesignTokens.space16),
+                  ),
+
+                  // Summary card
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.space20,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: _SummaryCard(
+                        insights: insights,
+                        currency: currency,
+                        periodText:
+                            _getPeriodDisplayText(selectedPeriod),
+                      ),
+                    ),
+                  ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: DesignTokens.space20),
+                  ),
+
+                  // Category breakdown
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.space20,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: _CategoryBreakdownChart(
+                        insights: insights,
+                        currency: currency,
+                      ),
+                    ),
+                  ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: DesignTokens.space20),
+                  ),
+
+                  // Spending trend
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.space20,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: _SpendingTrendChart(
+                        transactions: transactions,
+                        currency: currency,
+                      ),
+                    ),
+                  ),
+
+                  // Bottom padding for nav bar
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: DesignTokens.bottomNavHeight +
+                          DesignTokens.space32,
+                    ),
+                  ),
+                ],
+              ),
             );
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-
-          final transactions = snapshot.data ?? [];
-
-          if (transactions.isEmpty) {
-            return const NoInsightsEmpty();
-          }
-
-          final insights = InsightsService.generateInsights(transactions);
-          final currency = transactions.first.currency;
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              setState(() {});
-            },
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // Time period selector
-                _PeriodSelector(
-                  selectedPeriod: _selectedPeriod,
-                  onPeriodChanged: (period) {
-                    HapticUtils.light();
-                    setState(() => _selectedPeriod = period);
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                // Summary card
-                _SummaryCard(
-                  insights: insights,
-                  currency: currency,
-                  periodText: _getPeriodDisplayText(),
-                ),
-                
-                const SizedBox(height: 24),
-
-                // Chart 1: Category Breakdown (Pie Chart)
-                _CategoryBreakdownChart(insights: insights, currency: currency),
-
-                const SizedBox(height: 24),
-
-                // Chart 2: Spending Trend (Line Chart)
-                _SpendingTrendChart(transactions: transactions, currency: currency),
-
-                // REMOVED for V1.0: Chart 3 - Income vs Expenses
-                // (SpendingInsights model doesn't track income separately)
-                // Will be added in V2.0 when income tracking is enhanced
-
-                // REMOVED for V1.0 simplification:
-                // - Top Merchants (defer to V2.0)
-                // - AI Insights Section (Tier 2 feature)
-                // - Financial Analyst Section (Tier 2 feature)
-              ],
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }
-
-  // REMOVED for V1.0: _generateAIInsights() and _generateFinancialInsights()
-  // These Tier 2 features will return in V2.0
 }
+
+// ── Summary Card ──────────────────────────────────────────────────────
 
 class _SummaryCard extends StatelessWidget {
   final SpendingInsights insights;
   final String currency;
-  final String periodText; // NEW: Dynamic period text
+  final String periodText;
 
   const _SummaryCard({
     required this.insights,
@@ -194,61 +200,83 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              periodText, // Changed from static 'This Month'
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-                fontWeight: FontWeight.w600,
-              ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: DesignTokens.cardPaddingLarge,
+      decoration: BoxDecoration(
+        gradient: isDark
+            ? AppTheme.primaryGradientDark
+            : AppTheme.primaryGradient,
+        borderRadius: DesignTokens.borderRadiusXXL,
+        boxShadow: [
+          BoxShadow(
+            color:
+                AppTheme.primaryIndigo.withOpacity(isDark ? 0.15 : 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            periodText,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.white70,
             ),
-            const SizedBox(height: 8),
-            Text(
-              CurrencyUtils.formatAmount(insights.totalSpent, currency),
-              style: const TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-              ),
+          ),
+          const SizedBox(height: DesignTokens.space8),
+          AnimatedCounter(
+            value: insights.totalSpent,
+            prefix: CurrencyUtils.getCurrencySymbol(currency),
+            decimalPlaces: 2,
+            style: const TextStyle(
+              fontFamily: 'Manrope',
+              fontSize: 40,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              height: 1.1,
+              letterSpacing: -0.5,
             ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatItem(
-                    icon: Icons.receipt_long,
-                    label: 'Transactions',
-                    value: '${insights.transactionCount}',
-                  ),
+          ),
+          const SizedBox(height: DesignTokens.space20),
+          Row(
+            children: [
+              Expanded(
+                child: _StatPill(
+                  icon: PhosphorIcons.receipt(),
+                  label: 'Transactions',
+                  value: '${insights.transactionCount}',
                 ),
-                Expanded(
-                  child: _StatItem(
-                    icon: Icons.trending_up,
-                    label: 'Avg/Day',
-                    value: CurrencyUtils.formatAmount(insights.averagePerDay, currency),
-                  ),
+              ),
+              const SizedBox(width: DesignTokens.space12),
+              Expanded(
+                child: _StatPill(
+                  icon: PhosphorIcons.trendUp(),
+                  label: 'Avg/Day',
+                  value: CurrencyUtils.formatAmount(
+                      insights.averagePerDay, currency),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-class _StatItem extends StatelessWidget {
+class _StatPill extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
 
-  const _StatItem({
+  const _StatPill({
     required this.icon,
     required this.label,
     required this.value,
@@ -256,23 +284,53 @@ class _StatItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.blue, size: 24),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.space12,
+        vertical: DesignTokens.space8,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.12),
+        borderRadius: DesignTokens.borderRadiusMD,
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: Colors.white70),
+          const SizedBox(width: DesignTokens.space8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11,
+                    color: Colors.white60,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
+
+// ── Category Breakdown ────────────────────────────────────────────────
 
 class _CategoryBreakdownChart extends StatelessWidget {
   final SpendingInsights insights;
@@ -283,41 +341,25 @@ class _CategoryBreakdownChart extends StatelessWidget {
     required this.currency,
   });
 
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'groceries': return Colors.green;
-      case 'dining': return Colors.orange;
-      case 'transport': return Colors.blue;
-      case 'entertainment': return Colors.purple;
-      case 'shopping': return Colors.pink;
-      case 'health': return Colors.red;
-      case 'bills': return Colors.brown;
-      case 'education': return Colors.indigo;
-      case 'travel': return Colors.teal;
-      default: return Colors.grey;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final sortedCategories = insights.byCategory.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    return Card(
-      elevation: 2,
+    return GlassCard(
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: DesignTokens.cardPaddingLarge,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Spending by Category',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontFamily: 'Manrope',
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: DesignTokens.space20),
             SizedBox(
               height: 200,
               child: Row(
@@ -328,17 +370,26 @@ class _CategoryBreakdownChart extends StatelessWidget {
                     child: PieChart(
                       PieChartData(
                         sectionsSpace: 2,
-                        centerSpaceRadius: 40,
-                        sections: sortedCategories.map((entry) {
-                          final percentage = (entry.value / insights.totalSpent) * 100;
+                        centerSpaceRadius: 36,
+                        sections: sortedCategories
+                            .asMap()
+                            .entries
+                            .map((entry) {
+                          final cat = entry.value;
+                          final percentage =
+                              (cat.value / insights.totalSpent) * 100;
+                          final categoryData =
+                              AppCategories.getCategoryByName(cat.key);
+
                           return PieChartSectionData(
-                            color: _getCategoryColor(entry.key),
-                            value: entry.value,
+                            color: categoryData.color,
+                            value: cat.value,
                             title: '${percentage.toStringAsFixed(0)}%',
-                            radius: 50,
+                            radius: 48,
                             titleStyle: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Inter',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
                           );
@@ -346,7 +397,7 @@ class _CategoryBreakdownChart extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: DesignTokens.space16),
                   // Legend
                   Expanded(
                     flex: 1,
@@ -354,23 +405,30 @@ class _CategoryBreakdownChart extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: sortedCategories.take(5).map((entry) {
+                        final categoryData =
+                            AppCategories.getCategoryByName(entry.key);
                         return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 3),
                           child: Row(
                             children: [
                               Container(
-                                width: 12,
-                                height: 12,
+                                width: 10,
+                                height: 10,
                                 decoration: BoxDecoration(
-                                  color: _getCategoryColor(entry.key),
-                                  shape: BoxShape.circle,
+                                  color: categoryData.color,
+                                  borderRadius:
+                                      DesignTokens.borderRadiusXS,
                                 ),
                               ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   entry.key,
-                                  style: const TextStyle(fontSize: 11),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(fontSize: 11),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -383,43 +441,50 @@ class _CategoryBreakdownChart extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            // Category list
+            const SizedBox(height: DesignTokens.space16),
+            // Category breakdown list
             ...sortedCategories.map((entry) {
-              final percentage = (entry.value / insights.totalSpent) * 100;
+              final percentage =
+                  (entry.value / insights.totalSpent) * 100;
+              final categoryData =
+                  AppCategories.getCategoryByName(entry.key);
+
               return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                    vertical: DesignTokens.space4),
                 child: Row(
                   children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: _getCategoryColor(entry.key),
-                        shape: BoxShape.circle,
-                      ),
+                    Icon(
+                      categoryData.icon,
+                      size: 16,
+                      color: categoryData.color,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: DesignTokens.space8),
                     Expanded(
                       child: Text(
-                        entry.key[0].toUpperCase() + entry.key.substring(1),
-                        style: const TextStyle(fontSize: 14),
+                        entry.key[0].toUpperCase() +
+                            entry.key.substring(1),
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ),
                     Text(
                       '${percentage.toStringAsFixed(1)}%',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
+                      style:
+                          Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.5),
+                              ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: DesignTokens.space12),
                     Text(
                       CurrencyUtils.formatAmount(entry.value, currency),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTheme.monoAmountStyle(context).copyWith(
+                            fontFeatures: [
+                              const FontFeature.tabularFigures()
+                            ],
+                          ),
                     ),
                   ],
                 ),
@@ -432,7 +497,8 @@ class _CategoryBreakdownChart extends StatelessWidget {
   }
 }
 
-/// Spending Trend Chart - Simple line chart showing daily spending over period
+// ── Spending Trend ────────────────────────────────────────────────────
+
 class _SpendingTrendChart extends StatelessWidget {
   final List<model.Transaction> transactions;
   final String currency;
@@ -444,11 +510,9 @@ class _SpendingTrendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Group transactions by date and sum amounts
     final Map<DateTime, double> dailySpending = {};
-    
+
     for (final transaction in transactions) {
-      // All positive amounts are expenses
       if (transaction.amount > 0) {
         final date = DateTime(
           transaction.transactionDate.year,
@@ -459,121 +523,126 @@ class _SpendingTrendChart extends StatelessWidget {
       }
     }
 
-    // Sort by date
     final sortedDates = dailySpending.keys.toList()..sort();
-    
-    if (sortedDates.isEmpty) {
-      return Card(
-        elevation: 2,
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Spending Trend',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 40),
-              Center(
-                child: Text(
-                  'No expense data available',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ),
-              const SizedBox(height: 40),
-            ],
-          ),
-        ),
-      );
-    }
 
-    // Create chart spots
+    return GlassCard(
+      child: Padding(
+        padding: DesignTokens.cardPaddingLarge,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Spending Trend',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontFamily: 'Manrope',
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: DesignTokens.space20),
+            if (sortedDates.isEmpty)
+              SizedBox(
+                height: 120,
+                child: Center(
+                  child: Text(
+                    'No expense data available',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.5),
+                        ),
+                  ),
+                ),
+              )
+            else
+              _buildChart(context, sortedDates, dailySpending),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChart(
+    BuildContext context,
+    List<DateTime> sortedDates,
+    Map<DateTime, double> dailySpending,
+  ) {
     final spots = <FlSpot>[];
     for (int i = 0; i < sortedDates.length; i++) {
       spots.add(FlSpot(i.toDouble(), dailySpending[sortedDates[i]]!));
     }
 
     final maxY = dailySpending.values.reduce((a, b) => a > b ? a : b);
+    final chartStyles = ChartStyles(context);
 
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Spending Trend',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              height: 200,
-              child: LineChart(
-                LineChartData(
-                  minY: 0,
-                  maxY: maxY * 1.2,
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: spots,
-                      isCurved: true,
-                      color: Colors.blue,
-                      barWidth: 3,
-                      dotData: const FlDotData(show: true),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        color: Colors.blue.withOpacity(0.1),
-                      ),
+    return SizedBox(
+      height: 200,
+      child: LineChart(
+        LineChartData(
+          minY: 0,
+          maxY: maxY * 1.2,
+          lineBarsData: [
+            chartStyles.gradientLine(spots: spots),
+          ],
+          titlesData: FlTitlesData(
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 48,
+                getTitlesWidget: (value, meta) {
+                  return Text(
+                    CurrencyUtils.formatAmount(value, currency),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 10,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.4),
+                      fontFeatures: [const FontFeature.tabularFigures()],
                     ),
-                  ],
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 50,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            CurrencyUtils.formatAmount(value, currency),
-                            style: const TextStyle(fontSize: 10),
-                          );
-                        },
-                      ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        interval: (sortedDates.length / 4).ceilToDouble(),
-                        getTitlesWidget: (value, meta) {
-                          final index = value.toInt();
-                          if (index < 0 || index >= sortedDates.length) {
-                            return const Text('');
-                          }
-                          final date = sortedDates[index];
-                          return Text(
-                            '${date.month}/${date.day}',
-                            style: const TextStyle(fontSize: 10),
-                          );
-                        },
-                      ),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                  ),
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: maxY / 4,
-                  ),
-                  borderData: FlBorderData(show: false),
-                ),
+                  );
+                },
               ),
             ),
-          ],
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                interval:
+                    (sortedDates.length / 4).ceilToDouble().clamp(1, 100),
+                getTitlesWidget: (value, meta) {
+                  final index = value.toInt();
+                  if (index < 0 || index >= sortedDates.length) {
+                    return const SizedBox.shrink();
+                  }
+                  final date = sortedDates[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '${date.month}/${date.day}',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 10,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.4),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+          ),
+          gridData: chartStyles.defaultGrid,
+          borderData: FlBorderData(show: false),
+          lineTouchData: chartStyles.lineTooltip(),
         ),
       ),
     );
@@ -1325,7 +1394,7 @@ class _FinancialAnalystSection extends StatelessWidget {
 
 END OF COMMENTED OUT TIER 2/3 FEATURES */
 
-/// Improved Period Selector Widget with better styling
+/// Improved Period Selector Widget with glass styling
 class _PeriodSelector extends StatelessWidget {
   final String selectedPeriod;
   final Function(String) onPeriodChanged;
@@ -1340,43 +1409,56 @@ class _PeriodSelector extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withOpacity(0.3),
+        borderRadius: DesignTokens.borderRadiusMD,
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          color:
+              Theme.of(context).colorScheme.outline.withOpacity(0.1),
           width: 1,
         ),
       ),
       child: Row(
         children: [
-          _buildPeriodButton(context, 'week', 'Week', Icons.calendar_view_week),
-          _buildPeriodButton(context, 'month', 'Month', Icons.calendar_view_month),
-          _buildPeriodButton(context, 'year', 'Year', Icons.calendar_today),
+          _buildPeriodButton(
+              context, 'week', 'Week', PhosphorIcons.calendarBlank()),
+          _buildPeriodButton(
+              context, 'month', 'Month', PhosphorIcons.calendar()),
+          _buildPeriodButton(
+              context, 'year', 'Year', PhosphorIcons.calendarDots()),
         ],
       ),
     );
   }
 
-  Widget _buildPeriodButton(BuildContext context, String value, String label, IconData icon) {
+  Widget _buildPeriodButton(
+      BuildContext context, String value, String label, IconData icon) {
     final isSelected = selectedPeriod == value;
 
     return Expanded(
       child: GestureDetector(
         onTap: () => onPeriodChanged(value),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        child: AnimatedContainer(
+          duration: DesignTokens.durationFast,
+          padding: const EdgeInsets.symmetric(
+              vertical: DesignTokens.space12,
+              horizontal: DesignTokens.space8),
           decoration: BoxDecoration(
             color: isSelected
-              ? Theme.of(context).colorScheme.primary
-              : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: isSelected ? [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ] : null,
+                ? AppTheme.primaryIndigo
+                : Colors.transparent,
+            borderRadius: DesignTokens.borderRadiusSM,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppTheme.primaryIndigo.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1385,23 +1467,82 @@ class _PeriodSelector extends StatelessWidget {
                 icon,
                 size: 16,
                 color: isSelected
-                  ? Colors.white
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: isSelected
-                    ? Colors.white
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                      ? Colors.white
+                      : Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant,
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Insights Shimmer ──────────────────────────────────────────────────
+
+class _InsightsShimmer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(DesignTokens.space20),
+      child: Column(
+        children: const [
+          SizedBox(height: DesignTokens.space48),
+          CardSkeleton(),
+          SizedBox(height: DesignTokens.space20),
+          ChartSkeleton(),
+          SizedBox(height: DesignTokens.space20),
+          ChartSkeleton(),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Error State ───────────────────────────────────────────────────────
+
+class _ErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _ErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            PhosphorIcons.warning(),
+            size: 48,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          const SizedBox(height: DesignTokens.space16),
+          Text(
+            'Unable to load insights',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: DesignTokens.space12),
+          TextButton(
+            onPressed: onRetry,
+            child: const Text('Try Again'),
+          ),
+        ],
       ),
     );
   }

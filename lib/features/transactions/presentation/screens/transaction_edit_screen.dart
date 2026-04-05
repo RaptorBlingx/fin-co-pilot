@@ -2,8 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/constants/categories.dart';
-import '../../../../shared/models/transaction.dart' as model;
+import '../../../../core/theme/design_tokens.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/glass_card.dart';
+import '../../../../shared/widgets/premium_button.dart';
+import '../../../../shared/widgets/glass_bottom_sheet.dart';
+import '../../../../shared/widgets/add_category_sheet.dart';
+import '../../../../models/transaction.dart' as model;
+import '../../../../services/transaction_service.dart';
+import '../../../../services/custom_category_service.dart';
 
 /// Transaction Edit Screen
 /// 
@@ -31,6 +41,7 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
   late String _selectedPaymentMethod;
   late DateTime _selectedDate;
   bool _isSaving = false;
+  List<CustomCategory> _customCategories = [];
 
   final List<String> _paymentMethods = [
     'cash',
@@ -59,6 +70,12 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
     _selectedCategory = widget.transaction.category;
     _selectedPaymentMethod = widget.transaction.paymentMethod;
     _selectedDate = widget.transaction.transactionDate;
+    _loadCustomCategories();
+  }
+
+  Future<void> _loadCustomCategories() async {
+    final custom = await CustomCategoryService().getCustomCategories();
+    if (mounted) setState(() => _customCategories = custom);
   }
 
   @override
@@ -76,27 +93,61 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
     setState(() => _isSaving = true);
 
     try {
+      final newAmount = double.parse(_amountController.text);
+      final oldAmount = widget.transaction.amount;
+      final oldCategory = widget.transaction.category.toLowerCase();
+      final newCategory = _selectedCategory.toLowerCase();
+      final transactionService = TransactionService();
+
       // Update transaction in Firestore
       await FirebaseFirestore.instance
           .collection('transactions')
           .doc(widget.transaction.id)
           .update({
         'merchant': _merchantController.text.trim(),
-        'amount': double.parse(_amountController.text),
+        'amount': newAmount,
         'description': _descriptionController.text.trim(),
-        'category': _selectedCategory.toLowerCase(), // Store lowercase for consistency
+        'category': newCategory,
         'payment_method': _selectedPaymentMethod,
         'notes': _notesController.text.trim(),
         'transactionDate': Timestamp.fromDate(_selectedDate),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      // Sync budget spending for amount/category changes
+      if (oldCategory == newCategory) {
+        // Same category — apply delta
+        final delta = newAmount - oldAmount;
+        if (delta != 0) {
+          await transactionService.updateBudgetSpendingPublic(
+            userId: widget.transaction.userId,
+            category: newCategory,
+            amount: delta,
+            transactionDate: _selectedDate,
+          );
+        }
+      } else {
+        // Category changed — decrement old, increment new
+        await transactionService.updateBudgetSpendingPublic(
+          userId: widget.transaction.userId,
+          category: oldCategory,
+          amount: -oldAmount,
+          transactionDate: widget.transaction.transactionDate,
+        );
+        await transactionService.updateBudgetSpendingPublic(
+          userId: widget.transaction.userId,
+          category: newCategory,
+          amount: newAmount,
+          transactionDate: _selectedDate,
+        );
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Transaction updated successfully'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: const Text('Transaction updated successfully'),
+            backgroundColor: AppTheme.accentEmerald,
+            duration: const Duration(seconds: 2),
           ),
         );
         Navigator.pop(context, true); // Return true to indicate success
@@ -106,7 +157,7 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error updating transaction: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.rose500,
             duration: const Duration(seconds: 3),
           ),
         );
@@ -138,23 +189,25 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Transaction'),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
+        centerTitle: true,
         actions: [
           if (_isSaving)
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(DesignTokens.space16),
                 child: SizedBox(
                   width: 24,
                   height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppTheme.primaryIndigo,
+                  ),
                 ),
               ),
             )
           else
             IconButton(
-              icon: const Icon(Icons.check),
+              icon: Icon(PhosphorIcons.check(PhosphorIconsStyle.bold)),
               tooltip: 'Save',
               onPressed: _saveTransaction,
             ),
@@ -163,22 +216,15 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(DesignTokens.space16),
           children: [
             // Merchant field
-            TextFormField(
+            _buildTextField(
               controller: _merchantController,
-              decoration: InputDecoration(
-                labelText: 'Merchant',
-                hintText: 'Where did you shop?',
-                prefixIcon: const Icon(Icons.store),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.surface,
-              ),
-              textCapitalization: TextCapitalization.words,
+              label: 'Merchant',
+              hint: 'Where did you shop?',
+              icon: PhosphorIcons.storefront(),
+              capitalization: TextCapitalization.words,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'Please enter a merchant name';
@@ -186,21 +232,14 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: DesignTokens.space16),
 
             // Amount field
-            TextFormField(
+            _buildTextField(
               controller: _amountController,
-              decoration: InputDecoration(
-                labelText: 'Amount',
-                hintText: '0.00',
-                prefixIcon: const Icon(Icons.attach_money),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.surface,
-              ),
+              label: 'Amount',
+              hint: '0.00',
+              icon: PhosphorIcons.currencyDollar(),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
@@ -216,22 +255,15 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: DesignTokens.space16),
 
             // Description field
-            TextFormField(
+            _buildTextField(
               controller: _descriptionController,
-              decoration: InputDecoration(
-                labelText: 'Description',
-                hintText: 'Brief description of the transaction',
-                prefixIcon: const Icon(Icons.description),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.surface,
-              ),
-              textCapitalization: TextCapitalization.sentences,
+              label: 'Description',
+              hint: 'Brief description of the transaction',
+              icon: PhosphorIcons.noteBlank(),
+              capitalization: TextCapitalization.sentences,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'Please enter a description';
@@ -239,96 +271,116 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: DesignTokens.space16),
 
             // Category selector
-            Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                ),
-              ),
+            GlassCard(
+              onTap: _showCategoryPicker,
               child: ListTile(
                 leading: Container(
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
                     color: category.color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(DesignTokens.radiusSM),
                   ),
                   child: Icon(category.icon, color: category.color),
                 ),
-                title: const Text('Category'),
-                subtitle: Text(_selectedCategory),
-                trailing: const Icon(Icons.arrow_drop_down),
-                onTap: () => _showCategoryPicker(),
+                title: Text(
+                  'Category',
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: context.colors.onSurface.withOpacity(0.6),
+                  ),
+                ),
+                subtitle: Text(
+                  _selectedCategory,
+                  style: context.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                trailing: Icon(
+                  PhosphorIcons.caretDown(),
+                  color: context.colors.onSurface.withOpacity(0.5),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: DesignTokens.space16),
 
             // Date selector
-            Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+            GlassCard(
+              onTap: _selectDate,
+              child: ListTile(
+                leading: Icon(
+                  PhosphorIcons.calendarBlank(),
+                  color: AppTheme.primaryIndigo,
+                ),
+                title: Text(
+                  'Date',
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: context.colors.onSurface.withOpacity(0.6),
+                  ),
+                ),
+                subtitle: Text(
+                  DateFormat.yMMMd().format(_selectedDate),
+                  style: context.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                trailing: Icon(
+                  PhosphorIcons.caretDown(),
+                  color: context.colors.onSurface.withOpacity(0.5),
                 ),
               ),
-              child: ListTile(
-                leading: const Icon(Icons.calendar_today),
-                title: const Text('Date'),
-                subtitle: Text(DateFormat.yMMMd().format(_selectedDate)),
-                trailing: const Icon(Icons.arrow_drop_down),
-                onTap: _selectDate,
-              ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: DesignTokens.space16),
 
             // Payment Method selector
-            Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+            GlassCard(
+              onTap: _showPaymentMethodPicker,
+              child: ListTile(
+                leading: Icon(
+                  _getPaymentMethodIcon(_selectedPaymentMethod),
+                  color: AppTheme.primaryIndigo,
+                ),
+                title: Text(
+                  'Payment Method',
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: context.colors.onSurface.withOpacity(0.6),
+                  ),
+                ),
+                subtitle: Text(
+                  _formatPaymentMethod(_selectedPaymentMethod),
+                  style: context.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                trailing: Icon(
+                  PhosphorIcons.caretDown(),
+                  color: context.colors.onSurface.withOpacity(0.5),
                 ),
               ),
-              child: ListTile(
-                leading: Icon(_getPaymentMethodIcon(_selectedPaymentMethod)),
-                title: const Text('Payment Method'),
-                subtitle: Text(_formatPaymentMethod(_selectedPaymentMethod)),
-                trailing: const Icon(Icons.arrow_drop_down),
-                onTap: () => _showPaymentMethodPicker(),
-              ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: DesignTokens.space16),
 
             // Notes field
-            TextFormField(
+            _buildTextField(
               controller: _notesController,
-              decoration: InputDecoration(
-                labelText: 'Notes (Optional)',
-                hintText: 'Add any additional details...',
-                prefixIcon: const Icon(Icons.notes),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.surface,
-              ),
+              label: 'Notes (Optional)',
+              hint: 'Add any additional details...',
+              icon: PhosphorIcons.note(),
               maxLines: 3,
-              textCapitalization: TextCapitalization.sentences,
+              capitalization: TextCapitalization.sentences,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: DesignTokens.space24),
 
             // Save button
-            FilledButton.icon(
+            PremiumButton(
               onPressed: _isSaving ? null : _saveTransaction,
-              icon: _isSaving
-                  ? const SizedBox(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_isSaving)
+                    SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
@@ -336,48 +388,125 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
                         color: Colors.white,
                       ),
                     )
-                  : const Icon(Icons.save),
-              label: Text(_isSaving ? 'Saving...' : 'Save Changes'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                  else
+                    Icon(PhosphorIcons.floppyDisk(), size: DesignTokens.iconSM),
+                  SizedBox(width: DesignTokens.space8),
+                  Text(_isSaving ? 'Saving...' : 'Save Changes'),
+                ],
               ),
             ),
-          ],
+          ]
+              .animate(interval: DesignTokens.staggerDelay)
+              .fadeIn(duration: DesignTokens.durationNormal)
+              .slideY(begin: 0.03, end: 0),
         ),
       ),
     );
   }
 
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextCapitalization capitalization = TextCapitalization.none,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,
+    int maxLines = 1,
+  }) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(DesignTokens.radiusMD),
+        ),
+        filled: true,
+        fillColor: context.colors.surface,
+      ),
+      textCapitalization: capitalization,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
+      validator: validator,
+      maxLines: maxLines,
+    );
+  }
+
   void _showCategoryPicker() {
-    showModalBottomSheet(
+    final allCategories = AppCategories.mergedWith(_customCategories);
+
+    showGlassBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
+      builder: (context) => Padding(
+        padding: EdgeInsets.all(DesignTokens.space16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Select Category',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              style: context.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: DesignTokens.space16),
             GridView.builder(
               shrinkWrap: true,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 childAspectRatio: 1.2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
+                crossAxisSpacing: DesignTokens.space12,
+                mainAxisSpacing: DesignTokens.space12,
               ),
-              itemCount: AppCategories.categories.length,
+              itemCount: allCategories.length + 1, // +1 for "Add" tile
               itemBuilder: (context, index) {
-                final cat = AppCategories.categories[index];
+                // Last tile = "Add Custom"
+                if (index == allCategories.length) {
+                  return InkWell(
+                    onTap: () async {
+                      Navigator.pop(context);
+                      final result = await showAddCategorySheet(this.context);
+                      if (result != null && mounted) {
+                        setState(() {
+                          _customCategories.add(result);
+                          _selectedCategory = result.name;
+                        });
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(DesignTokens.radiusMD),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: context.colors.surface,
+                        borderRadius: BorderRadius.circular(DesignTokens.radiusMD),
+                        border: Border.all(
+                          color: context.colors.outline.withOpacity(0.2),
+                          style: BorderStyle.solid,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(PhosphorIcons.plus(), color: AppTheme.primaryIndigo, size: DesignTokens.iconLG),
+                          SizedBox(height: DesignTokens.space4),
+                          Text(
+                            'Custom',
+                            style: context.textTheme.bodySmall?.copyWith(
+                              color: AppTheme.primaryIndigo,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final cat = allCategories[index];
                 final isSelected = cat.name.toLowerCase() == _selectedCategory.toLowerCase();
                 
                 return InkWell(
@@ -385,28 +514,28 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
                     setState(() => _selectedCategory = cat.name);
                     Navigator.pop(context);
                   },
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusMD),
                   child: Container(
                     decoration: BoxDecoration(
                       color: isSelected
                           ? cat.color.withOpacity(0.2)
-                          : Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
+                          : context.colors.surface,
+                      borderRadius: BorderRadius.circular(DesignTokens.radiusMD),
                       border: Border.all(
                         color: isSelected
                             ? cat.color
-                            : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                            : context.colors.outline.withOpacity(0.2),
                         width: isSelected ? 2 : 1,
                       ),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(cat.icon, color: cat.color, size: 32),
-                        const SizedBox(height: 4),
+                        Icon(cat.icon, color: cat.color, size: DesignTokens.iconLG),
+                        SizedBox(height: DesignTokens.space4),
                         Text(
                           cat.name,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          style: context.textTheme.bodySmall?.copyWith(
                                 fontWeight: isSelected ? FontWeight.bold : null,
                               ),
                           textAlign: TextAlign.center,
@@ -428,17 +557,17 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
   IconData _getPaymentMethodIcon(String method) {
     switch (method) {
       case 'cash':
-        return Icons.money;
+        return PhosphorIcons.money();
       case 'credit_card':
-        return Icons.credit_card;
+        return PhosphorIcons.creditCard();
       case 'debit_card':
-        return Icons.payment;
+        return PhosphorIcons.contactlessPayment();
       case 'bank_transfer':
-        return Icons.account_balance;
+        return PhosphorIcons.bank();
       case 'digital_wallet':
-        return Icons.account_balance_wallet;
+        return PhosphorIcons.wallet();
       default:
-        return Icons.payment;
+        return PhosphorIcons.creditCard();
     }
   }
 
@@ -449,36 +578,39 @@ class _TransactionEditScreenState extends State<TransactionEditScreen> {
   }
 
   void _showPaymentMethodPicker() {
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
+      builder: (context) => Padding(
+        padding: EdgeInsets.all(DesignTokens.space16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Select Payment Method',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              style: context.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: DesignTokens.space16),
             ..._paymentMethods.map((method) {
               final isSelected = method == _selectedPaymentMethod;
               return ListTile(
                 leading: Icon(
                   _getPaymentMethodIcon(method),
-                  color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                  color: isSelected ? AppTheme.primaryIndigo : null,
                 ),
                 title: Text(
                   _formatPaymentMethod(method),
                   style: TextStyle(
                     fontWeight: isSelected ? FontWeight.bold : null,
-                    color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                    color: isSelected ? AppTheme.primaryIndigo : null,
                   ),
                 ),
-                trailing: isSelected ? const Icon(Icons.check, color: Colors.green) : null,
+                trailing: isSelected
+                    ? Icon(PhosphorIcons.check(PhosphorIconsStyle.bold),
+                        color: AppTheme.accentEmerald)
+                    : null,
                 onTap: () {
                   setState(() => _selectedPaymentMethod = method);
                   Navigator.pop(context);

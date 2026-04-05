@@ -39,4 +39,22 @@ class PreferencesService {
   static String? getLanguage() {
     return _prefs?.getString(AppConstants.keyLanguage);
   }
+
+  // Notifications enabled
+  static Future<void> setNotificationsEnabled(bool value) async {
+    await _prefs?.setBool('notifications_enabled', value);
+  }
+
+  static bool isNotificationsEnabled() {
+    return _prefs?.getBool('notifications_enabled') ?? true;
+  }
+
+  // Haptic feedback enabled
+  static Future<void> setHapticFeedbackEnabled(bool value) async {
+    await _prefs?.setBool('haptic_feedback_enabled', value);
+  }
+
+  static bool isHapticFeedbackEnabled() {
+    return _prefs?.getBool('haptic_feedback_enabled') ?? true;
+  }
 }

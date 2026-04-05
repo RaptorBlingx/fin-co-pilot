@@ -1,21 +1,36 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_ai/firebase_ai.dart';
-import '../shared/models/transaction.dart' as model;
+import '../models/transaction.dart' as model;
+import '../models/user_context.dart';
+import 'context_formatter.dart';
 
 class ReportGeneratorAgent {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GenerativeModel _model;
+  late GenerativeModel _model;
 
   ReportGeneratorAgent()
       : _model = FirebaseAI.googleAI().generativeModel(
-          model: 'gemini-2.5-flash',
+          model: 'gemini-3-flash-preview',
           generationConfig: GenerationConfig(
-            temperature: 0.3,
-            topK: 40,
-            topP: 0.8,
             maxOutputTokens: 4096,
           ),
         );
+
+  /// Update the model with user-specific system instructions.
+  void updateContext(UserContext ctx) {
+    final systemText = '''
+You are a financial report generator. Create concise, data-driven financial summaries.
+
+${ContextFormatter.formatCoreRules(ctx)}
+''';
+    _model = FirebaseAI.googleAI().generativeModel(
+      model: 'gemini-3-flash-preview',
+      systemInstruction: Content.text(systemText),
+      generationConfig: GenerationConfig(
+        maxOutputTokens: 4096,
+      ),
+    );
+  }
 
   /// Generate monthly spending report
   Future<Map<String, dynamic>> generateMonthlyReport({

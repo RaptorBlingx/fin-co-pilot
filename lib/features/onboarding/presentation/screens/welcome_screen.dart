@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/design_tokens.dart';
+import '../../../../shared/widgets/premium_button.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -7,138 +12,160 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(),
-              
-              // Icon
-              const Icon(
-                Icons.rocket_launch,
-                size: 120,
-                color: Colors.blue,
-              ),
-              
-              const SizedBox(height: 32),
-              
-              // Title
-              const Text(
-                'Welcome to Fin Co-Pilot!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: context.isDark
+                ? [AppTheme.darkBackground, const Color(0xFF1A1040)]
+                : [AppTheme.slate50, Colors.white],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.all(DesignTokens.space24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Spacer(),
+                
+                // Icon
+                Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.primaryGradient,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    PhosphorIcons.rocketLaunch(PhosphorIconsStyle.duotone),
+                    size: 48,
+                    color: Colors.white,
+                  ),
+                ).animate().fadeIn(duration: DesignTokens.durationSlow).scale(
+                  begin: const Offset(0.5, 0.5),
+                  end: const Offset(1.0, 1.0),
+                  curve: DesignTokens.curveDecelerate,
                 ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Subtitle
-              const Text(
-                'Your AI-powered financial assistant is here to help you:',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
-              ),
-              
-              const SizedBox(height: 32),
-              
-              // Features
-              _buildFeature(
-                icon: Icons.camera_alt,
-                title: 'Scan Receipts',
-                description: 'Just take a photo, we\'ll handle the rest',
-              ),
-              
-              const SizedBox(height: 16),
-              
-              _buildFeature(
-                icon: Icons.mic,
-                title: 'Voice Input',
-                description: 'Tell us your expenses naturally',
-              ),
-              
-              const SizedBox(height: 16),
-              
-              _buildFeature(
-                icon: Icons.insights,
-                title: 'Smart Insights',
-                description: 'AI-powered spending analysis',
-              ),
-              
-              const SizedBox(height: 16),
-              
-              _buildFeature(
-                icon: Icons.shopping_cart,
-                title: 'Price Comparison',
-                description: 'Find the best deals automatically',
-              ),
-              
-              const Spacer(),
-              
-              // Continue Button
-              ElevatedButton(
-                onPressed: () {
-                  context.push('/onboarding/currency');
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text(
-                  'Get Started',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-            ],
+                
+                SizedBox(height: DesignTokens.space24),
+                
+                // Title
+                Text(
+                  'Welcome to Fin Co-Pilot!',
+                  textAlign: TextAlign.center,
+                  style: context.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ).animate().fadeIn(delay: 150.ms),
+                
+                SizedBox(height: DesignTokens.space12),
+                
+                // Subtitle
+                Text(
+                  'Your AI-powered financial assistant is here to help you:',
+                  textAlign: TextAlign.center,
+                  style: context.textTheme.bodyLarge?.copyWith(
+                    color: context.colors.onSurface.withOpacity(0.6),
+                  ),
+                ).animate().fadeIn(delay: 250.ms),
+                
+                SizedBox(height: DesignTokens.space32),
+                
+                // Features
+                ...[
+                  _FeatureItem(
+                    icon: PhosphorIcons.camera(PhosphorIconsStyle.duotone),
+                    color: AppTheme.primaryIndigo,
+                    title: 'Scan Receipts',
+                    description: 'Just take a photo, we\'ll handle the rest',
+                  ),
+                  _FeatureItem(
+                    icon: PhosphorIcons.microphone(PhosphorIconsStyle.duotone),
+                    color: AppTheme.accentPurple,
+                    title: 'Voice Input',
+                    description: 'Tell us your expenses naturally',
+                  ),
+                  _FeatureItem(
+                    icon: PhosphorIcons.chartLineUp(PhosphorIconsStyle.duotone),
+                    color: AppTheme.accentEmerald,
+                    title: 'Smart Insights',
+                    description: 'AI-powered spending analysis',
+                  ),
+                  _FeatureItem(
+                    icon: PhosphorIcons.shoppingCart(PhosphorIconsStyle.duotone),
+                    color: AppTheme.amber500,
+                    title: 'Price Comparison',
+                    description: 'Find the best deals automatically',
+                  ),
+                ].asMap().entries.map((entry) => Padding(
+                  padding: EdgeInsets.only(bottom: DesignTokens.space12),
+                  child: entry.value,
+                ).animate().fadeIn(delay: (350 + entry.key * 100).ms).slideX(begin: -0.1, end: 0)),
+                
+                const Spacer(),
+                
+                // Continue Button
+                PremiumButton(
+                  onPressed: () {
+                    context.push('/onboarding/currency');
+                  },
+                  child: const Text('Get Started'),
+                ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.2, end: 0),
+                
+                SizedBox(height: DesignTokens.space16),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
-  
-  Widget _buildFeature({
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
+}
+
+class _FeatureItem extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String description;
+
+  const _FeatureItem({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(DesignTokens.space12),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(DesignTokens.radiusMD),
           ),
-          child: Icon(icon, color: Colors.blue, size: 28),
+          child: Icon(icon, color: color, size: DesignTokens.iconMD),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: DesignTokens.space16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: context.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: DesignTokens.space2),
               Text(
                 description,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colors.onSurface.withOpacity(0.6),
                 ),
               ),
             ],

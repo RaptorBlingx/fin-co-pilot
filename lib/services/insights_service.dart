@@ -1,4 +1,4 @@
-import '../shared/models/transaction.dart' as model;
+import '../models/transaction.dart' as model;
 import '../shared/models/spending_insights.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 import 'dart:convert';
@@ -112,7 +112,7 @@ class InsightsService {
 
     try {
       final model = FirebaseAI.googleAI().generativeModel(
-        model: 'gemini-2.5-pro', // Use Pro for deep analysis
+        model: 'gemini-3-flash-preview',
       );
 
       final prompt = '''

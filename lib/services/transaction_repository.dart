@@ -24,7 +24,7 @@ class TransactionRepository {
       final querySnapshot = await _firestore
           .collection(_collection)
           .where('user_id', isEqualTo: userId)
-          .orderBy('date', descending: true)
+          .orderBy('transaction_date', descending: true)
           .get();
 
       return querySnapshot.docs
@@ -45,9 +45,9 @@ class TransactionRepository {
       final querySnapshot = await _firestore
           .collection(_collection)
           .where('user_id', isEqualTo: userId)
-          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
-          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
-          .orderBy('date', descending: true)
+          .where('transaction_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('transaction_date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
+          .orderBy('transaction_date', descending: true)
           .get();
 
       return querySnapshot.docs
@@ -68,7 +68,7 @@ class TransactionRepository {
           .collection(_collection)
           .where('user_id', isEqualTo: userId)
           .where('category', isEqualTo: category)
-          .orderBy('date', descending: true)
+          .orderBy('transaction_date', descending: true)
           .get();
 
       return querySnapshot.docs
@@ -82,31 +82,10 @@ class TransactionRepository {
   /// Update transaction
   Future<void> updateTransaction(models.Transaction transaction) async {
     try {
-      final updatedTransaction = models.Transaction(
-        id: transaction.id,
-        userId: transaction.userId,
-        amount: transaction.amount,
-        currency: transaction.currency,
-        category: transaction.category,
-        type: transaction.type,
-        merchant: transaction.merchant,
-        description: transaction.description,
-        notes: transaction.notes,
-        tags: transaction.tags,
-        date: transaction.date,
-        time: transaction.time,
-        paymentMethod: transaction.paymentMethod,
-        paymentDetails: transaction.paymentDetails,
-        receipt: transaction.receipt,
-        metadata: transaction.metadata,
-        createdAt: transaction.createdAt,
-        updatedAt: DateTime.now(),
-      );
-      
       await _firestore
           .collection(_collection)
           .doc(transaction.id)
-          .update(updatedTransaction.toFirestore());
+          .update(transaction.toFirestore());
     } catch (e) {
       throw Exception('Failed to update transaction: $e');
     }
@@ -153,10 +132,10 @@ class TransactionRepository {
           .where('user_id', isEqualTo: userId);
 
       if (startDate != null) {
-        query = query.where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
+        query = query.where('transaction_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
       }
       if (endDate != null) {
-        query = query.where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
+        query = query.where('transaction_date', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
       }
 
       final querySnapshot = await query.get();
@@ -188,10 +167,10 @@ class TransactionRepository {
           .where('user_id', isEqualTo: userId);
 
       if (startDate != null) {
-        query = query.where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
+        query = query.where('transaction_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
       }
       if (endDate != null) {
-        query = query.where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
+        query = query.where('transaction_date', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
       }
 
       final querySnapshot = await query.get();

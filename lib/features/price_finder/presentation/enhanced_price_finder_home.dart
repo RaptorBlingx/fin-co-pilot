@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import '../../../core/navigation/page_transitions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -219,24 +220,14 @@ class _EnhancedPriceFinderHomeState extends State<EnhancedPriceFinderHome> {
       onTap: () {
         HapticUtils.light();
         Navigator.pop(context);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailScreen(product: product),
-          ),
-        );
+        context.pushWithFade(ProductDetailScreen(product: product));
       },
     );
   }
 
   void _openScanner() {
     HapticUtils.light();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const BarcodeScannerScreen(),
-      ),
-    ).then((_) => _loadData());
+    context.pushWithSlideUp(const BarcodeScannerScreen()).then((_) => _loadData());
   }
 
   @override
@@ -376,12 +367,7 @@ class _EnhancedPriceFinderHomeState extends State<EnhancedPriceFinderHome> {
                             TextButton(
                               onPressed: () {
                                 HapticUtils.light();
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const WishlistScreen(),
-                                  ),
-                                ).then((_) => _loadData());
+                                context.pushWithFade(const WishlistScreen()).then((_) => _loadData());
                               },
                               child: const Text('View All'),
                             ),
@@ -533,12 +519,7 @@ class _EnhancedPriceFinderHomeState extends State<EnhancedPriceFinderHome> {
         child: InkWell(
           onTap: () {
             HapticUtils.light();
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ProductDetailScreen(product: product),
-              ),
-            );
+            context.pushWithFade(ProductDetailScreen(product: product));
           },
           borderRadius: BorderRadius.circular(16),
           child: Padding(

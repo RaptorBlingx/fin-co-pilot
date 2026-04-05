@@ -1,19 +1,31 @@
 import 'package:firebase_ai/firebase_ai.dart';
 import 'dart:typed_data';
 import 'dart:convert';
+import '../../models/user_context.dart';
+import '../../services/context_formatter.dart';
 
 /// Agent 5: Receipt Agent
 /// OCR from receipt photos and extracts ALL items with prices
 /// This is THE MOAT - enables item-level tracking and price intelligence
 class ReceiptAgent {
-  late final GenerativeModel _visionModel;
+  late GenerativeModel _visionModel;
 
   ReceiptAgent() {
-    // Use Gemini 2.5 Flash-Lite for fast, cost-effective receipt OCR
-    // Gemini 2.5 Flash-Lite: Optimized for low-latency, high-volume OCR tasks
-    // Supports image analysis with text extraction at lower cost
     _visionModel = FirebaseAI.googleAI().generativeModel(
-      model: 'gemini-2.5-flash-lite',
+      model: 'gemini-3.1-flash-lite-preview',
+    );
+  }
+
+  /// Update the model with user-specific system instructions.
+  void updateContext(UserContext ctx) {
+    final systemText = '''
+You are a receipt OCR agent that extracts items and prices from receipt photos.
+
+${ContextFormatter.formatCoreRules(ctx)}
+''';
+    _visionModel = FirebaseAI.googleAI().generativeModel(
+      model: 'gemini-3.1-flash-lite-preview',
+      systemInstruction: Content.text(systemText),
     );
   }
 

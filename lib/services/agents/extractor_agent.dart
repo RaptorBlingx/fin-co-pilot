@@ -1,15 +1,31 @@
 import 'package:firebase_ai/firebase_ai.dart';
 import 'dart:convert';
 import '../../features/add_transaction/models/transaction_data.dart';
+import '../../models/user_context.dart';
+import '../../services/context_formatter.dart';
 
 /// Agent 2: Extractor Agent
 /// Specialized in parsing natural language and extracting transaction fields
 class ExtractorAgent {
-  late final GenerativeModel _model;
+  late GenerativeModel _model;
 
   ExtractorAgent() {
     _model = FirebaseAI.googleAI().generativeModel(
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.1-flash-lite-preview',
+    );
+  }
+
+  /// Update the model with user-specific system instructions.
+  void updateContext(UserContext ctx) {
+    final systemText = '''
+You are a specialized data extraction agent for financial transactions.
+Your ONLY job: Extract transaction fields from user input.
+
+${ContextFormatter.formatCoreRules(ctx)}
+''';
+    _model = FirebaseAI.googleAI().generativeModel(
+      model: 'gemini-3.1-flash-lite-preview',
+      systemInstruction: Content.text(systemText),
     );
   }
 
@@ -48,7 +64,7 @@ class ExtractorAgent {
     return '''
 You are a specialized data extraction agent for financial transactions.
 
-Your ONLY job: Extract transaction fields from user input.
+Your ONLY job: Extract transaction fields AND contextual signals from user input.
 
 User input: "$userMessage"
 
@@ -64,13 +80,24 @@ Extract these fields:
 - category: one of [Coffee, Dining, Groceries, Transport, Entertainment, Shopping, Health, Bills, Education, Travel, Other]
 - merchant: string (store/restaurant name)
 - description: string (additional details)
+- tags: array of contextual signal strings extracted from the message
+
+TAG EXTRACTION RULES:
+Extract tags for any of these signal types found in the message:
+- Time signals: "morning", "afternoon", "evening", "night", "lunch", "breakfast", "dinner", "late-night"
+- Social signals: "social:<person_name>" (e.g., "social:Sarah" if "with Sarah" is mentioned)
+- Location signals: "location:<place>" (e.g., "location:mall", "location:downtown", "location:airport")
+- Emotional signals: "impulse" (treat myself, couldn't resist, splurge), "planned" (weekly, usual, regular)
+- Recurring signals: "recurring" (my usual, every week, subscription, monthly)
+- Only extract tags for signals EXPLICITLY mentioned. Do NOT invent tags.
+- Return an empty array [] if no signals are found.
 
 IMPORTANT:
 - Extract ONLY what is explicitly mentioned
 - Do NOT invent or assume data
 - Return null for fields not found
 - Infer category from context (e.g., "Starbucks" → "Coffee")
-- Handle various formats: \$5, 5 dollars, 5.50, etc.
+- Handle various currency formats
 
 Response format (JSON only, no markdown):
 {
@@ -78,7 +105,8 @@ Response format (JSON only, no markdown):
   "item": "Coffee" or null,
   "category": "Coffee" or null,
   "merchant": "Starbucks" or null,
-  "description": null
+  "description": null,
+  "tags": ["morning", "social:Sarah"]
 }
 
 Respond with ONLY JSON:
@@ -105,12 +133,20 @@ Respond with ONLY JSON:
       // Parse JSON
       final Map<String, dynamic> json = jsonDecode(cleanedJson);
 
+      // Parse tags
+      List<String>? tags;
+      if (json['tags'] != null && json['tags'] is List) {
+        tags = (json['tags'] as List).whereType<String>().toList();
+        if (tags.isEmpty) tags = null;
+      }
+
       return TransactionData(
         amount: _parseDouble(json['amount']),
         item: json['item']?.toString(),
         category: json['category']?.toString(),
         merchant: json['merchant']?.toString(),
         description: json['description']?.toString(),
+        tags: tags,
       );
     } catch (e) {
       print('Extraction parsing error: $e');

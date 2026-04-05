@@ -1,5 +1,7 @@
 import 'package:firebase_ai/firebase_ai.dart';
 import '../../features/add_transaction/models/transaction_data.dart';
+import '../../models/user_context.dart';
+import '../../services/context_formatter.dart';
 import 'extractor_agent.dart';
 import 'validator_agent.dart';
 import 'context_agent.dart';
@@ -7,7 +9,7 @@ import 'context_agent.dart';
 /// Agent 1: Orchestrator Agent
 /// Routes requests to specialist agents and synthesizes responses
 class OrchestratorAgent {
-  late final GenerativeModel _model;
+  late GenerativeModel _model;
   final ExtractorAgent _extractorAgent;
   final ValidatorAgent _validatorAgent;
   final ContextAgent _contextAgent;
@@ -20,7 +22,22 @@ class OrchestratorAgent {
         _validatorAgent = validatorAgent,
         _contextAgent = contextAgent {
     _model = FirebaseAI.googleAI().generativeModel(
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.1-flash-lite-preview',
+    );
+  }
+
+  /// Update the model with user-specific system instructions.
+  void updateContext(UserContext ctx) {
+    final systemText = '''
+You are FinCoPilot, a friendly financial assistant that helps users log transactions conversationally.
+
+${ContextFormatter.formatForSystemInstruction(ctx)}
+
+${ContextFormatter.formatCoreRules(ctx)}
+''';
+    _model = FirebaseAI.googleAI().generativeModel(
+      model: 'gemini-3.1-flash-lite-preview',
+      systemInstruction: Content.text(systemText),
     );
   }
 

@@ -1,21 +1,40 @@
+import 'dart:ui' as ui;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_ai/firebase_ai.dart';
+import '../models/user_context.dart';
+import 'context_formatter.dart';
 import '../shared/models/price_result.dart';
 
 class PriceIntelligenceAgent {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GenerativeModel _model;
+  late GenerativeModel _groundedModel;
 
-  PriceIntelligenceAgent()
-      : _model = FirebaseAI.googleAI().generativeModel(
-          model: 'gemini-2.5-flash',
-          generationConfig: GenerationConfig(
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 8192,
-          ),
-        );
+  PriceIntelligenceAgent() {
+    _groundedModel = FirebaseAI.googleAI().generativeModel(
+      model: 'gemini-3-flash-preview',
+      tools: [Tool.googleSearch()],
+      generationConfig: GenerationConfig(
+        maxOutputTokens: 8192,
+      ),
+    );
+  }
+
+  /// Update the model with user-specific system instructions.
+  void updateContext(UserContext ctx) {
+    final systemText = '''
+You are a price intelligence expert. Search for the best prices for products.
+
+${ContextFormatter.formatCoreRules(ctx)}
+''';
+    _groundedModel = FirebaseAI.googleAI().generativeModel(
+      model: 'gemini-3-flash-preview',
+      systemInstruction: Content.text(systemText),
+      tools: [Tool.googleSearch()],
+      generationConfig: GenerationConfig(
+        maxOutputTokens: 8192,
+      ),
+    );
+  }
 
   /// Search for best prices of a product
   Future<List<PriceResult>> searchBestPrice({
@@ -46,10 +65,10 @@ class PriceIntelligenceAgent {
         userCurrency,
       );
 
-      print('🔍 PriceIntelligence: Calling Gemini 2.5 Flash with Google Search grounding');
+      print('🔍 PriceIntelligence: Calling Gemini with Google Search grounding');
       
-      // 3. Call Gemini with Google Search grounding
-      final response = await _model.generateContent([Content.text(prompt)]);
+      // 3. Call Gemini with Google Search grounding for real-time data
+      final response = await _groundedModel.generateContent([Content.text(prompt)]);
       final searchResults = response.text ?? '';
 
       print('🔍 PriceIntelligence: Received response: ${searchResults.length} characters');
@@ -127,7 +146,7 @@ class PriceIntelligenceAgent {
     String userCurrency,
   ) {
     return '''
-You are a price intelligence expert using Gemini 2.5 Flash with advanced reasoning capabilities. Search for the best prices for "$productQuery" in $userCountry.
+You are a price intelligence expert with advanced reasoning capabilities. Search for the best prices for "$productQuery" in $userCountry.
 
 REASONING APPROACH:
 1. Think step-by-step about where consumers in $userCountry typically shop for this product
@@ -408,11 +427,28 @@ IMPORTANT: Use your advanced reasoning to provide accurate, current pricing info
     ];
   }
 
-  /// Detect user's country (fallback method)
+  /// Detect user's country from device locale
   Future<String> detectUserCountry() async {
-    // In a real app, you might use location services or IP geolocation
-    // For now, return a default based on device locale or settings
-    return 'United States'; // Default fallback
+    final locale = ui.PlatformDispatcher.instance.locale;
+    final countryCode = locale.countryCode?.toUpperCase() ?? 'US';
+    const codeToCountry = {
+      'US': 'United States',
+      'CA': 'Canada',
+      'GB': 'United Kingdom',
+      'DE': 'Germany',
+      'FR': 'France',
+      'JP': 'Japan',
+      'AU': 'Australia',
+      'IT': 'Italy',
+      'ES': 'Spain',
+      'NL': 'Netherlands',
+      'SA': 'Saudi Arabia',
+      'AE': 'United Arab Emirates',
+      'IN': 'India',
+      'BR': 'Brazil',
+      'MX': 'Mexico',
+    };
+    return codeToCountry[countryCode] ?? 'United States';
   }
 
   /// Get currency for country

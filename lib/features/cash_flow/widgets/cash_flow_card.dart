@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/navigation/page_transitions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../services/predictive_cash_flow_service.dart';
 import '../../../services/auth_service.dart';
@@ -98,11 +99,7 @@ class _CashFlowCardState extends ConsumerState<CashFlowCard> {
       ),
       child: InkWell(
         onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => CashFlowScreen(prediction: prediction),
-            ),
-          );
+          context.pushWithFade(CashFlowScreen(prediction: prediction));
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -218,12 +215,7 @@ class _CashFlowCardState extends ConsumerState<CashFlowCard> {
                   const Spacer(),
                   TextButton.icon(
                     onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              CashFlowScreen(prediction: prediction),
-                        ),
-                      );
+                      context.pushWithFade(CashFlowScreen(prediction: prediction));
                     },
                     icon: const Icon(Icons.arrow_forward, size: 16),
                     label: const Text('View Details'),

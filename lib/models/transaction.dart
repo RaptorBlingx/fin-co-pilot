@@ -1,94 +1,60 @@
 ﻿import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Transaction model (v3 specification)
+/// Transaction type enum
+enum TransactionType {
+  expense,
+  income,
+}
+
+/// Consolidated Transaction model
 ///
-/// Per DATA_MODELS.md specification:
-/// Core transaction model with full v3 features:
-/// - SMS source tracking
-/// - AI agent attribution
-/// - Receipt OCR integration
-/// - Price intelligence
-/// - Enhanced metadata
+/// Single source of truth for all transaction data.
+/// Uses snake_case Firestore field names matching the primary data layer.
 class Transaction {
-  final String id;
+  final String? id;
   final String userId;
   final double amount;
   final String currency;
   final String category;
-  final TransactionType type;
-
+  final String? subcategory;
   final String? merchant;
   final String? description;
   final String? notes;
+  final String paymentMethod;
+  final DateTime transactionDate;
+  final DateTime createdAt;
+  final String inputMethod;
+  final String? receiptImageUrl;
+  final Map<String, dynamic>? receiptData;
+  final double? aiConfidence;
   final List<String>? tags;
 
-  final DateTime date;
-  final String? time; // HH:MM format
-
-  /// Payment method: 'card', 'cash', 'digital_wallet'
-  final String? paymentMethod;
-  final PaymentDetails? paymentDetails;
-
-  /// Receipt data (optional)
-  final ReceiptInfo? receipt;
-
-  /// NEW v3: Enhanced metadata
-  final TransactionMetadata metadata;
-
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
   Transaction({
-    required this.id,
+    this.id,
     required this.userId,
     required this.amount,
     required this.currency,
     required this.category,
-    required this.type,
+    this.subcategory,
     this.merchant,
     this.description,
     this.notes,
-    this.tags,
-    required this.date,
-    this.time,
-    this.paymentMethod,
-    this.paymentDetails,
-    this.receipt,
-    required this.metadata,
+    this.paymentMethod = 'cash',
+    required this.transactionDate,
     required this.createdAt,
-    required this.updatedAt,
+    this.inputMethod = 'manual',
+    this.receiptImageUrl,
+    this.receiptData,
+    this.aiConfidence,
+    this.tags,
   });
 
-  /// Create from Firestore document
-  factory Transaction.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  /// Alias for transactionDate (v3 compatibility)
+  DateTime get date => transactionDate;
 
-    return Transaction(
-      id: doc.id,
-      userId: (data['user_id'] ?? data['userId']) as String,
-      amount: (data['amount'] as num).toDouble(),
-      currency: data['currency'] as String? ?? 'USD',
-      category: data['category'] as String,
-      type: TransactionType.values.byName(data['type'] as String? ?? 'expense'),
-      merchant: data['merchant'] as String?,
-      description: data['description'] as String?,
-      notes: data['notes'] as String?,
-      tags: data['tags'] != null ? List<String>.from(data['tags']) : null,
-      date: (data['date'] as Timestamp).toDate(),
-      time: data['time'] as String?,
-      paymentMethod: data['paymentMethod'] as String?,
-      paymentDetails: data['paymentDetails'] != null
-          ? PaymentDetails.fromMap(data['paymentDetails'] as Map<String, dynamic>)
-          : null,
-      receipt: data['receipt'] != null
-          ? ReceiptInfo.fromMap(data['receipt'] as Map<String, dynamic>)
-          : null,
-      metadata: TransactionMetadata.fromMap(
-          data['metadata'] as Map<String, dynamic>? ?? {}),
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
-    );
-  }
+  /// Inferred transaction type from category
+  TransactionType get type =>
+      category.toLowerCase() == 'income' ? TransactionType.income : TransactionType.expense;
 
   /// Convert to Firestore document
   Map<String, dynamic> toFirestore() {
@@ -97,341 +63,118 @@ class Transaction {
       'amount': amount,
       'currency': currency,
       'category': category,
-      'type': type.name,
+      'subcategory': subcategory,
       'merchant': merchant,
       'description': description,
       'notes': notes,
-      'tags': tags,
-      'date': Timestamp.fromDate(date),
-      'time': time,
-      'paymentMethod': paymentMethod,
-      'paymentDetails': paymentDetails?.toMap(),
-      'receipt': receipt?.toMap(),
-      'metadata': metadata.toMap(),
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': Timestamp.fromDate(updatedAt),
+      'payment_method': paymentMethod,
+      'transaction_date': Timestamp.fromDate(transactionDate),
+      'created_at': Timestamp.fromDate(createdAt),
+      'input_method': inputMethod,
+      'receipt_image_url': receiptImageUrl,
+      'receipt_data': receiptData,
+      'ai_confidence': aiConfidence,
+      if (tags != null && tags!.isNotEmpty) 'tags': tags,
     };
   }
 
-  /// Create new transaction
-  factory Transaction.create({
-    required String userId,
-    required double amount,
-    required String category,
-    TransactionType type = TransactionType.expense,
-    String? merchant,
-    String? description,
-    String? notes,
-    List<String>? tags,
-    DateTime? date,
-    String? time,
-    String? paymentMethod,
-    PaymentDetails? paymentDetails,
-    ReceiptInfo? receipt,
-    required TransactionMetadata metadata,
-    String currency = 'USD',
-  }) {
-    final now = DateTime.now();
+  /// Create from Firestore document (supports both field naming conventions)
+  factory Transaction.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+
     return Transaction(
-      id: '',
-      userId: userId,
-      amount: amount,
-      currency: currency,
-      category: category,
-      type: type,
-      merchant: merchant,
-      description: description,
-      notes: notes,
-      tags: tags,
-      date: date ?? now,
-      time: time,
-      paymentMethod: paymentMethod,
-      paymentDetails: paymentDetails,
-      receipt: receipt,
-      metadata: metadata,
-      createdAt: now,
-      updatedAt: now,
+      id: doc.id,
+      userId: data['user_id'] ?? data['userId'] ?? '',
+      amount: (data['amount'] ?? 0).toDouble(),
+      currency: data['currency'] ?? 'USD',
+      category: data['category'] ?? 'other',
+      subcategory: data['subcategory'],
+      merchant: data['merchant'],
+      description: data['description'],
+      notes: data['notes'],
+      paymentMethod: data['payment_method'] ?? data['paymentMethod'] ?? 'cash',
+      transactionDate: _parseDate(data['transaction_date'] ?? data['date']),
+      createdAt: _parseDate(data['created_at'] ?? data['createdAt']),
+      inputMethod: data['input_method'] ?? data['inputMethod'] ?? 'manual',
+      receiptImageUrl: data['receipt_image_url'] ?? data['receiptImageUrl'],
+      receiptData: data['receipt_data'] ?? data['receiptData'],
+      aiConfidence: (data['ai_confidence'] ?? data['aiConfidence'])?.toDouble(),
+      tags: data['tags'] != null ? List<String>.from(data['tags']) : null,
     );
   }
 
-  /// Copy with updated fields
+  /// Create from Map
+  factory Transaction.fromMap(Map<String, dynamic> data, String id) {
+    return Transaction(
+      id: id,
+      userId: data['user_id'] ?? data['userId'] ?? '',
+      amount: (data['amount'] ?? 0).toDouble(),
+      currency: data['currency'] ?? 'USD',
+      category: data['category'] ?? 'other',
+      subcategory: data['subcategory'],
+      merchant: data['merchant'],
+      description: data['description'],
+      notes: data['notes'],
+      paymentMethod: data['payment_method'] ?? data['paymentMethod'] ?? 'cash',
+      transactionDate: _parseDate(data['transaction_date'] ?? data['date']),
+      createdAt: _parseDate(data['created_at'] ?? data['createdAt']),
+      inputMethod: data['input_method'] ?? data['inputMethod'] ?? 'manual',
+      receiptImageUrl: data['receipt_image_url'] ?? data['receiptImageUrl'],
+      receiptData: data['receipt_data'] ?? data['receiptData'],
+      aiConfidence: (data['ai_confidence'] ?? data['aiConfidence'])?.toDouble(),
+      tags: data['tags'] != null ? List<String>.from(data['tags']) : null,
+    );
+  }
+
+  static DateTime _parseDate(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    return DateTime.now();
+  }
+
+  /// Copy with method for updates
   Transaction copyWith({
     String? id,
+    String? userId,
     double? amount,
     String? currency,
     String? category,
-    TransactionType? type,
+    String? subcategory,
     String? merchant,
     String? description,
     String? notes,
+    String? paymentMethod,
+    DateTime? transactionDate,
+    DateTime? createdAt,
+    String? inputMethod,
+    String? receiptImageUrl,
+    Map<String, dynamic>? receiptData,
+    double? aiConfidence,
     List<String>? tags,
-    DateTime? date,
-    String? time,
-    TransactionMetadata? metadata,
   }) {
     return Transaction(
       id: id ?? this.id,
-      userId: userId,
+      userId: userId ?? this.userId,
       amount: amount ?? this.amount,
       currency: currency ?? this.currency,
       category: category ?? this.category,
-      type: type ?? this.type,
+      subcategory: subcategory ?? this.subcategory,
       merchant: merchant ?? this.merchant,
       description: description ?? this.description,
       notes: notes ?? this.notes,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      transactionDate: transactionDate ?? this.transactionDate,
+      createdAt: createdAt ?? this.createdAt,
+      inputMethod: inputMethod ?? this.inputMethod,
+      receiptImageUrl: receiptImageUrl ?? this.receiptImageUrl,
+      receiptData: receiptData ?? this.receiptData,
+      aiConfidence: aiConfidence ?? this.aiConfidence,
       tags: tags ?? this.tags,
-      date: date ?? this.date,
-      time: time ?? this.time,
-      paymentMethod: paymentMethod,
-      paymentDetails: paymentDetails,
-      receipt: receipt,
-      metadata: metadata ?? this.metadata,
-      createdAt: createdAt,
-      updatedAt: DateTime.now(),
     );
   }
-
-  /// Check if transaction has receipt
-  bool get hasReceipt => receipt != null;
-
-  /// Check if transaction was auto-captured (SMS or voice)
-  bool get isAutoCaptured =>
-      metadata.source == 'sms' || metadata.source == 'voice';
-
-  /// Check if transaction needs verification
-  bool get needsVerification => !metadata.verified && metadata.confidence != null && metadata.confidence! < 0.9;
 }
 
-/// Payment details
-class PaymentDetails {
-  final String? cardLast4;
-  final String? cardBrand;
-
-  PaymentDetails({
-    this.cardLast4,
-    this.cardBrand,
-  });
-
-  factory PaymentDetails.fromMap(Map<String, dynamic> map) {
-    return PaymentDetails(
-      cardLast4: map['cardLast4'] as String?,
-      cardBrand: map['cardBrand'] as String?,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'cardLast4': cardLast4,
-      'cardBrand': cardBrand,
-    };
-  }
-}
-
-/// Receipt information
-class ReceiptInfo {
-  final String imageUrl;
-  final String? thumbnailUrl;
-  final DateTime uploadedAt;
-  final ReceiptData? parsedData;
-
-  /// NEW v3: Price intelligence comparison
-  final PriceComparison? priceComparison;
-
-  ReceiptInfo({
-    required this.imageUrl,
-    this.thumbnailUrl,
-    required this.uploadedAt,
-    this.parsedData,
-    this.priceComparison,
-  });
-
-  factory ReceiptInfo.fromMap(Map<String, dynamic> map) {
-    return ReceiptInfo(
-      imageUrl: map['imageUrl'] as String,
-      thumbnailUrl: map['thumbnailUrl'] as String?,
-      uploadedAt: (map['uploadedAt'] as Timestamp).toDate(),
-      parsedData: map['parsedData'] != null
-          ? ReceiptData.fromMap(map['parsedData'] as Map<String, dynamic>)
-          : null,
-      priceComparison: map['priceComparison'] != null
-          ? PriceComparison.fromMap(
-              map['priceComparison'] as Map<String, dynamic>)
-          : null,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'imageUrl': imageUrl,
-      'thumbnailUrl': thumbnailUrl,
-      'uploadedAt': Timestamp.fromDate(uploadedAt),
-      'parsedData': parsedData?.toMap(),
-      'priceComparison': priceComparison?.toMap(),
-    };
-  }
-}
-
-/// Parsed receipt data (from Vision Service)
-class ReceiptData {
-  final List<ReceiptItem> items;
-  final double subtotal;
-  final double tax;
-  final double? tip;
-  final double total;
-
-  ReceiptData({
-    required this.items,
-    required this.subtotal,
-    required this.tax,
-    this.tip,
-    required this.total,
-  });
-
-  factory ReceiptData.fromMap(Map<String, dynamic> map) {
-    final itemsData = map['items'] as List<dynamic>;
-    final items = itemsData
-        .map((item) => ReceiptItem.fromMap(item as Map<String, dynamic>))
-        .toList();
-
-    return ReceiptData(
-      items: items,
-      subtotal: (map['subtotal'] as num).toDouble(),
-      tax: (map['tax'] as num).toDouble(),
-      tip: map['tip'] != null ? (map['tip'] as num).toDouble() : null,
-      total: (map['total'] as num).toDouble(),
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'items': items.map((item) => item.toMap()).toList(),
-      'subtotal': subtotal,
-      'tax': tax,
-      'tip': tip,
-      'total': total,
-    };
-  }
-}
-
-/// Individual receipt item
-class ReceiptItem {
-  final String description;
-  final int quantity;
-  final double unitPrice;
-  final double totalPrice;
-
-  ReceiptItem({
-    required this.description,
-    required this.quantity,
-    required this.unitPrice,
-    required this.totalPrice,
-  });
-
-  factory ReceiptItem.fromMap(Map<String, dynamic> map) {
-    return ReceiptItem(
-      description: map['description'] as String,
-      quantity: map['quantity'] as int,
-      unitPrice: (map['unitPrice'] as num).toDouble(),
-      totalPrice: (map['totalPrice'] as num).toDouble(),
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'description': description,
-      'quantity': quantity,
-      'unitPrice': unitPrice,
-      'totalPrice': totalPrice,
-    };
-  }
-}
-
-/// NEW v3: Price intelligence comparison
-class PriceComparison {
-  final double averagePrice;
-  final double savingsOpportunity;
-  final String cheapestStore;
-
-  PriceComparison({
-    required this.averagePrice,
-    required this.savingsOpportunity,
-    required this.cheapestStore,
-  });
-
-  factory PriceComparison.fromMap(Map<String, dynamic> map) {
-    return PriceComparison(
-      averagePrice: (map['averagePrice'] as num).toDouble(),
-      savingsOpportunity: (map['savingsOpportunity'] as num).toDouble(),
-      cheapestStore: map['cheapestStore'] as String,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'averagePrice': averagePrice,
-      'savingsOpportunity': savingsOpportunity,
-      'cheapestStore': cheapestStore,
-    };
-  }
-
-  /// Check if user got a good deal
-  bool get isGoodDeal => savingsOpportunity < 0;
-}
-
-/// NEW v3: Enhanced transaction metadata
-class TransactionMetadata {
-  /// Source: 'manual', 'voice', 'chat', 'receipt', 'sms' (NEW v3)
-  final String source;
-
-  /// AI confidence: 0-1 (optional)
-  final double? confidence;
-
-  /// User verified
-  final bool verified;
-
-  /// User edited after creation
-  final bool edited;
-
-  /// NEW v3: Which AI agent processed this transaction
-  /// Values: 'financial_copilot', 'vision', 'analyst'
-  final String? aiAgent;
-
-  TransactionMetadata({
-    required this.source,
-    this.confidence,
-    required this.verified,
-    required this.edited,
-    this.aiAgent,
-  });
-
-  factory TransactionMetadata.fromMap(Map<String, dynamic> map) {
-    return TransactionMetadata(
-      source: map['source'] as String? ?? 'manual',
-      confidence: map['confidence'] != null
-          ? (map['confidence'] as num).toDouble()
-          : null,
-      verified: map['verified'] as bool? ?? false,
-      edited: map['edited'] as bool? ?? false,
-      aiAgent: map['aiAgent'] as String?,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'source': source,
-      'confidence': confidence,
-      'verified': verified,
-      'edited': edited,
-      'aiAgent': aiAgent,
-    };
-  }
-}
-
-/// Transaction type
-enum TransactionType {
-  expense,
-  income,
-}
+/// Transaction type enum is defined at top of file
 
 /// Transaction categories
 class TransactionCategories {

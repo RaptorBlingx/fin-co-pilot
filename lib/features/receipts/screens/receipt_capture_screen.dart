@@ -1,8 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../services/auth_service.dart';
-// REMOVED: import '../../../services/receipt_ocr_service.dart'; // Tier 2 - backed up for V2.0
+import '../../../services/receipt_ocr_service_with_vision.dart'; // Vision AI integration
+import '../../../services/preferences_service.dart';
+import '../../../core/utils/currency_utils.dart';
+import '../../../core/utils/haptic_utils.dart';
+import '../../../models/transaction.dart' as model;
 // REMOVED: import 'receipt_review_screen.dart'; // Tier 2 feature - broken, moved to backup
 
 /// Receipt Capture Screen (Week 10 Feature)
@@ -26,7 +31,7 @@ class ReceiptCaptureScreen extends StatefulWidget {
 
 class _ReceiptCaptureScreenState extends State<ReceiptCaptureScreen> {
   final ImagePicker _picker = ImagePicker();
-  // final ReceiptOCRService _ocrService = ReceiptOCRService(); // Tier 2 - disabled for V1.0
+  final ReceiptOCRServiceWithVision _ocrService = ReceiptOCRServiceWithVision(); // Vision AI
   final AuthService _authService = AuthService();
 
   File? _imageFile;
@@ -305,55 +310,51 @@ class _ReceiptCaptureScreenState extends State<ReceiptCaptureScreen> {
     });
 
     try {
-      // Simulate progress updates
-      _updateProgress(0.1, 'Uploading image...');
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Step 1: Upload image (triggers Vision AI)
+      _updateProgress(0.2, 'Uploading image...');
+      await Future.delayed(const Duration(milliseconds: 300));
 
-      _updateProgress(0.3, 'Analyzing receipt...');
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Step 2: Vision AI extracts text
+      _updateProgress(0.5, 'Extracting text with Vision AI...');
+      
+      // Process with Vision AI
+      final result = await _ocrService.processReceipt(
+        imageFile: _imageFile!,
+        userId: user.uid,
+      );
 
-      // TIER 2 DISABLED: Process with OCR (coming in V2.0)
-      // final receiptData = await _ocrService.processReceipt(
-      //   imageFile: _imageFile!,
-      //   userId: user.uid,
-      // );
-
-      _updateProgress(0.9, 'Extracting items...');
-      await Future.delayed(const Duration(milliseconds: 500));
+      _updateProgress(0.8, 'Parsing receipt data...');
+      await Future.delayed(const Duration(milliseconds: 300));
 
       _updateProgress(1.0, 'Complete!');
 
-      // V1.0: Show placeholder message instead of processing
+      if (!result['success']) {
+        throw Exception(result['error'] ?? 'Could not process receipt');
+      }
+
+      // Get receipt data
+      final receiptData = result['data'];
+      final warnings = result['warnings'] as List<String>?;
+
+      // Show success message
       if (mounted) {
+        String message = '✅ Receipt processed successfully!';
+        if (warnings != null && warnings.isNotEmpty) {
+          message += '\n⚠️ ${warnings.join(', ')}';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Receipt scanning coming in V2.0!'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(message),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
-        Navigator.pop(context);
-        return;
-      }
 
-      // COMMENTED OUT: ReceiptData processing and navigation (Tier 2 - V2.0)
-      /*
-      if (receiptData == null) {
-        throw Exception('Could not extract data from receipt');
+        // Show receipt data (for now, just display in dialog)
+        // Save transaction from receipt OCR data
+        await _saveReceiptTransaction(receiptData);
       }
-
-      // COMMENTED OUT: Navigation to ReceiptReviewScreen (Tier 2 - broken in V1.0)
-      // Will be restored in V2.0 with proper ReceiptData model
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ReceiptReviewScreen(
-              receiptData: receiptData,
-            ),
-          ),
-        );
-      }
-      */
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -369,6 +370,88 @@ class _ReceiptCaptureScreenState extends State<ReceiptCaptureScreen> {
           _isProcessing = false;
           _processingProgress = 0.0;
         });
+      }
+    }
+  }
+
+  /// Save transaction from receipt OCR data
+  Future<void> _saveReceiptTransaction(Map<String, dynamic> receiptData) async {
+    final user = _authService.currentUser;
+    if (user == null) return;
+
+    try {
+      final currency = PreferencesService.getCurrency() ?? 'USD';
+      final store = receiptData['store'] as String? ?? 'Unknown Store';
+      final total = (receiptData['total'] as num?)?.toDouble() ?? 0.0;
+
+      DateTime txnDate = DateTime.now();
+      if (receiptData['date'] != null) {
+        try {
+          txnDate = DateTime.parse(receiptData['date'].toString());
+        } catch (_) {}
+      }
+
+      final transaction = model.Transaction(
+        userId: user.uid,
+        amount: total,
+        currency: currency,
+        category: 'shopping',
+        merchant: store,
+        description: 'Receipt from $store',
+        paymentMethod: 'cash',
+        transactionDate: txnDate,
+        createdAt: DateTime.now(),
+        inputMethod: 'receipt_scan',
+        receiptData: receiptData,
+      );
+
+      final firestore = FirebaseFirestore.instance;
+      await firestore
+          .collection('transactions')
+          .add(transaction.toFirestore());
+
+      // Update budget spending
+      final month =
+          '${txnDate.year}-${txnDate.month.toString().padLeft(2, '0')}';
+      final budgetQuery = await firestore
+          .collection('budgets')
+          .where('user_id', isEqualTo: user.uid)
+          .where('category', isEqualTo: 'shopping')
+          .where('month', isEqualTo: month)
+          .limit(1)
+          .get();
+
+      if (budgetQuery.docs.isNotEmpty) {
+        final budgetDoc = budgetQuery.docs.first;
+        final currentSpending =
+            (budgetDoc.data()['currentSpending'] as num?)?.toDouble() ?? 0;
+        await firestore.collection('budgets').doc(budgetDoc.id).update({
+          'currentSpending': currentSpending + total,
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+      }
+
+      HapticUtils.heavy();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '✅ Transaction saved: ${CurrencyUtils.formatAmount(total, currency)} at $store',
+            ),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving transaction: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
       }
     }
   }

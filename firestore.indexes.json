@@ -9,6 +9,24 @@
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "date",
           "order": "DESCENDING"
         }
@@ -197,6 +215,66 @@
         {
           "fieldPath": "receivedAt",
           "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "coaching_tips_library",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "category",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "coaching_tips_library",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "category",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "usageCount",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "coaching_tips_library",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "trigger",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "effectiveness",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "budgets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "period.start",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "period.end",
+          "order": "ASCENDING"
         }
       ]
     }

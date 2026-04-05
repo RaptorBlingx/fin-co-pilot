@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/navigation/page_transitions.dart';
 import '../../../models/money_story.dart';
 import '../../../services/money_story_service.dart';
 import '../../../services/auth_service.dart';
@@ -148,12 +149,7 @@ class _MoneyStoryCardState extends State<MoneyStoryCard> {
       ),
       child: InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const MoneyStoriesScreen(),
-            ),
-          );
+          context.pushWithFade(const MoneyStoriesScreen());
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
@@ -281,12 +277,7 @@ class _MoneyStoryCardState extends State<MoneyStoryCard> {
       if (mounted) {
         if (story != null) {
           // Navigate to the stories screen to view the generated story
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const MoneyStoriesScreen(),
-            ),
-          );
+          context.pushWithFade(const MoneyStoriesScreen());
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('No transactions today to generate a story')),

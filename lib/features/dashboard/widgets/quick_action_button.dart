@@ -1,73 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/design_tokens.dart';
+import '../../../core/utils/haptic_utils.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/staggered_animation.dart';
 
 class QuickActionButton extends StatelessWidget {
   final String title;
   final IconData icon;
   final VoidCallback onTap;
-  final Color? backgroundColor;
-  final Color? iconColor;
-  final Color? textColor;
+  final Color color;
 
   const QuickActionButton({
     super.key,
     required this.title,
     required this.icon,
     required this.onTap,
-    this.backgroundColor,
-    this.iconColor,
-    this.textColor,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: colorScheme.outline.withOpacity(0.1),
-          width: 1,
+    return GlassCard(
+      onTap: () {
+        HapticUtils.light();
+        onTap();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.space12,
+          vertical: DesignTokens.space16,
         ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: backgroundColor ?? colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  icon,
-                  size: 28,
-                  color: iconColor ?? colorScheme.primary,
-                ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: DesignTokens.borderRadiusMD,
               ),
-              
-              const SizedBox(height: 12),
-              
-              Text(
-                title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: textColor ?? colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
+              child: Icon(
+                icon,
+                size: DesignTokens.iconMD,
+                color: color,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: DesignTokens.space8),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );
@@ -79,70 +72,93 @@ class QuickActionGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final actions = [
+      _ActionDef(
+        title: 'Scan Receipt',
+        icon: PhosphorIcons.receipt(PhosphorIconsStyle.duotone),
+        color: AppTheme.accentPurple,
+        route: AppConstants.routeReceiptCapture,
+      ),
+      _ActionDef(
+        title: 'Reports',
+        icon: PhosphorIcons.chartBar(PhosphorIconsStyle.duotone),
+        color: AppTheme.primaryIndigo,
+        route: AppConstants.routeReports,
+      ),
+      _ActionDef(
+        title: 'Shopping',
+        icon: PhosphorIcons.shoppingBag(PhosphorIconsStyle.duotone),
+        color: AppTheme.accentEmerald,
+        route: AppConstants.routeShopping,
+      ),
+      _ActionDef(
+        title: 'Health Score',
+        icon: PhosphorIcons.heartbeat(PhosphorIconsStyle.duotone),
+        color: AppTheme.rose400,
+        route: AppConstants.routeHealthScore,
+      ),
+    ];
+
     return Column(
       children: [
         Row(
           children: [
             Expanded(
               child: QuickActionButton(
-                title: 'Scan Receipt',
-                icon: Icons.receipt_long,
-                onTap: () {
-                  context.push(AppConstants.routeReceiptCapture);
-                },
-                backgroundColor: Colors.purple.withOpacity(0.1),
-                iconColor: Colors.purple,
-              ),
+                title: actions[0].title,
+                icon: actions[0].icon,
+                color: actions[0].color,
+                onTap: () => context.push(actions[0].route),
+              ).staggered(0),
             ),
-
-            const SizedBox(width: 12),
-
+            const SizedBox(width: DesignTokens.space12),
             Expanded(
               child: QuickActionButton(
-                title: 'Reports',
-                icon: Icons.analytics_rounded,
-                onTap: () {
-                  context.push(AppConstants.routeReports);
-                },
-                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                iconColor: Theme.of(context).colorScheme.primary,
-              ),
+                title: actions[1].title,
+                icon: actions[1].icon,
+                color: actions[1].color,
+                onTap: () => context.push(actions[1].route),
+              ).staggered(1),
             ),
           ],
         ),
-
-        const SizedBox(height: 12),
-
+        const SizedBox(height: DesignTokens.space12),
         Row(
           children: [
             Expanded(
               child: QuickActionButton(
-                title: 'Shopping',
-                icon: Icons.shopping_bag_rounded,
-                onTap: () {
-                  context.push(AppConstants.routeShopping);
-                },
-                backgroundColor: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
-                iconColor: Theme.of(context).colorScheme.secondary,
-              ),
+                title: actions[2].title,
+                icon: actions[2].icon,
+                color: actions[2].color,
+                onTap: () => context.push(actions[2].route),
+              ).staggered(2),
             ),
-
-            const SizedBox(width: 12),
-
+            const SizedBox(width: DesignTokens.space12),
             Expanded(
               child: QuickActionButton(
-                title: 'Watchlist',
-                icon: Icons.remove_red_eye,
-                onTap: () {
-                  context.push(AppConstants.routeWatchlist);
-                },
-                backgroundColor: Colors.green.withOpacity(0.1),
-                iconColor: Colors.green,
-              ),
+                title: actions[3].title,
+                icon: actions[3].icon,
+                color: actions[3].color,
+                onTap: () => context.push(actions[3].route),
+              ).staggered(3),
             ),
           ],
         ),
       ],
     );
   }
+}
+
+class _ActionDef {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final String route;
+
+  const _ActionDef({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.route,
+  });
 }

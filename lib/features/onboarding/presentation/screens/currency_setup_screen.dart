@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/design_tokens.dart';
 import '../../../../core/utils/currency_utils.dart';
+import '../../../../shared/widgets/premium_button.dart';
+import '../../../../shared/widgets/glass_card.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/preferences_service.dart';
 
@@ -76,117 +82,133 @@ class _CurrencySetupScreenState extends State<CurrencySetupScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Currency Setup'),
+        centerTitle: true,
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.all(DesignTokens.space24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 20),
+              SizedBox(height: DesignTokens.space12),
               
               // Icon
-              const Icon(
-                Icons.monetization_on,
-                size: 80,
-                color: Colors.blue,
+              Icon(
+                PhosphorIcons.currencyCircleDollar(PhosphorIconsStyle.duotone),
+                size: 64,
+                color: AppTheme.primaryIndigo,
+              ).animate().fadeIn().scale(
+                begin: const Offset(0.8, 0.8),
+                end: const Offset(1.0, 1.0),
               ),
               
-              const SizedBox(height: 24),
+              SizedBox(height: DesignTokens.space20),
               
               // Title
-              const Text(
+              Text(
                 'Choose Your Currency',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24,
+                style: context.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
-              ),
+              ).animate().fadeIn(delay: 100.ms),
               
-              const SizedBox(height: 8),
+              SizedBox(height: DesignTokens.space8),
               
               // Auto-detected currency
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+              GlassCard(
+                padding: EdgeInsets.all(DesignTokens.space16),
                 child: Row(
                   children: [
-                    const Icon(Icons.location_on, color: Colors.blue),
-                    const SizedBox(width: 12),
+                    Icon(PhosphorIcons.mapPin(), color: AppTheme.primaryIndigo, size: DesignTokens.iconMD),
+                    SizedBox(width: DesignTokens.space12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Auto-detected:',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
+                            style: context.textTheme.labelSmall?.copyWith(
+                              color: context.colors.onSurface.withOpacity(0.6),
                             ),
                           ),
                           Text(
                             '$_detectedCurrency (${CurrencyUtils.getCurrencySymbol(_detectedCurrency)})',
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style: context.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
                     ),
+                    if (_selectedCurrency == _detectedCurrency)
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: DesignTokens.space8,
+                          vertical: DesignTokens.space4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentEmerald.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(DesignTokens.radiusFull),
+                        ),
+                        child: Text(
+                          'Selected',
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: AppTheme.accentEmerald,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
-              ),
+              ).animate().fadeIn(delay: 200.ms),
               
-              const SizedBox(height: 32),
+              SizedBox(height: DesignTokens.space24),
               
-              // Currency selection
-              const Text(
+              // Currency selection label
+              Text(
                 'Or choose a different currency:',
-                style: TextStyle(
-                  fontSize: 16,
+                style: context.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w500,
                 ),
-              ),
+              ).animate().fadeIn(delay: 300.ms),
               
-              const SizedBox(height: 16),
+              SizedBox(height: DesignTokens.space16),
               
               // Popular currencies grid
               Expanded(
                 child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     childAspectRatio: 2.2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
+                    crossAxisSpacing: DesignTokens.space12,
+                    mainAxisSpacing: DesignTokens.space12,
                   ),
                   itemCount: _popularCurrencies.length,
                   itemBuilder: (context, index) {
                     final currency = _popularCurrencies[index];
                     final isSelected = _selectedCurrency == currency['code'];
                     
-                    return InkWell(
+                    return GestureDetector(
                       onTap: () {
                         setState(() {
                           _selectedCurrency = currency['code']!;
                         });
                       },
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
+                      child: AnimatedContainer(
+                        duration: DesignTokens.durationFast,
+                        curve: DesignTokens.curveStandard,
+                        padding: EdgeInsets.all(DesignTokens.space12),
                         decoration: BoxDecoration(
                           color: isSelected 
-                              ? Colors.blue 
-                              : Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12),
+                              ? AppTheme.primaryIndigo
+                              : context.colors.surfaceContainerHighest.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(DesignTokens.radiusMD),
                           border: Border.all(
                             color: isSelected 
-                                ? Colors.blue 
-                                : Colors.grey[300]!,
-                            width: 2,
+                                ? AppTheme.primaryIndigo 
+                                : context.colors.outlineVariant.withOpacity(0.3),
+                            width: isSelected ? 2 : 1,
                           ),
                         ),
                         child: Center(
@@ -196,42 +218,38 @@ class _CurrencySetupScreenState extends State<CurrencySetupScreen> {
                             children: [
                               Text(
                                 CurrencyUtils.getCurrencySymbol(currency['code']!),
-                                style: TextStyle(
-                                  fontSize: 18,
+                                style: context.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: isSelected ? Colors.white : Colors.black,
+                                  color: isSelected ? Colors.white : null,
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              SizedBox(height: DesignTokens.space2),
                               Text(
                                 currency['code']!,
-                                style: TextStyle(
-                                  fontSize: 11,
+                                style: context.textTheme.labelSmall?.copyWith(
                                   fontWeight: FontWeight.w500,
                                   color: isSelected 
-                                      ? Colors.white 
-                                      : Colors.grey[600],
+                                      ? Colors.white.withOpacity(0.8)
+                                      : context.colors.onSurface.withOpacity(0.6),
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
+                    ).animate().fadeIn(delay: (350 + index * 50).ms).scale(
+                      begin: const Offset(0.9, 0.9),
+                      end: const Offset(1.0, 1.0),
                     );
                   },
                 ),
               ),
               
-              const SizedBox(height: 24),
+              SizedBox(height: DesignTokens.space20),
               
               // Continue Button
-              ElevatedButton(
+              PremiumButton(
                 onPressed: _isLoading ? null : _handleContinue,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
                 child: _isLoading
                     ? const SizedBox(
                         height: 20,
@@ -241,10 +259,7 @@ class _CurrencySetupScreenState extends State<CurrencySetupScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
-                        'Continue',
-                        style: TextStyle(fontSize: 16),
-                      ),
+                    : const Text('Continue'),
               ),
             ],
           ),

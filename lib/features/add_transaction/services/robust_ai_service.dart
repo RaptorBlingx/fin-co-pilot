@@ -23,7 +23,7 @@ class RobustAIService {
   RobustAIService({bool useAgentSwarm = true}) : _useAgentSwarm = useAgentSwarm {
     // Initialize Gemini 2.5 Flash using Firebase AI
     _model = FirebaseAI.googleAI().generativeModel(
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
     );
 
     if (_useAgentSwarm) {

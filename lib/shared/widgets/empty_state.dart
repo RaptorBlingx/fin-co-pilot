@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/theme/design_tokens.dart';
+import '../../core/constants/app_icons.dart';
+import 'premium_button.dart';
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PREMIUM EMPTY STATE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 class EmptyState extends StatelessWidget {
   final IconData icon;
+  final Color? iconColor;
   final String title;
   final String message;
   final String? actionLabel;
@@ -12,53 +22,76 @@ class EmptyState extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.message,
+    this.iconColor,
     this.actionLabel,
     this.onAction,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tint = iconColor ?? colors.primary;
+
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(DesignTokens.space32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Icon in tinted circle
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(DesignTokens.space24),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
                 shape: BoxShape.circle,
+                color: tint.withOpacity(isDark ? 0.12 : 0.08),
+                border: Border.all(
+                  color: tint.withOpacity(isDark ? 0.15 : 0.12),
+                ),
               ),
-              child: Icon(
-                icon,
-                size: 64,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 24),
+              child: Icon(icon, size: DesignTokens.iconXXL, color: tint),
+            )
+                .animate()
+                .fadeIn(duration: DesignTokens.durationNormal, curve: DesignTokens.curveDecelerate)
+                .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1), duration: DesignTokens.durationNormal, curve: DesignTokens.curveDecelerate),
+
+            const SizedBox(height: DesignTokens.space24),
+
+            // Title
             Text(
               title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(context).textTheme.titleLarge,
               textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
+            )
+                .animate(delay: const Duration(milliseconds: 80))
+                .fadeIn(duration: DesignTokens.durationFast, curve: DesignTokens.curveDecelerate)
+                .slideY(begin: 0.15, end: 0, duration: DesignTokens.durationNormal, curve: DesignTokens.curveDecelerate),
+
+            const SizedBox(height: DesignTokens.space12),
+
+            // Message
             Text(
               message,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
+                    color: colors.onSurfaceVariant,
                   ),
               textAlign: TextAlign.center,
-            ),
+            )
+                .animate(delay: const Duration(milliseconds: 160))
+                .fadeIn(duration: DesignTokens.durationFast, curve: DesignTokens.curveDecelerate)
+                .slideY(begin: 0.15, end: 0, duration: DesignTokens.durationNormal, curve: DesignTokens.curveDecelerate),
+
+            // CTA Button
             if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: onAction,
-                icon: const Icon(Icons.add),
-                label: Text(actionLabel!),
-              ),
+              const SizedBox(height: DesignTokens.space24),
+              PremiumButton(
+                onPressed: onAction!,
+                variant: PremiumButtonVariant.primary,
+                child: Text(actionLabel!),
+              )
+                  .animate(delay: const Duration(milliseconds: 240))
+                  .fadeIn(duration: DesignTokens.durationFast, curve: DesignTokens.curveDecelerate)
+                  .slideY(begin: 0.15, end: 0, duration: DesignTokens.durationNormal, curve: DesignTokens.curveDecelerate),
             ],
           ],
         ),
@@ -67,7 +100,10 @@ class EmptyState extends StatelessWidget {
   }
 }
 
-// Specific empty states
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SPECIFIC EMPTY STATES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 class NoTransactionsEmpty extends StatelessWidget {
   final VoidCallback? onAdd;
 
@@ -76,9 +112,10 @@ class NoTransactionsEmpty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EmptyState(
-      icon: Icons.receipt_long_outlined,
-      title: 'No Transactions Yet',
-      message: 'Start tracking your expenses by adding your first transaction',
+      icon: AppIcons.receipt,
+      iconColor: AppTheme.accentEmerald,
+      title: 'Your Financial Journey Starts Here',
+      message: 'Add your first transaction and let us help you understand your spending.',
       actionLabel: 'Add Transaction',
       onAction: onAdd,
     );
@@ -90,10 +127,11 @@ class NoInsightsEmpty extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const EmptyState(
-      icon: Icons.analytics_outlined,
-      title: 'No Data to Analyze',
-      message: 'Add some transactions to see insights and spending patterns',
+    return EmptyState(
+      icon: AppIcons.insights,
+      iconColor: AppTheme.primaryIndigo,
+      title: 'Insights Are on the Way',
+      message: 'Add some transactions and we\'ll surface smart spending patterns for you.',
     );
   }
 }
@@ -106,9 +144,10 @@ class NoCoachingTipsEmpty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EmptyState(
-      icon: Icons.psychology_outlined,
-      title: 'No Coaching Tips Yet',
-      message: 'Generate personalized financial coaching based on your spending habits',
+      icon: AppIcons.coach,
+      iconColor: AppTheme.amber500,
+      title: 'Your Coach Is Ready',
+      message: 'Generate personalized tips based on your spending habits.',
       actionLabel: 'Generate Tips',
       onAction: onGenerate,
     );
@@ -123,9 +162,10 @@ class NoSearchResultsEmpty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EmptyState(
-      icon: Icons.search_off,
+      icon: AppIcons.search,
+      iconColor: AppTheme.slate400,
       title: 'No Results Found',
-      message: 'We couldn\'t find any results for "$query"',
+      message: 'We couldn\'t find anything matching "$query". Try a different search.',
     );
   }
 }

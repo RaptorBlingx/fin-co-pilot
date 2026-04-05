@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/navigation/page_transitions.dart';
 import '../../../models/subscription.dart';
 import '../../../services/subscription_detection_service.dart';
 import '../../../services/auth_service.dart';
@@ -161,12 +162,7 @@ class _SubscriptionSummaryCardState extends State<SubscriptionSummaryCard> {
       ),
       child: InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const SubscriptionsScreen(),
-            ),
-          );
+          context.pushWithFade(const SubscriptionsScreen());
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(

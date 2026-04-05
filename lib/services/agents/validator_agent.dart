@@ -1,14 +1,31 @@
 import 'package:firebase_ai/firebase_ai.dart';
 import '../../features/add_transaction/models/transaction_data.dart';
+import '../../models/user_context.dart';
+import '../../services/context_formatter.dart';
 
 /// Agent 3: Validator Agent
 /// Checks required fields and generates smart follow-up questions
 class ValidatorAgent {
-  late final GenerativeModel _model;
+  late GenerativeModel _model;
+  String _currencySymbol = '\$';
 
   ValidatorAgent() {
     _model = FirebaseAI.googleAI().generativeModel(
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.1-flash-lite-preview',
+    );
+  }
+
+  /// Update the model with user-specific system instructions.
+  void updateContext(UserContext ctx) {
+    _currencySymbol = ctx.currencySymbol;
+    final systemText = '''
+You are a validation assistant that generates follow-up questions to collect missing transaction data.
+
+${ContextFormatter.formatCoreRules(ctx)}
+''';
+    _model = FirebaseAI.googleAI().generativeModel(
+      model: 'gemini-3.1-flash-lite-preview',
+      systemInstruction: Content.text(systemText),
     );
   }
 
@@ -66,7 +83,7 @@ class ValidatorAgent {
 You are a validation assistant. Generate a follow-up question to collect missing data.
 
 Current transaction data:
-- Amount: ${data.amount != null ? '\$${data.amount}' : 'missing'}
+- Amount: ${data.amount != null ? '$_currencySymbol${data.amount}' : 'missing'}
 - Item: ${data.item ?? 'missing'}
 - Category: ${data.category ?? 'missing'}
 - Merchant: ${data.merchant ?? 'missing'}
@@ -84,7 +101,7 @@ Rules:
 
 Examples:
 - If amount missing: "Got your ${data.item}! How much did it cost? 💰"
-- If item missing: "What did you buy for \$${data.amount}? 🛍️"
+- If item missing: "What did you buy for $_currencySymbol${data.amount}? 🛍️"
 - If both missing: "What did you buy and how much did it cost?"
 
 Generate question:

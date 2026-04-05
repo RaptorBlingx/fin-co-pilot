@@ -29,18 +29,12 @@ class MockData {
       amount: amount ?? 50.0,
       currency: 'USD',
       category: category ?? 'Dining',
-      type: type ?? models.TransactionType.expense,
       merchant: merchant ?? 'Starbucks',
       description: description ?? 'Coffee',
-      date: date ?? DateTime.now(),
-      metadata: models.TransactionMetadata(
-        source: 'manual',
-        confidence: 1.0,
-        verified: true,
-        edited: false,
-      ),
+      transactionDate: date ?? DateTime.now(),
       createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      inputMethod: 'manual',
+      aiConfidence: 1.0,
     );
   }
 
@@ -116,19 +110,12 @@ class MockData {
       amount: 45.99,
       currency: 'USD',
       category: 'Dining',
-      type: models.TransactionType.expense,
       merchant: 'Restaurant',
       description: 'Payment via SMS',
-      date: DateTime.now(),
-      metadata: models.TransactionMetadata(
-        source: 'sms',
-        confidence: 0.95,
-        verified: false,
-        edited: false,
-        aiAgent: 'gemini-2.5-flash',
-      ),
+      transactionDate: DateTime.now(),
       createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      inputMethod: 'sms',
+      aiConfidence: 0.95,
     );
   }
 
@@ -140,23 +127,12 @@ class MockData {
       amount: 87.50,
       currency: 'USD',
       category: 'Groceries',
-      type: models.TransactionType.expense,
       merchant: 'Whole Foods',
       description: 'Grocery shopping',
-      date: DateTime.now(),
-      receipt: models.ReceiptInfo(
-        imageUrl: 'https://example.com/receipt.jpg',
-        uploadedAt: DateTime.now(),
-      ),
-      metadata: models.TransactionMetadata(
-        source: 'receipt',
-        confidence: 0.98,
-        verified: true,
-        edited: false,
-        aiAgent: 'gemini-2.5-flash',
-      ),
+      transactionDate: DateTime.now(),
       createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      inputMethod: 'receipt_photo',
+      aiConfidence: 0.98,
     );
   }
 

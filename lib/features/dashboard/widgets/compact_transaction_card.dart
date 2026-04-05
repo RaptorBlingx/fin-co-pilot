@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../core/constants/categories.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/design_tokens.dart';
 import '../../../core/utils/currency_utils.dart';
-import '../../../shared/models/transaction.dart';
-
+import '../../../models/transaction.dart';
+import '../../../shared/widgets/light_card.dart';
 class CompactTransactionCard extends StatelessWidget {
   final Transaction transaction;
   final VoidCallback? onTap;
@@ -15,76 +18,80 @@ class CompactTransactionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-          width: 1,
+    final category = AppCategories.getCategoryByName(transaction.category);
+    final isIncome = transaction.type == TransactionType.income;
+    final financeColors = context.financeColors;
+
+    return LightCard(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.space16,
+          vertical: DesignTokens.space12,
         ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Category icon
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: _getCategoryColor(transaction.category).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+        child: Row(
+          children: [
+            // Category icon
+            Container(
+              width: DesignTokens.avatarMD,
+              height: DesignTokens.avatarMD,
+              decoration: BoxDecoration(
+                color: category.color.withOpacity(0.12),
+                borderRadius: DesignTokens.borderRadiusMD,
+              ),
+              child: Center(
+                child: Icon(
+                  category.icon,
+                  color: category.color,
+                  size: DesignTokens.iconSM,
                 ),
-                child: Center(
-                  child: Text(
-                    _getCategoryEmoji(transaction.category),
-                    style: const TextStyle(fontSize: 24),
+              ),
+            ),
+
+            const SizedBox(width: DesignTokens.space12),
+
+            // Transaction details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    transaction.merchant ??
+                        transaction.description ??
+                        'Unknown',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatDate(transaction.transactionDate),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.5),
+                        ),
+                  ),
+                ],
               ),
-              
-              const SizedBox(width: 16),
-              
-              // Transaction details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      transaction.merchant ?? transaction.description ?? 'Unknown',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _formatDate(transaction.transactionDate),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(width: 16),
-              
-              // Amount
-              Text(
-                '-${CurrencyUtils.formatAmount(transaction.amount, transaction.currency)}',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontFamily: 'SF Mono',
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-              ),
-            ],
-          ),
+            ),
+
+            const SizedBox(width: DesignTokens.space8),
+
+            // Amount
+            Text(
+              '${isIncome ? '+' : '-'}${CurrencyUtils.formatAmount(transaction.amount.abs(), transaction.currency)}',
+              style: AppTheme.monoAmountStyle(context).copyWith(
+                    color: isIncome
+                        ? financeColors.positive
+                        : financeColors.negative,
+                    fontFeatures: [const FontFeature.tabularFigures()],
+                  ),
+            ),
+          ],
         ),
       ),
     );
@@ -101,63 +108,9 @@ class CompactTransactionCard extends StatelessWidget {
     } else if (transactionDay == yesterday) {
       return 'Yesterday, ${DateFormat('h:mm a').format(date)}';
     } else if (now.difference(date).inDays < 7) {
-      return DateFormat('EEEE, h:mm a').format(date); // "Monday, 2:30 PM"
+      return DateFormat('EEEE, h:mm a').format(date);
     } else {
-      return DateFormat('MMM d, h:mm a').format(date); // "Oct 5, 2:30 PM"
-    }
-  }
-
-  String _getCategoryEmoji(String category) {
-    switch (category.toLowerCase()) {
-      case 'groceries':
-        return '🛒';
-      case 'dining':
-        return '🍽️';
-      case 'transport':
-        return '🚗';
-      case 'entertainment':
-        return '🎬';
-      case 'shopping':
-        return '🛍️';
-      case 'health':
-        return '🏥';
-      case 'bills':
-        return '📄';
-      case 'education':
-        return '📚';
-      case 'travel':
-        return '✈️';
-      case 'coffee':
-        return '☕';
-      default:
-        return '💰';
-    }
-  }
-
-  Color _getCategoryColor(String category) {
-    switch (category.toLowerCase()) {
-      case 'groceries':
-        return Colors.green;
-      case 'dining':
-        return Colors.orange;
-      case 'transport':
-        return Colors.blue;
-      case 'entertainment':
-        return Colors.purple;
-      case 'shopping':
-        return Colors.pink;
-      case 'health':
-        return Colors.red;
-      case 'bills':
-        return Colors.teal;
-      case 'education':
-        return Colors.indigo;
-      case 'travel':
-        return Colors.cyan;
-      case 'coffee':
-        return Colors.brown;
-      default:
-        return Colors.grey;
+      return DateFormat('MMM d, h:mm a').format(date);
     }
   }
 }

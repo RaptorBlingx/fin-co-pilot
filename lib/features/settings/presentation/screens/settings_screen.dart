@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../services/auth_service.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../services/preferences_service.dart';
 import '../../../../core/utils/currency_utils.dart';
-import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/haptic_utils.dart';
+import '../../../../core/theme/design_tokens.dart';
+import '../../../../core/theme/app_theme.dart';
 
 import '../../../../main.dart' show themeProvider;
 
@@ -17,11 +18,8 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  final AuthService _authService = AuthService();
   String _selectedCurrency = 'USD';
   bool _isDarkMode = false;
-  bool _notificationsEnabled = true;
-  bool _hapticFeedbackEnabled = true;
 
   @override
   void initState() {
@@ -33,336 +31,228 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final themeNotifier = ref.read(themeProvider);
-    _isDarkMode = themeNotifier.isDarkMode || 
+    _isDarkMode = themeNotifier.isDarkMode ||
         (themeNotifier.isSystemMode && Theme.of(context).brightness == Brightness.dark);
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = _authService.currentUser;
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: const Text('Appearance'),
+        centerTitle: true,
       ),
       body: ListView(
+        padding: EdgeInsets.symmetric(horizontal: DesignTokens.space16),
         children: [
-          // Account section
-          _SectionHeader(title: 'ACCOUNT'),
-          
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.blue,
-              child: Text(
-                user?.email?.substring(0, 1).toUpperCase() ?? 'U',
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-            title: Text(user?.displayName ?? 'User'),
-            subtitle: Text(user?.email ?? ''),
-          ),
+          SizedBox(height: DesignTokens.space8),
 
-          const Divider(),
-
-          // Preferences section
-          _SectionHeader(title: 'PREFERENCES'),
-
-          // CURRENCY SWITCHING - DISABLED FOR MVP
-          // TODO: Re-enable after implementing proper multi-currency conversion
-          // ListTile(
-          //   leading: const Icon(Icons.monetization_on),
-          //   title: const Text('Currency'),
-          //   subtitle: Text('$_selectedCurrency (${CurrencyUtils.getCurrencySymbol(_selectedCurrency)})'),
-          //   trailing: const Icon(Icons.chevron_right),
-          //   onTap: () => _showCurrencyPicker(),
-          // ),
-
-          // Show currency as read-only
-          ListTile(
-            leading: const Icon(Icons.monetization_on),
-            title: const Text('Currency'),
-            subtitle: Text(
-              '$_selectedCurrency (${CurrencyUtils.getCurrencySymbol(_selectedCurrency)}) - Auto-detected',
-            ),
-          ),
-
-          // Dark Mode Toggle
-          ListTile(
-            leading: Icon(_isDarkMode ? Icons.dark_mode : Icons.light_mode),
-            title: const Text('Dark Mode'),
-            subtitle: Text(_isDarkMode ? 'Enabled' : 'Disabled'),
-            trailing: Switch(
-              value: _isDarkMode,
-              onChanged: (value) {
-                HapticUtils.light();
-                final themeNotifier = ref.read(themeProvider.notifier);
-                
-                // Toggle between light and dark mode
-                if (value) {
-                  themeNotifier.setThemeMode(ThemeMode.dark);
-                } else {
-                  themeNotifier.setThemeMode(ThemeMode.light);
-                }
-                
-                setState(() {
-                  _isDarkMode = value;
-                });
-                
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Theme changed to ${value ? 'dark' : 'light'} mode'),
-                    duration: const Duration(seconds: 2),
+          // Theme section
+          _SectionLabel(title: 'THEME', delay: 0),
+          SizedBox(height: DesignTokens.space8),
+          _GlassSection(
+            delay: 0,
+            child: Column(
+              children: [
+                // Dark Mode Toggle
+                _SettingsRow(
+                  icon: _isDarkMode
+                      ? PhosphorIcons.moon(PhosphorIconsStyle.duotone)
+                      : PhosphorIcons.sunDim(PhosphorIconsStyle.duotone),
+                  iconColor: _isDarkMode ? AppTheme.accentPurple : AppTheme.amber500,
+                  title: 'Dark Mode',
+                  subtitle: _isDarkMode ? 'Enabled' : 'Disabled',
+                  trailing: Switch(
+                    value: _isDarkMode,
+                    onChanged: (value) {
+                      HapticUtils.light();
+                      final themeNotifier = ref.read(themeProvider.notifier);
+                      if (value) {
+                        themeNotifier.setThemeMode(ThemeMode.dark);
+                      } else {
+                        themeNotifier.setThemeMode(ThemeMode.light);
+                      }
+                      setState(() => _isDarkMode = value);
+                    },
                   ),
-                );
-              },
-            ),
-          ),
-          
-          // Notifications Toggle
-          ListTile(
-            leading: const Icon(Icons.notifications),
-            title: const Text('Notifications'),
-            subtitle: Text(_notificationsEnabled ? 'Enabled' : 'Disabled'),
-            trailing: Switch(
-              value: _notificationsEnabled,
-              onChanged: (value) {
-                HapticUtils.light();
-                setState(() {
-                  _notificationsEnabled = value;
-                });
-              },
-            ),
-          ),
-          
-          // Haptic Feedback Toggle
-          ListTile(
-            leading: const Icon(Icons.vibration),
-            title: const Text('Haptic Feedback'),
-            subtitle: Text(_hapticFeedbackEnabled ? 'Enabled' : 'Disabled'),
-            trailing: Switch(
-              value: _hapticFeedbackEnabled,
-              onChanged: (value) {
-                if (value) {
-                  HapticUtils.light();
-                }
-                setState(() {
-                  _hapticFeedbackEnabled = value;
-                });
-              },
-            ),
-          ),
-          
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: const Text('Language'),
-            subtitle: const Text('English'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              HapticUtils.light();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Language selection coming soon')),
-              );
-            },
-          ),
-
-          const Divider(),
-
-          // Data section
-          _SectionHeader(title: 'DATA'),
-
-          ListTile(
-            leading: const Icon(Icons.download),
-            title: const Text('Export Data'),
-            subtitle: const Text('Download your transactions as CSV'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Export coming soon')),
-              );
-            },
-          ),
-
-          const Divider(),
-
-          // About section
-          _SectionHeader(title: 'ABOUT'),
-
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('Version'),
-            subtitle: Text(AppConstants.appVersion),
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.privacy_tip_outlined),
-            title: const Text('Privacy Policy'),
-            trailing: const Icon(Icons.open_in_new),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Privacy policy coming soon')),
-              );
-            },
-          ),
-
-          const Divider(),
-
-          // Danger zone
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text(
-              'Sign Out',
-              style: TextStyle(color: Colors.red),
-            ),
-            onTap: () => _confirmSignOut(),
-          ),
-
-          const SizedBox(height: 32),
-        ],
-      ),
-    );
-  }
-
-  // CURRENCY SWITCHING - DISABLED FOR MVP
-  // TODO: Re-enable after implementing proper multi-currency conversion
-  /* void _showCurrencyPicker() {
-    final currencies = [
-      {'code': 'USD', 'name': 'US Dollar'},
-      {'code': 'EUR', 'name': 'Euro'},
-      {'code': 'GBP', 'name': 'British Pound'},
-      {'code': 'JPY', 'name': 'Japanese Yen'},
-      {'code': 'CNY', 'name': 'Chinese Yuan'},
-      {'code': 'CAD', 'name': 'Canadian Dollar'},
-      {'code': 'AUD', 'name': 'Australian Dollar'},
-      {'code': 'CHF', 'name': 'Swiss Franc'},
-      {'code': 'TRY', 'name': 'Turkish Lira'},
-      {'code': 'INR', 'name': 'Indian Rupee'},
-      {'code': 'BRL', 'name': 'Brazilian Real'},
-      {'code': 'MXN', 'name': 'Mexican Peso'},
-      {'code': 'ZAR', 'name': 'South African Rand'},
-      {'code': 'KRW', 'name': 'South Korean Won'},
-      {'code': 'SGD', 'name': 'Singapore Dollar'},
-      {'code': 'HKD', 'name': 'Hong Kong Dollar'},
-      {'code': 'SEK', 'name': 'Swedish Krona'},
-      {'code': 'NOK', 'name': 'Norwegian Krone'},
-      {'code': 'DKK', 'name': 'Danish Krone'},
-      {'code': 'PLN', 'name': 'Polish Zloty'},
-    ];
-
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'Select Currency',
-                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: currencies.length,
-                  itemBuilder: (context, index) {
-                    final currency = currencies[index];
-                    final isSelected = _selectedCurrency == currency['code'];
+              ],
+            ),
+          ),
+          SizedBox(height: DesignTokens.space20),
 
-                    return ListTile(
-                      leading: Text(
-                        CurrencyUtils.getCurrencySymbol(currency['code']!),
-                        style: const TextStyle(fontSize: 24),
-                      ),
-                      title: Text(currency['name']!),
-                      subtitle: Text(currency['code']!),
-                      trailing: isSelected
-                          ? const Icon(Icons.check, color: Colors.blue)
-                          : null,
-                      selected: isSelected,
-                      onTap: () async {
-                        await PreferencesService.setCurrency(currency['code']!);
-                        
-                        final user = _authService.currentUser;
-                        if (user != null) {
-                          await _authService.updateUserPreferences(
-                            userId: user.uid,
-                            currency: currency['code']!,
-                            language: PreferencesService.getLanguage() ?? 'en',
-                            countryCode: currency['code']!.substring(0, 2),
-                          );
-                        }
-
-                        setState(() {
-                          _selectedCurrency = currency['code']!;
-                        });
-
-                        if (context.mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Currency changed to ${currency['code']}'),
-                            ),
-                          );
-                        }
-                      },
+          // Display section
+          _SectionLabel(title: 'DISPLAY', delay: 1),
+          SizedBox(height: DesignTokens.space8),
+          _GlassSection(
+            delay: 1,
+            child: Column(
+              children: [
+                // Currency
+                _SettingsRow(
+                  icon: PhosphorIcons.coins(PhosphorIconsStyle.duotone),
+                  iconColor: AppTheme.amber500,
+                  title: 'Currency',
+                  subtitle: '$_selectedCurrency (${CurrencyUtils.getCurrencySymbol(_selectedCurrency)})',
+                  trailing: Icon(
+                    PhosphorIcons.caretRight(),
+                    size: DesignTokens.iconSM,
+                    color: context.colors.onSurface.withOpacity(0.3),
+                  ),
+                ),
+                _divider(context),
+                // Language
+                _SettingsRow(
+                  icon: PhosphorIcons.globe(PhosphorIconsStyle.duotone),
+                  iconColor: AppTheme.primaryIndigo,
+                  title: 'Language',
+                  subtitle: 'English',
+                  trailing: Icon(
+                    PhosphorIcons.caretRight(),
+                    size: DesignTokens.iconSM,
+                    color: context.colors.onSurface.withOpacity(0.3),
+                  ),
+                  onTap: () {
+                    HapticUtils.light();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Language selection coming soon')),
                     );
                   },
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        );
-      },
-    );
-  } */
-
-  Future<void> _confirmSignOut() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Sign Out'),
-          ),
+          SizedBox(height: DesignTokens.space48),
         ],
       ),
     );
+  }
 
-    if (confirmed == true) {
-      await _authService.signOut();
-      if (mounted) {
-        context.go(AppConstants.routeSignIn);
-      }
-    }
+  Widget _divider(BuildContext context) {
+    return Divider(
+      height: 1,
+      indent: DesignTokens.space48 + DesignTokens.space12,
+      color: context.colors.onSurface.withOpacity(0.06),
+    );
   }
 }
 
-class _SectionHeader extends StatelessWidget {
+class _SectionLabel extends StatelessWidget {
   final String title;
+  final int delay;
 
-  const _SectionHeader({required this.title});
+  const _SectionLabel({required this.title, this.delay = 0});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: EdgeInsets.only(left: DesignTokens.space4),
       child: Text(
         title,
-        style: TextStyle(
-          fontSize: 12,
+        style: context.textTheme.labelMedium?.copyWith(
+          color: context.colors.onSurface.withOpacity(0.45),
           fontWeight: FontWeight.w600,
-          color: Colors.grey[600],
           letterSpacing: 1.2,
+        ),
+      ),
+    )
+        .animate(delay: Duration(milliseconds: delay * 50))
+        .fadeIn(duration: DesignTokens.durationNormal);
+  }
+}
+
+class _GlassSection extends StatelessWidget {
+  final Widget child;
+  final int delay;
+
+  const _GlassSection({required this.child, this.delay = 0});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.isDark
+            ? Colors.white.withOpacity(0.04)
+            : Colors.white.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLG),
+        border: Border.all(
+          color: context.isDark
+              ? Colors.white.withOpacity(0.06)
+              : Colors.black.withOpacity(0.05),
+        ),
+      ),
+      child: child,
+    )
+        .animate(delay: Duration(milliseconds: delay * 50))
+        .fadeIn(duration: DesignTokens.durationNormal)
+        .slideY(begin: 0.05, end: 0);
+  }
+}
+
+class _SettingsRow extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  const _SettingsRow({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLG),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: DesignTokens.space16,
+            vertical: DesignTokens.space12,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusSM),
+                ),
+                child: Icon(icon, size: DesignTokens.iconMD, color: iconColor),
+              ),
+              SizedBox(width: DesignTokens.space12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: context.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (subtitle != null)
+                      Text(
+                        subtitle!,
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: context.colors.onSurface.withOpacity(0.5),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (trailing != null) trailing!,
+            ],
+          ),
         ),
       ),
     );

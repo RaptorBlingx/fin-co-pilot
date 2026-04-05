@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../../../shared/models/transaction.dart' as model;
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../../../../models/transaction.dart' as model;
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../services/transaction_service.dart';
 import '../../../../core/constants/categories.dart';
+import '../../../../core/theme/design_tokens.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/glass_card.dart';
+import '../../../../shared/widgets/premium_button.dart';
+import '../../../../shared/widgets/glass_bottom_sheet.dart';
 import 'package:intl/intl.dart';
 import 'transaction_edit_screen.dart';
 
@@ -33,10 +40,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   Future<void> _editTransaction() async {
     final result = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(
-        builder: (context) => TransactionEditScreen(
+      PageRouteBuilder<bool>(
+        pageBuilder: (_, __, ___) => TransactionEditScreen(
           transaction: _currentTransaction,
         ),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: DesignTokens.durationNormal,
       ),
     );
 
@@ -64,16 +75,15 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Transaction Details'),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
+        centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: Icon(PhosphorIcons.pencilSimple()),
             tooltip: 'Edit',
             onPressed: _editTransaction,
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline),
+            icon: Icon(PhosphorIcons.trash(), color: AppTheme.rose500),
             tooltip: 'Delete',
             onPressed: _confirmDelete,
           ),
@@ -82,10 +92,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Header card with gradient and category icon
+            // Header card with category icon and amount
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(32),
+              padding: EdgeInsets.all(DesignTokens.space32),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -98,7 +108,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               ),
               child: Column(
                 children: [
-                  // Category icon with hero animation
                   Hero(
                     tag: 'transaction_${_currentTransaction.id}',
                     child: Container(
@@ -115,153 +124,165 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  // Amount
+                  SizedBox(height: DesignTokens.space16),
                   Text(
                     CurrencyUtils.formatAmount(
                       _currentTransaction.amount,
                       _currentTransaction.currency,
                     ),
-                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: context.textTheme.displayMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  // Category
+                  SizedBox(height: DesignTokens.space8),
                   Text(
                     _currentTransaction.category,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Colors.white.withOpacity(0.9),
-                        ),
+                    style: context.textTheme.titleMedium?.copyWith(
+                      color: Colors.white.withOpacity(0.9),
+                    ),
                   ),
                 ],
               ),
-            ),
+            )
+                .animate()
+                .fadeIn(duration: DesignTokens.durationNormal),
 
             // Details section
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(DesignTokens.space16),
               child: Column(
                 children: [
                   _buildDetailCard(
                     context,
-                    icon: Icons.store,
+                    icon: PhosphorIcons.storefront(),
                     label: 'Merchant',
                     value: _currentTransaction.merchant ?? 'Not specified',
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: DesignTokens.space12),
                   
-                  if (_currentTransaction.description != null && _currentTransaction.description!.isNotEmpty)
+                  if (_currentTransaction.description != null && _currentTransaction.description!.isNotEmpty) ...[
                     _buildDetailCard(
                       context,
-                      icon: Icons.description,
+                      icon: PhosphorIcons.noteBlank(),
                       label: 'Description',
                       value: _currentTransaction.description!,
                     ),
-                  
-                  if (_currentTransaction.description != null && _currentTransaction.description!.isNotEmpty)
-                    const SizedBox(height: 12),
+                    SizedBox(height: DesignTokens.space12),
+                  ],
                   
                   _buildDetailCard(
                     context,
-                    icon: Icons.calendar_today,
+                    icon: PhosphorIcons.calendarBlank(),
                     label: 'Date',
                     value: DateFormat.yMMMMd().add_jm().format(_currentTransaction.transactionDate),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: DesignTokens.space12),
                   
                   _buildDetailCard(
                     context,
-                    icon: Icons.payment,
+                    icon: PhosphorIcons.creditCard(),
                     label: 'Payment Method',
                     value: _formatPaymentMethod(_currentTransaction.paymentMethod),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: DesignTokens.space12),
                   
                   _buildDetailCard(
                     context,
-                    icon: Icons.input,
+                    icon: PhosphorIcons.textAa(),
                     label: 'Input Method',
                     value: _formatInputMethod(_currentTransaction.inputMethod),
                   ),
                   
-                  // AI Confidence (if available)
+                  // AI Confidence
                   if (_currentTransaction.aiConfidence != null) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: DesignTokens.space12),
                     _buildDetailCard(
                       context,
-                      icon: Icons.psychology,
+                      icon: PhosphorIcons.brain(),
                       label: 'AI Confidence',
                       value: '${(_currentTransaction.aiConfidence! * 100).toStringAsFixed(0)}%',
-                      trailing: LinearProgressIndicator(
-                        value: _currentTransaction.aiConfidence,
-                        backgroundColor: Colors.grey[300],
-                        valueColor: AlwaysStoppedAnimation(
-                          _currentTransaction.aiConfidence! > 0.8 ? Colors.green : Colors.orange,
+                      trailing: ClipRRect(
+                        borderRadius: BorderRadius.circular(DesignTokens.radiusSM),
+                        child: LinearProgressIndicator(
+                          value: _currentTransaction.aiConfidence,
+                          backgroundColor: context.colors.onSurface.withOpacity(0.1),
+                          valueColor: AlwaysStoppedAnimation(
+                            _currentTransaction.aiConfidence! > 0.8
+                                ? AppTheme.accentEmerald
+                                : AppTheme.amber500,
+                          ),
+                          minHeight: 6,
                         ),
                       ),
                     ),
                   ],
 
-                  // Notes (if available)
+                  // Notes
                   if (_currentTransaction.notes != null && _currentTransaction.notes!.isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: DesignTokens.space12),
                     _buildDetailCard(
                       context,
-                      icon: Icons.notes,
+                      icon: PhosphorIcons.note(),
                       label: 'Notes',
                       value: _currentTransaction.notes!,
                     ),
                   ],
 
-                  // Receipt items breakdown (if from receipt)
+                  // Receipt items breakdown
                   if (_currentTransaction.receiptData != null) ...[
-                    const SizedBox(height: 24),
+                    SizedBox(height: DesignTokens.space24),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Receipt Items',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        style: context.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: DesignTokens.space12),
                     _buildReceiptItems(context),
                   ],
                   
                   // Metadata section
-                  const SizedBox(height: 24),
+                  SizedBox(height: DesignTokens.space24),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'METADATA',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      style: context.textTheme.labelSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                             letterSpacing: 1.2,
+                            color: context.colors.onSurface.withOpacity(0.5),
                           ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: DesignTokens.space12),
                   
                   _buildDetailCard(
                     context,
-                    icon: Icons.fingerprint,
+                    icon: PhosphorIcons.fingerprint(),
                     label: 'Transaction ID',
                     value: _currentTransaction.id ?? 'Unknown',
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: DesignTokens.space12),
                   
                   _buildDetailCard(
                     context,
-                    icon: Icons.update,
+                    icon: PhosphorIcons.clockCounterClockwise(),
                     label: 'Created',
                     value: DateFormat('MMM d, y h:mm a').format(_currentTransaction.createdAt),
                   ),
                 ],
               ),
-            ),
+            )
+                .animate()
+                .fadeIn(
+                  duration: DesignTokens.durationNormal,
+                  delay: DesignTokens.staggerDelay,
+                )
+                .slideY(begin: 0.05, end: 0),
           ],
         ),
       ),
@@ -275,44 +296,35 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     required String value,
     Widget? trailing,
   }) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-            ),
-            if (trailing != null) ...[
-              const SizedBox(height: 8),
-              trailing,
+    return GlassCard(
+      padding: EdgeInsets.all(DesignTokens.space16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: DesignTokens.iconSM, color: AppTheme.primaryIndigo),
+              SizedBox(width: DesignTokens.space8),
+              Text(
+                label,
+                style: context.textTheme.bodySmall?.copyWith(
+                      color: context.colors.onSurface.withOpacity(0.6),
+                    ),
+              ),
             ],
+          ),
+          SizedBox(height: DesignTokens.space8),
+          Text(
+            value,
+            style: context.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+          ),
+          if (trailing != null) ...[
+            SizedBox(height: DesignTokens.space8),
+            trailing,
           ],
-        ),
+        ],
       ),
     );
   }
@@ -326,23 +338,21 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         final itemName = item['name'] ?? item['item'] ?? 'Unknown item';
         final itemPrice = (item['price'] ?? 0).toDouble();
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-            ),
-          ),
-          child: ListTile(
-            leading: const Icon(Icons.shopping_bag_outlined),
-            title: Text(itemName),
-            trailing: Text(
-              CurrencyUtils.formatAmount(itemPrice, _currentTransaction.currency),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+        return Padding(
+          padding: EdgeInsets.only(bottom: DesignTokens.space8),
+          child: GlassCard(
+            child: ListTile(
+              leading: Icon(
+                PhosphorIcons.shoppingBag(),
+                color: AppTheme.primaryIndigo,
+              ),
+              title: Text(itemName),
+              trailing: Text(
+                CurrencyUtils.formatAmount(itemPrice, _currentTransaction.currency),
+                style: context.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
             ),
           ),
         );
@@ -372,38 +382,82 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   }
 
   Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showGlassBottomSheet<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Transaction'),
-        content: const Text(
-          'Are you sure you want to delete this transaction? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
+      builder: (context) => Padding(
+        padding: EdgeInsets.all(DesignTokens.space24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppTheme.rose500.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                PhosphorIcons.trash(),
+                color: AppTheme.rose500,
+                size: DesignTokens.iconLG,
+              ),
             ),
-            child: const Text('Delete'),
-          ),
-        ],
+            SizedBox(height: DesignTokens.space16),
+            Text(
+              'Delete Transaction',
+              style: context.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: DesignTokens.space8),
+            Text(
+              'Are you sure you want to delete this transaction? This action cannot be undone.',
+              textAlign: TextAlign.center,
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colors.onSurface.withOpacity(0.7),
+              ),
+            ),
+            SizedBox(height: DesignTokens.space24),
+            Row(
+              children: [
+                Expanded(
+                  child: PremiumButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    variant: PremiumButtonVariant.secondary,
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                SizedBox(width: DesignTokens.space12),
+                Expanded(
+                  child: PremiumButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    variant: PremiumButtonVariant.danger,
+                    child: const Text('Delete'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
 
     if (confirmed == true && mounted) {
       try {
-        await TransactionService().deleteTransaction(_currentTransaction.id!);
+        final transactionService = TransactionService();
+        await transactionService.updateBudgetSpendingPublic(
+          userId: _currentTransaction.userId,
+          category: _currentTransaction.category,
+          amount: -_currentTransaction.amount,
+          transactionDate: _currentTransaction.transactionDate,
+        );
+        await transactionService.deleteTransaction(_currentTransaction.id!);
         if (mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Transaction deleted'),
-              backgroundColor: Colors.red,
+            SnackBar(
+              content: const Text('Transaction deleted'),
+              backgroundColor: AppTheme.rose500,
             ),
           );
         }
@@ -412,7 +466,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error deleting transaction: $e'),
-              backgroundColor: Colors.red,
+              backgroundColor: AppTheme.rose500,
             ),
           );
         }

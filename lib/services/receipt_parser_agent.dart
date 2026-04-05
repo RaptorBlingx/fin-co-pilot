@@ -6,9 +6,9 @@ class ReceiptParserAgent {
   late final GenerativeModel _model;
 
   ReceiptParserAgent() {
-    // Use Gemini 2.5 Flash-Lite for cost-effective receipt OCR
+    // Use Gemini 3.1 Flash-Lite for cost-effective receipt OCR
     _model = FirebaseAI.googleAI().generativeModel(
-      model: 'gemini-2.5-flash-lite',
+      model: 'gemini-3.1-flash-lite-preview',
       generationConfig: GenerationConfig(
         temperature: 0.2,
         maxOutputTokens: 2048,
@@ -166,6 +166,88 @@ Now analyze the provided receipt image and respond with ONLY the JSON (no markdo
       return {
         'success': false,
         'error': 'Receipt parsing failed: ${e.toString()}',
+      };
+    }
+  }
+  
+  /// Parse extracted text from Vision AI (NEW METHOD for Task 4.4.2)
+  /// 
+  /// Takes raw OCR text and uses Gemini to extract structured data
+  Future<Map<String, dynamic>> parseExtractedText(String extractedText) async {
+    try {
+      final prompt = '''
+You are an expert receipt parser. I have raw OCR text from a receipt. Parse it and extract structured data.
+
+RAW OCR TEXT:
+$extractedText
+
+CRITICAL RULES:
+1. Extract ONLY what you can clearly see in the text - use null for unclear fields
+2. Total amount is the MOST IMPORTANT field - be very careful
+3. Currency: Look for dollar, euro, pound, yen symbols or text like "USD", "EUR"
+4. Date: Parse various formats (MM/DD/YYYY, DD-MM-YYYY, etc.) to YYYY-MM-DD
+5. Merchant: Extract the business name (usually first non-address line)
+6. Items: Include ALL line items with accurate prices
+
+REQUIRED OUTPUT FORMAT (JSON only, no markdown):
+{
+  "merchant": "Store Name or null",
+  "total": 0.00,
+  "currency": "USD",
+  "date": "YYYY-MM-DD or null",
+  "items": [{"name": "Item", "price": 0.00, "quantity": 1}],
+  "tax": 0.00,
+  "payment_method": "cash|credit_card|debit_card or null",
+  "confidence": 0.0
+}
+
+CONFIDENCE SCORING:
+- 0.9-1.0: All fields clear in OCR text
+- 0.7-0.9: Most fields clear
+- 0.5-0.7: Key fields (total, merchant) clear
+- 0.3-0.5: Only total or merchant clear
+- 0.0-0.3: Very unclear text
+
+Now analyze the OCR text and respond with ONLY the JSON (no markdown, no explanation):
+''';
+
+      final response = await _model.generateContent([
+        Content.text(prompt),
+      ]);
+      
+      final responseText = response.text ?? '';
+      
+      // Parse JSON response
+      try {
+        String cleanedJson = responseText
+            .replaceAll('```json', '')
+            .replaceAll('```', '')
+            .trim();
+        
+        final Map<String, dynamic> receiptData = jsonDecode(cleanedJson);
+        
+        // Validate and handle edge cases
+        final validated = _validateReceiptData(receiptData);
+        
+        return {
+          'success': true,
+          'data': validated['data'],
+          'warnings': validated['warnings'],
+        };
+      } catch (e) {
+        print('Receipt text parsing error: $e');
+        print('Response was: $responseText');
+        
+        return {
+          'success': false,
+          'error': 'Failed to parse receipt data from text',
+          'raw_response': responseText,
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Receipt text parsing failed: ${e.toString()}',
       };
     }
   }

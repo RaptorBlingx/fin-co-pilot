@@ -66,7 +66,7 @@ class MoneyStoryService {
       date: startOfDay,
       story: storyText,
       highlights: highlights,
-      transactions: todayTxns.map((t) => t.id).toList(),
+      transactions: todayTxns.map((t) => t.id ?? '').where((id) => id.isNotEmpty).toList(),
       generatedAt: DateTime.now(),
       sentAt: null, // Will be set when notification is sent
     );
@@ -150,7 +150,7 @@ class MoneyStoryService {
     try {
       // Use Gemini 2.5 Flash for fast story generation
       final model = FirebaseAI.googleAI().generativeModel(
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
       );
 
       // Format transactions for prompt

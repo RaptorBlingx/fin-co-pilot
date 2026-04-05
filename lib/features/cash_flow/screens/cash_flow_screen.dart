@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../../../core/theme/design_tokens.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/premium_button.dart';
 import '../../../services/predictive_cash_flow_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../core/utils/currency_utils.dart';
+import '../../../services/preferences_service.dart';
 
 /// Predictive Cash Flow Detail Screen
 ///
@@ -39,163 +47,132 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final prediction = widget.prediction;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cash Flow Projection'),
-        elevation: 0,
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(DesignTokens.space16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Status Card
-            _buildStatusCard(theme, prediction),
-            const SizedBox(height: 24),
-
-            // Cash Flow Chart
-            _buildChartSection(theme, prediction),
-            const SizedBox(height: 24),
-
-            // Key Metrics
-            _buildMetricsSection(theme, prediction),
-            const SizedBox(height: 24),
-
-            // Recurring Expenses
+            _buildStatusCard(context, prediction),
+            SizedBox(height: DesignTokens.space24),
+            _buildChartSection(context, prediction),
+            SizedBox(height: DesignTokens.space24),
+            _buildMetricsSection(context, prediction),
+            SizedBox(height: DesignTokens.space24),
             if (prediction.recurringExpenses.isNotEmpty) ...[
-              _buildRecurringExpensesSection(theme, prediction),
-              const SizedBox(height: 24),
+              _buildRecurringExpensesSection(context, prediction),
+              SizedBox(height: DesignTokens.space24),
             ],
-
-            // Expected Income
             if (prediction.expectedIncome.isNotEmpty) ...[
-              _buildExpectedIncomeSection(theme, prediction),
-              const SizedBox(height: 24),
+              _buildExpectedIncomeSection(context, prediction),
+              SizedBox(height: DesignTokens.space24),
             ],
-
-            // Affordability Calculator
-            _buildAffordabilityCalculator(theme),
-            const SizedBox(height: 24),
-
-            // Tips Section
-            _buildTipsSection(theme, prediction),
-            const SizedBox(height: 16),
+            _buildAffordabilityCalculator(context),
+            SizedBox(height: DesignTokens.space24),
+            _buildTipsSection(context, prediction),
+            SizedBox(height: DesignTokens.space16),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatusCard(ThemeData theme, CashFlowPrediction prediction) {
+  Widget _buildStatusCard(BuildContext context, CashFlowPrediction prediction) {
     final statusColor = _getStatusColor(prediction.status);
     final statusIcon = _getStatusIcon(prediction.status);
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: statusColor.withOpacity(0.3),
-          width: 2,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return GlassCard(
+      padding: EdgeInsets.all(DesignTokens.space20),
+      child: Row(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusMD),
+            ),
+            child: Icon(
+              statusIcon,
+              color: statusColor,
+              size: 28,
+            ),
+          ),
+          SizedBox(width: DesignTokens.space16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    statusIcon,
+                Text(
+                  prediction.statusMessage,
+                  style: context.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
                     color: statusColor,
-                    size: 28,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        prediction.statusMessage,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: statusColor,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _getStatusDescription(prediction),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
+                SizedBox(height: DesignTokens.space4),
+                Text(
+                  _getStatusDescription(prediction),
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    color: context.colors.onSurface.withOpacity(0.7),
                   ),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    )
+        .animate()
+        .fadeIn(duration: DesignTokens.durationNormal);
+  }
+
+  Widget _buildChartSection(BuildContext context, CashFlowPrediction prediction) {
+    return GlassCard(
+      padding: EdgeInsets.all(DesignTokens.space20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '30-Day Cash Flow Projection',
+            style: context.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: DesignTokens.space8),
+          Text(
+            'Based on your spending patterns and upcoming bills',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colors.onSurface.withOpacity(0.6),
+            ),
+          ),
+          SizedBox(height: DesignTokens.space24),
+          SizedBox(
+            height: 250,
+            child: _buildLineChart(context, prediction),
+          ),
+          SizedBox(height: DesignTokens.space16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildLegendItem(context, AppTheme.primaryIndigo, 'Projected Balance'),
+              _buildLegendItem(context, AppTheme.rose500, 'Critical Zone'),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildChartSection(ThemeData theme, CashFlowPrediction prediction) {
-    return Card(
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '30-Day Cash Flow Projection',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Based on your spending patterns and upcoming bills',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              height: 250,
-              child: _buildLineChart(theme, prediction),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildLegendItem(theme, Colors.blue, 'Projected Balance'),
-                _buildLegendItem(theme, Colors.red, 'Critical Zone'),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLineChart(ThemeData theme, CashFlowPrediction prediction) {
+  Widget _buildLineChart(BuildContext context, CashFlowPrediction prediction) {
     final projections = prediction.dailyProjections;
 
-    // Find min and max for Y-axis
     final minBalance = projections.map((p) => p.balance).reduce(
       (a, b) => a < b ? a : b,
     );
@@ -214,7 +191,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
           horizontalInterval: (yMax - yMin) / 5,
           getDrawingHorizontalLine: (value) {
             return FlLine(
-              color: theme.colorScheme.outlineVariant.withOpacity(0.2),
+              color: context.colors.outlineVariant.withOpacity(0.2),
               strokeWidth: 1,
             );
           },
@@ -227,9 +204,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
               getTitlesWidget: (value, meta) {
                 return Text(
                   '\$${value.toInt()}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 10,
-                  ),
+                  style: context.textTheme.bodySmall?.copyWith(fontSize: 10),
                 );
               },
             ),
@@ -248,12 +223,10 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
               getTitlesWidget: (value, meta) {
                 if (value.toInt() % 5 != 0) return const SizedBox.shrink();
                 return Padding(
-                  padding: const EdgeInsets.only(top: 8),
+                  padding: EdgeInsets.only(top: DesignTokens.space8),
                   child: Text(
                     'Day ${value.toInt()}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontSize: 10,
-                    ),
+                    style: context.textTheme.bodySmall?.copyWith(fontSize: 10),
                   ),
                 );
               },
@@ -266,7 +239,6 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
         minY: yMin,
         maxY: yMax,
         lineBarsData: [
-          // Projected balance line
           LineChartBarData(
             spots: projections.asMap().entries.map((entry) {
               return FlSpot(
@@ -275,23 +247,22 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
               );
             }).toList(),
             isCurved: true,
-            color: Colors.blue,
+            color: AppTheme.primaryIndigo,
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              color: Colors.blue.withOpacity(0.1),
+              color: AppTheme.primaryIndigo.withOpacity(0.1),
             ),
           ),
-          // Zero line (critical zone)
           LineChartBarData(
             spots: [
               FlSpot(0, 0),
               FlSpot(projections.length.toDouble() - 1, 0),
             ],
             isCurved: false,
-            color: Colors.red,
+            color: AppTheme.rose500,
             barWidth: 2,
             dashArray: [5, 5],
             dotData: const FlDotData(show: false),
@@ -299,16 +270,16 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
         ],
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
-            tooltipRoundedRadius: 8,
-            tooltipPadding: const EdgeInsets.all(8),
+            tooltipRoundedRadius: DesignTokens.radiusSM,
+            tooltipPadding: EdgeInsets.all(DesignTokens.space8),
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
                 if (spot.barIndex == 0) {
                   final projection = projections[spot.x.toInt()];
                   return LineTooltipItem(
                     'Day ${spot.x.toInt()}\n\$${projection.balance.toStringAsFixed(2)}',
-                    theme.textTheme.bodySmall!.copyWith(
-                      color: theme.colorScheme.onSurface,
+                    context.textTheme.bodySmall!.copyWith(
+                      color: context.colors.onSurface,
                       fontWeight: FontWeight.bold,
                     ),
                   );
@@ -322,7 +293,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
     );
   }
 
-  Widget _buildLegendItem(ThemeData theme, Color color, String label) {
+  Widget _buildLegendItem(BuildContext context, Color color, String label) {
     return Row(
       children: [
         Container(
@@ -333,75 +304,75 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
             borderRadius: BorderRadius.circular(2),
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: DesignTokens.space8),
         Text(
           label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.7),
+          style: context.textTheme.bodySmall?.copyWith(
+            color: context.colors.onSurface.withOpacity(0.7),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildMetricsSection(ThemeData theme, CashFlowPrediction prediction) {
+  Widget _buildMetricsSection(BuildContext context, CashFlowPrediction prediction) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Key Metrics',
-          style: theme.textTheme.titleMedium?.copyWith(
+          style: context.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: DesignTokens.space16),
         Row(
           children: [
             Expanded(
               child: _buildMetricCard(
-                theme,
+                context,
                 'Current Balance',
                 '\$${prediction.currentBalance.toStringAsFixed(2)}',
-                Icons.account_balance_wallet,
-                Colors.blue,
+                PhosphorIcons.wallet(),
+                AppTheme.primaryIndigo,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: DesignTokens.space12),
             Expanded(
               child: _buildMetricCard(
-                theme,
+                context,
                 'Daily Burn Rate',
                 '\$${prediction.dailyBurnRate.toStringAsFixed(2)}',
-                Icons.local_fire_department,
-                Colors.orange,
+                PhosphorIcons.fire(),
+                AppTheme.amber500,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: DesignTokens.space12),
         Row(
           children: [
             Expanded(
               child: _buildMetricCard(
-                theme,
+                context,
                 'Days Until \$0',
                 prediction.daysUntilZero != null
                     ? '${prediction.daysUntilZero} days'
                     : 'Safe',
-                Icons.calendar_today,
+                PhosphorIcons.calendarBlank(),
                 prediction.daysUntilZero != null && prediction.daysUntilZero! < 7
-                    ? Colors.red
-                    : Colors.green,
+                    ? AppTheme.rose500
+                    : AppTheme.accentEmerald,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: DesignTokens.space12),
             Expanded(
               child: _buildMetricCard(
-                theme,
+                context,
                 'Recurring Bills',
                 '${prediction.recurringExpenses.length}',
-                Icons.repeat,
-                Colors.purple,
+                PhosphorIcons.repeat(),
+                AppTheme.accentPurple,
               ),
             ),
           ],
@@ -411,47 +382,40 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
   }
 
   Widget _buildMetricCard(
-    ThemeData theme,
+    BuildContext context,
     String label,
     String value,
     IconData icon,
     Color color,
   ) {
-    return Card(
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              icon,
+    return GlassCard(
+      padding: EdgeInsets.all(DesignTokens.space16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: DesignTokens.iconMD),
+          SizedBox(height: DesignTokens.space12),
+          Text(
+            label,
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colors.onSurface.withOpacity(0.6),
+            ),
+          ),
+          SizedBox(height: DesignTokens.space4),
+          Text(
+            value,
+            style: context.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
               color: color,
-              size: 24,
             ),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildRecurringExpensesSection(
-    ThemeData theme,
+    BuildContext context,
     CashFlowPrediction prediction,
   ) {
     return Column(
@@ -459,22 +423,22 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
       children: [
         Text(
           'Upcoming Bills',
-          style: theme.textTheme.titleMedium?.copyWith(
+          style: context.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: DesignTokens.space8),
         Text(
           'Detected recurring expenses based on your transaction history',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+          style: context.textTheme.bodySmall?.copyWith(
+            color: context.colors.onSurface.withOpacity(0.6),
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: DesignTokens.space16),
         ...prediction.recurringExpenses.map((expense) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _buildRecurringExpenseCard(theme, expense),
+            padding: EdgeInsets.only(bottom: DesignTokens.space8),
+            child: _buildRecurringExpenseCard(context, expense),
           );
         }).toList(),
       ],
@@ -482,39 +446,32 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
   }
 
   Widget _buildRecurringExpenseCard(
-    ThemeData theme,
+    BuildContext context,
     RecurringExpense expense,
   ) {
     final daysUntil = expense.nextDueDate.difference(DateTime.now()).inDays;
     final isUpcoming = daysUntil <= 7;
 
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: isUpcoming
-            ? BorderSide(color: Colors.orange.withOpacity(0.3), width: 2)
-            : BorderSide.none,
-      ),
+    return GlassCard(
       child: ListTile(
         leading: Container(
           width: 48,
           height: 48,
           decoration: BoxDecoration(
             color: isUpcoming
-                ? Colors.orange.withOpacity(0.1)
-                : theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
+                ? AppTheme.amber500.withOpacity(0.1)
+                : context.colors.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(DesignTokens.radiusMD),
           ),
           child: Icon(
-            Icons.repeat,
-            color: isUpcoming ? Colors.orange : theme.colorScheme.primary,
-            size: 24,
+            PhosphorIcons.repeat(),
+            color: isUpcoming ? AppTheme.amber500 : AppTheme.primaryIndigo,
+            size: DesignTokens.iconMD,
           ),
         ),
         title: Text(
           expense.merchant,
-          style: theme.textTheme.titleSmall?.copyWith(
+          style: context.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -524,8 +481,8 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
               : daysUntil == 0
                   ? 'Due today'
                   : 'Overdue',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: isUpcoming ? Colors.orange : Colors.grey,
+          style: context.textTheme.bodySmall?.copyWith(
+            color: isUpcoming ? AppTheme.amber500 : context.colors.onSurface.withOpacity(0.5),
             fontWeight: isUpcoming ? FontWeight.bold : null,
           ),
         ),
@@ -535,14 +492,14 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
           children: [
             Text(
               '\$${expense.amount.toStringAsFixed(2)}',
-              style: theme.textTheme.titleSmall?.copyWith(
+              style: context.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
               _getFrequencyLabel(expense.intervalDays),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colors.onSurface.withOpacity(0.5),
               ),
             ),
           ],
@@ -552,7 +509,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
   }
 
   Widget _buildExpectedIncomeSection(
-    ThemeData theme,
+    BuildContext context,
     CashFlowPrediction prediction,
   ) {
     return Column(
@@ -560,22 +517,22 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
       children: [
         Text(
           'Expected Income',
-          style: theme.textTheme.titleMedium?.copyWith(
+          style: context.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: DesignTokens.space8),
         Text(
           'Predicted income based on your transaction patterns',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+          style: context.textTheme.bodySmall?.copyWith(
+            color: context.colors.onSurface.withOpacity(0.6),
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: DesignTokens.space16),
         ...prediction.expectedIncome.map((income) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _buildExpectedIncomeCard(theme, income),
+            padding: EdgeInsets.only(bottom: DesignTokens.space8),
+            child: _buildExpectedIncomeCard(context, income),
           );
         }).toList(),
       ],
@@ -583,31 +540,29 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
   }
 
   Widget _buildExpectedIncomeCard(
-    ThemeData theme,
+    BuildContext context,
     ExpectedIncome income,
   ) {
     final daysUntil = income.nextDate.difference(DateTime.now()).inDays;
 
-    return Card(
-      elevation: 1,
-      color: Colors.green.withOpacity(0.05),
+    return GlassCard(
       child: ListTile(
         leading: Container(
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            color: AppTheme.accentEmerald.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(DesignTokens.radiusMD),
           ),
-          child: const Icon(
-            Icons.attach_money,
-            color: Colors.green,
-            size: 24,
+          child: Icon(
+            PhosphorIcons.currencyDollar(),
+            color: AppTheme.accentEmerald,
+            size: DesignTokens.iconMD,
           ),
         ),
         title: Text(
           income.source,
-          style: theme.textTheme.titleSmall?.copyWith(
+          style: context.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -615,105 +570,102 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
           daysUntil > 0
               ? 'Expected in $daysUntil days'
               : 'Expected today',
-          style: theme.textTheme.bodySmall,
+          style: context.textTheme.bodySmall,
         ),
         trailing: Text(
           '\$${income.amount.toStringAsFixed(2)}',
-          style: theme.textTheme.titleSmall?.copyWith(
+          style: context.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.green,
+            color: AppTheme.accentEmerald,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildAffordabilityCalculator(ThemeData theme) {
-    return Card(
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.calculate_outlined,
-                  color: theme.colorScheme.primary,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Can I Afford It?',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Check if you can afford a purchase without impacting your cash flow',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+  Widget _buildAffordabilityCalculator(BuildContext context) {
+    return GlassCard(
+      padding: EdgeInsets.all(DesignTokens.space20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                PhosphorIcons.calculator(),
+                color: AppTheme.primaryIndigo,
+                size: DesignTokens.iconMD,
               ),
+              SizedBox(width: DesignTokens.space12),
+              Text(
+                'Can I Afford It?',
+                style: context.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: DesignTokens.space8),
+          Text(
+            'Check if you can afford a purchase without impacting your cash flow',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colors.onSurface.withOpacity(0.6),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _affordabilityController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Amount',
-                      prefixText: '\$',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      hintText: '0.00',
+          ),
+          SizedBox(height: DesignTokens.space16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _affordabilityController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Amount',
+                    prefixText: '${CurrencyUtils.getCurrencySymbol(PreferencesService.getCurrency() ?? 'USD')} ',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(DesignTokens.radiusSM),
                     ),
+                    hintText: '0.00',
                   ),
                 ),
-                const SizedBox(width: 12),
-                FilledButton(
-                  onPressed: _checkAffordability,
-                  child: _isCheckingAffordability
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Check'),
-                ),
-              ],
-            ),
-            if (_affordabilityCheck != null) ...[
-              const SizedBox(height: 16),
-              _buildAffordabilityResult(theme, _affordabilityCheck!),
+              ),
+              SizedBox(width: DesignTokens.space12),
+              PremiumButton(
+                onPressed: _checkAffordability,
+                child: _isCheckingAffordability
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Check'),
+              ),
             ],
+          ),
+          if (_affordabilityCheck != null) ...[
+            SizedBox(height: DesignTokens.space16),
+            _buildAffordabilityResult(context, _affordabilityCheck!),
           ],
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildAffordabilityResult(
-    ThemeData theme,
+    BuildContext context,
     AffordabilityCheck check,
   ) {
-    final color = check.isAffordable ? Colors.green : Colors.red;
-    final icon = check.isAffordable ? Icons.check_circle : Icons.warning;
+    final color = check.isAffordable ? AppTheme.accentEmerald : AppTheme.rose500;
+    final icon = check.isAffordable ? PhosphorIcons.checkCircle() : PhosphorIcons.warning();
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(DesignTokens.space16),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusSM),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
@@ -721,14 +673,14 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 8),
+              Icon(icon, color: color, size: DesignTokens.iconSM),
+              SizedBox(width: DesignTokens.space8),
               Expanded(
                 child: Text(
                   check.isAffordable
                       ? 'Yes, you can afford this!'
                       : 'Not recommended',
-                  style: theme.textTheme.titleSmall?.copyWith(
+                  style: context.textTheme.titleSmall?.copyWith(
                     color: color,
                     fontWeight: FontWeight.bold,
                   ),
@@ -737,18 +689,18 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
             ],
           ),
           if (check.recommendations.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: DesignTokens.space8),
             ...check.recommendations.map((rec) => Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: EdgeInsets.only(top: DesignTokens.space4),
               child: Text(
                 rec,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colors.onSurface.withOpacity(0.8),
                 ),
               ),
             )),
           ],
-          const SizedBox(height: 12),
+          SizedBox(height: DesignTokens.space12),
           Row(
             children: [
               Expanded(
@@ -757,13 +709,13 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                   children: [
                     Text(
                       'New Balance',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: context.colors.onSurface.withOpacity(0.6),
                       ),
                     ),
                     Text(
                       '\$${check.balanceAfterPurchase.toStringAsFixed(2)}',
-                      style: theme.textTheme.titleSmall?.copyWith(
+                      style: context.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -777,16 +729,16 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                     children: [
                       Text(
                         'Days Until \$0',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: context.colors.onSurface.withOpacity(0.6),
                         ),
                       ),
                       Text(
                         '${check.daysUntilZero} days',
-                        style: theme.textTheme.titleSmall?.copyWith(
+                        style: context.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: check.daysUntilZero! < 7
-                              ? Colors.red
+                              ? AppTheme.rose500
                               : null,
                         ),
                       ),
@@ -800,7 +752,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
     );
   }
 
-  Widget _buildTipsSection(ThemeData theme, CashFlowPrediction prediction) {
+  Widget _buildTipsSection(BuildContext context, CashFlowPrediction prediction) {
     final tips = _generateTips(prediction);
     if (tips.isEmpty) return const SizedBox.shrink();
 
@@ -809,25 +761,23 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
       children: [
         Text(
           'Tips to Improve Cash Flow',
-          style: theme.textTheme.titleMedium?.copyWith(
+          style: context.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: DesignTokens.space16),
         ...tips.map((tip) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Card(
-              elevation: 1,
-              color: Colors.blue.withOpacity(0.05),
+            padding: EdgeInsets.only(bottom: DesignTokens.space8),
+            child: GlassCard(
               child: ListTile(
                 leading: Icon(
-                  Icons.lightbulb_outline,
-                  color: Colors.blue,
+                  PhosphorIcons.lightbulb(),
+                  color: AppTheme.primaryIndigo,
                 ),
                 title: Text(
                   tip,
-                  style: theme.textTheme.bodyMedium,
+                  style: context.textTheme.bodyMedium,
                 ),
               ),
             ),
@@ -880,22 +830,22 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
   Color _getStatusColor(CashFlowStatus status) {
     switch (status) {
       case CashFlowStatus.critical:
-        return Colors.red;
+        return AppTheme.rose500;
       case CashFlowStatus.warning:
-        return Colors.orange;
+        return AppTheme.amber500;
       case CashFlowStatus.healthy:
-        return Colors.green;
+        return AppTheme.accentEmerald;
     }
   }
 
   IconData _getStatusIcon(CashFlowStatus status) {
     switch (status) {
       case CashFlowStatus.critical:
-        return Icons.warning;
+        return PhosphorIcons.warning();
       case CashFlowStatus.warning:
-        return Icons.info_outline;
+        return PhosphorIcons.info();
       case CashFlowStatus.healthy:
-        return Icons.check_circle_outline;
+        return PhosphorIcons.checkCircle();
     }
   }
 

@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../../../core/theme/design_tokens.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/shimmer_loading.dart';
 import '../../../models/financial_health_score.dart';
 import '../../../services/financial_health_score_service.dart';
 import '../../../services/auth_service.dart';
@@ -63,172 +69,170 @@ class _HealthScoreBreakdownScreenState
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Financial Health Score'),
-        elevation: 0,
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(DesignTokens.space16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildScoreSummary(theme),
-            const SizedBox(height: 24),
-            _buildScoreBreakdown(theme),
-            const SizedBox(height: 24),
-            _buildHistoryChart(theme),
-            const SizedBox(height: 24),
-            _buildFactors(theme),
-            const SizedBox(height: 24),
-            _buildRecommendations(theme),
-          ],
+            _buildScoreSummary(context),
+            SizedBox(height: DesignTokens.space24),
+            _buildScoreBreakdown(context),
+            SizedBox(height: DesignTokens.space24),
+            _buildHistoryChart(context),
+            SizedBox(height: DesignTokens.space24),
+            _buildFactors(context),
+            SizedBox(height: DesignTokens.space24),
+            _buildRecommendations(context),
+          ]
+              .animate(interval: DesignTokens.staggerDelay)
+              .fadeIn(duration: DesignTokens.durationNormal)
+              .slideY(begin: 0.03, end: 0),
         ),
       ),
     );
   }
 
-  Widget _buildScoreSummary(ThemeData theme) {
+  Widget _buildScoreSummary(BuildContext context) {
     final scoreColor = _getScoreColor(widget.score.score);
 
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Text(
-              'Your Score',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+    return GlassCard(
+      padding: EdgeInsets.all(DesignTokens.space24),
+      child: Column(
+        children: [
+          Text(
+            'Your Score',
+            style: context.textTheme.titleMedium?.copyWith(
+              color: context.colors.onSurface.withOpacity(0.6),
+            ),
+          ),
+          SizedBox(height: DesignTokens.space8),
+          Text(
+            '${widget.score.score}',
+            style: context.textTheme.displayLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: scoreColor,
+            ),
+          ),
+          Text(
+            'Grade ${widget.score.grade}',
+            style: context.textTheme.titleLarge?.copyWith(
+              color: scoreColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: DesignTokens.space16),
+          Text(
+            widget.score.statusMessage,
+            style: context.textTheme.bodyLarge,
+            textAlign: TextAlign.center,
+          ),
+          if (widget.score.scoreChange != null) ...[
+            SizedBox(height: DesignTokens.space12),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: DesignTokens.space16,
+                vertical: DesignTokens.space8,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${widget.score.score}',
-              style: theme.textTheme.displayLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: scoreColor,
+              decoration: BoxDecoration(
+                color: (widget.score.scoreChange! > 0
+                        ? AppTheme.accentEmerald
+                        : AppTheme.rose500)
+                    .withOpacity(0.1),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusFull),
               ),
-            ),
-            Text(
-              'Grade ${widget.score.grade}',
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: scoreColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              widget.score.statusMessage,
-              style: theme.textTheme.bodyLarge,
-              textAlign: TextAlign.center,
-            ),
-            if (widget.score.scoreChange != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: (widget.score.scoreChange! > 0
-                          ? Colors.green
-                          : Colors.red)
-                      .withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      widget.score.scoreChange! > 0
-                          ? Icons.arrow_upward
-                          : Icons.arrow_downward,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    widget.score.scoreChange! > 0
+                        ? PhosphorIcons.arrowUp()
+                        : PhosphorIcons.arrowDown(),
+                    color: widget.score.scoreChange! > 0
+                        ? AppTheme.accentEmerald
+                        : AppTheme.rose500,
+                    size: 16,
+                  ),
+                  SizedBox(width: DesignTokens.space4),
+                  Text(
+                    '${widget.score.scoreChange!.abs()} points from last week',
+                    style: context.textTheme.bodyMedium?.copyWith(
                       color: widget.score.scoreChange! > 0
-                          ? Colors.green
-                          : Colors.red,
-                      size: 16,
+                          ? AppTheme.accentEmerald
+                          : AppTheme.rose500,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${widget.score.scoreChange!.abs()} points from last week',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: widget.score.scoreChange! > 0
-                            ? Colors.green
-                            : Colors.red,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildScoreBreakdown(ThemeData theme) {
+  Widget _buildScoreBreakdown(BuildContext context) {
     final breakdown = widget.score.breakdown;
 
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Score Breakdown',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+    return GlassCard(
+      padding: EdgeInsets.all(DesignTokens.space24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Score Breakdown',
+            style: context.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 16),
-            _buildComponentBar(
-              theme,
-              'Budget Adherence',
-              breakdown.budgetAdherence,
-              25,
-              Icons.account_balance_wallet,
-              Colors.blue,
-            ),
-            const SizedBox(height: 16),
-            _buildComponentBar(
-              theme,
-              'Savings Rate',
-              breakdown.savingsRate,
-              25,
-              Icons.savings,
-              Colors.green,
-            ),
-            const SizedBox(height: 16),
-            _buildComponentBar(
-              theme,
-              'Debt Management',
-              breakdown.debtManagement,
-              25,
-              Icons.credit_card,
-              Colors.orange,
-            ),
-            const SizedBox(height: 16),
-            _buildComponentBar(
-              theme,
-              'Spending Stability',
-              breakdown.spendingStability,
-              25,
-              Icons.show_chart,
-              Colors.purple,
-            ),
-          ],
-        ),
+          ),
+          SizedBox(height: DesignTokens.space16),
+          _buildComponentBar(
+            context,
+            'Budget Adherence',
+            breakdown.budgetAdherence,
+            25,
+            PhosphorIcons.wallet(),
+            AppTheme.primaryIndigo,
+          ),
+          SizedBox(height: DesignTokens.space16),
+          _buildComponentBar(
+            context,
+            'Savings Rate',
+            breakdown.savingsRate,
+            25,
+            PhosphorIcons.piggyBank(),
+            AppTheme.accentEmerald,
+          ),
+          SizedBox(height: DesignTokens.space16),
+          _buildComponentBar(
+            context,
+            'Debt Management',
+            breakdown.debtManagement,
+            25,
+            PhosphorIcons.creditCard(),
+            AppTheme.amber500,
+          ),
+          SizedBox(height: DesignTokens.space16),
+          _buildComponentBar(
+            context,
+            'Spending Stability',
+            breakdown.spendingStability,
+            25,
+            PhosphorIcons.chartLine(),
+            AppTheme.accentPurple,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildComponentBar(
-    ThemeData theme,
+    BuildContext context,
     String label,
     int score,
     int maxScore,
@@ -242,247 +246,237 @@ class _HealthScoreBreakdownScreenState
       children: [
         Row(
           children: [
-            Icon(icon, size: 20, color: color),
-            const SizedBox(width: 8),
+            Icon(icon, size: DesignTokens.iconSM, color: color),
+            SizedBox(width: DesignTokens.space8),
             Expanded(
               child: Text(
                 label,
-                style: theme.textTheme.bodyLarge?.copyWith(
+                style: context.textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             Text(
               '$score/$maxScore',
-              style: theme.textTheme.bodyLarge?.copyWith(
+              style: context.textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: DesignTokens.space8),
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(DesignTokens.radiusXS),
           child: LinearProgressIndicator(
             value: score / maxScore,
             minHeight: 8,
-            backgroundColor: theme.colorScheme.surfaceContainerHighest,
+            backgroundColor: context.colors.onSurface.withOpacity(0.1),
             valueColor: AlwaysStoppedAnimation(color),
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: DesignTokens.space4),
         Text(
           '$percentage%',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+          style: context.textTheme.bodySmall?.copyWith(
+            color: context.colors.onSurface.withOpacity(0.6),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildHistoryChart(ThemeData theme) {
+  Widget _buildHistoryChart(BuildContext context) {
     if (_isLoadingHistory) {
-      return Card(
-        elevation: 2,
+      return GlassCard(
         child: Container(
           height: 200,
-          padding: const EdgeInsets.all(24),
-          child: const Center(child: CircularProgressIndicator()),
+          padding: EdgeInsets.all(DesignTokens.space24),
+          child: const Center(child: CardSkeleton()),
         ),
       );
     }
 
     if (_history.isEmpty || _history.length < 2) {
-      return Card(
-        elevation: 2,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              Icon(
-                Icons.show_chart,
-                size: 48,
-                color: theme.colorScheme.primary.withOpacity(0.5),
+      return GlassCard(
+        padding: EdgeInsets.all(DesignTokens.space24),
+        child: Column(
+          children: [
+            Icon(
+              PhosphorIcons.chartLine(),
+              size: 48,
+              color: AppTheme.primaryIndigo.withOpacity(0.5),
+            ),
+            SizedBox(height: DesignTokens.space16),
+            Text(
+              'Score History',
+              style: context.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Score History',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            ),
+            SizedBox(height: DesignTokens.space8),
+            Text(
+              'Not enough data yet. Check back next week!',
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colors.onSurface.withOpacity(0.6),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Not enough data yet. Check back next week!',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       );
     }
 
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Score History',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+    return GlassCard(
+      padding: EdgeInsets.all(DesignTokens.space24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Score History',
+            style: context.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 200,
-              child: LineChart(
-                LineChartData(
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: 20,
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(
-                        color: theme.colorScheme.outlineVariant,
-                        strokeWidth: 1,
-                      );
-                    },
-                  ),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        interval: 20,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toInt().toString(),
-                            style: theme.textTheme.bodySmall,
-                          );
-                        },
-                      ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 30,
-                        getTitlesWidget: (value, meta) {
-                          if (value.toInt() >= 0 &&
-                              value.toInt() < _history.length) {
-                            final weekLabel =
-                                'W${_history.length - value.toInt()}';
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                weekLabel,
-                                style: theme.textTheme.bodySmall,
-                              ),
-                            );
-                          }
-                          return const Text('');
-                        },
-                      ),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  minY: 0,
-                  maxY: 100,
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: _history.reversed
-                          .toList()
-                          .asMap()
-                          .entries
-                          .map((entry) => FlSpot(
-                                entry.key.toDouble(),
-                                entry.value.score.toDouble(),
-                              ))
-                          .toList(),
-                      isCurved: true,
-                      color: theme.colorScheme.primary,
-                      barWidth: 3,
-                      dotData: FlDotData(
-                        show: true,
-                        getDotPainter: (spot, percent, barData, index) {
-                          return FlDotCirclePainter(
-                            radius: 4,
-                            color: theme.colorScheme.primary,
-                            strokeWidth: 2,
-                            strokeColor: theme.colorScheme.surface,
-                          );
-                        },
-                      ),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        color: theme.colorScheme.primary.withOpacity(0.1),
-                      ),
-                    ),
-                  ],
+          ),
+          SizedBox(height: DesignTokens.space16),
+          SizedBox(
+            height: 200,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: 20,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: context.colors.outlineVariant,
+                      strokeWidth: 1,
+                    );
+                  },
                 ),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      interval: 20,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          value.toInt().toString(),
+                          style: context.textTheme.bodySmall,
+                        );
+                      },
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      getTitlesWidget: (value, meta) {
+                        if (value.toInt() >= 0 &&
+                            value.toInt() < _history.length) {
+                          final weekLabel =
+                              'W${_history.length - value.toInt()}';
+                          return Padding(
+                            padding: EdgeInsets.only(top: DesignTokens.space8),
+                            child: Text(
+                              weekLabel,
+                              style: context.textTheme.bodySmall,
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                minY: 0,
+                maxY: 100,
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: _history.reversed
+                        .toList()
+                        .asMap()
+                        .entries
+                        .map((entry) => FlSpot(
+                              entry.key.toDouble(),
+                              entry.value.score.toDouble(),
+                            ))
+                        .toList(),
+                    isCurved: true,
+                    color: AppTheme.primaryIndigo,
+                    barWidth: 3,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) {
+                        return FlDotCirclePainter(
+                          radius: 4,
+                          color: AppTheme.primaryIndigo,
+                          strokeWidth: 2,
+                          strokeColor: context.colors.surface,
+                        );
+                      },
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: AppTheme.primaryIndigo.withOpacity(0.1),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildFactors(ThemeData theme) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'What\'s Affecting Your Score',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+  Widget _buildFactors(BuildContext context) {
+    return GlassCard(
+      padding: EdgeInsets.all(DesignTokens.space24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'What\'s Affecting Your Score',
+            style: context.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 16),
-            if (widget.score.factors.positives.isNotEmpty) ...[
-              _buildFactorSection(
-                theme,
-                'Positive Factors',
-                widget.score.factors.positives,
-                Icons.check_circle,
-                Colors.green,
-              ),
-              const SizedBox(height: 16),
-            ],
-            if (widget.score.factors.negatives.isNotEmpty) ...[
-              _buildFactorSection(
-                theme,
-                'Areas to Improve',
-                widget.score.factors.negatives,
-                Icons.warning,
-                Colors.orange,
-              ),
-            ],
+          ),
+          SizedBox(height: DesignTokens.space16),
+          if (widget.score.factors.positives.isNotEmpty) ...[
+            _buildFactorSection(
+              context,
+              'Positive Factors',
+              widget.score.factors.positives,
+              PhosphorIcons.checkCircle(),
+              AppTheme.accentEmerald,
+            ),
+            SizedBox(height: DesignTokens.space16),
           ],
-        ),
+          if (widget.score.factors.negatives.isNotEmpty) ...[
+            _buildFactorSection(
+              context,
+              'Areas to Improve',
+              widget.score.factors.negatives,
+              PhosphorIcons.warning(),
+              AppTheme.amber500,
+            ),
+          ],
+        ],
       ),
     );
   }
 
   Widget _buildFactorSection(
-    ThemeData theme,
+    BuildContext context,
     String title,
     List<String> items,
     IconData icon,
@@ -493,26 +487,26 @@ class _HealthScoreBreakdownScreenState
       children: [
         Row(
           children: [
-            Icon(icon, size: 20, color: color),
-            const SizedBox(width: 8),
+            Icon(icon, size: DesignTokens.iconSM, color: color),
+            SizedBox(width: DesignTokens.space8),
             Text(
               title,
-              style: theme.textTheme.titleMedium?.copyWith(
+              style: context.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: DesignTokens.space12),
         ...items.map((item) => Padding(
-              padding: const EdgeInsets.only(left: 28, bottom: 8),
+              padding: EdgeInsets.only(left: 28, bottom: DesignTokens.space8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     width: 6,
                     height: 6,
-                    margin: const EdgeInsets.only(top: 6, right: 12),
+                    margin: EdgeInsets.only(top: 6, right: DesignTokens.space12),
                     decoration: BoxDecoration(
                       color: color,
                       shape: BoxShape.circle,
@@ -521,7 +515,7 @@ class _HealthScoreBreakdownScreenState
                   Expanded(
                     child: Text(
                       item,
-                      style: theme.textTheme.bodyMedium,
+                      style: context.textTheme.bodyMedium,
                     ),
                   ),
                 ],
@@ -531,75 +525,72 @@ class _HealthScoreBreakdownScreenState
     );
   }
 
-  Widget _buildRecommendations(ThemeData theme) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.lightbulb_outline,
-                  color: theme.colorScheme.primary,
+  Widget _buildRecommendations(BuildContext context) {
+    return GlassCard(
+      padding: EdgeInsets.all(DesignTokens.space24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                PhosphorIcons.lightbulb(),
+                color: AppTheme.primaryIndigo,
+              ),
+              SizedBox(width: DesignTokens.space8),
+              Text(
+                'Recommendations',
+                style: context.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Recommendations',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ...widget.score.factors.recommendations
-                .asMap()
-                .entries
-                .map((entry) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${entry.key + 1}',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
+              ),
+            ],
+          ),
+          SizedBox(height: DesignTokens.space16),
+          ...widget.score.factors.recommendations
+              .asMap()
+              .entries
+              .map((entry) => Padding(
+                    padding: EdgeInsets.only(bottom: DesignTokens.space12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryIndigo.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${entry.key + 1}',
+                              style: context.textTheme.bodySmall?.copyWith(
+                                color: AppTheme.primaryIndigo,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              entry.value,
-                              style: theme.textTheme.bodyMedium,
-                            ),
+                        ),
+                        SizedBox(width: DesignTokens.space12),
+                        Expanded(
+                          child: Text(
+                            entry.value,
+                            style: context.textTheme.bodyMedium,
                           ),
-                        ],
-                      ),
-                    )),
-          ],
-        ),
+                        ),
+                      ],
+                    ),
+                  )),
+        ],
       ),
     );
   }
 
   Color _getScoreColor(int score) {
-    if (score >= 80) return Colors.green;
-    if (score >= 70) return Colors.lightGreen;
-    if (score >= 60) return Colors.orange;
-    return Colors.red;
+    if (score >= 80) return AppTheme.accentEmerald;
+    if (score >= 70) return AppTheme.accentEmerald.withOpacity(0.7);
+    if (score >= 60) return AppTheme.amber500;
+    return AppTheme.rose500;
   }
 }

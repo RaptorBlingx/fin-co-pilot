@@ -1,16 +1,33 @@
 import 'package:firebase_ai/firebase_ai.dart';
 import '../../features/add_transaction/models/transaction_data.dart';
+import '../../models/user_context.dart';
+import '../../services/context_formatter.dart';
 import 'validator_agent.dart';
 
 /// Agent 4: Context Agent ⭐ KEY DIFFERENTIATOR
 /// Analyzes transaction completeness and suggests receipt uploads
 /// This is the competitive moat - encourages rich context naturally
 class ContextAgent {
-  late final GenerativeModel _model;
+  late GenerativeModel _model;
+  String _currencySymbol = '\$';
 
   ContextAgent() {
     _model = FirebaseAI.googleAI().generativeModel(
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.1-flash-lite-preview',
+    );
+  }
+
+  /// Update the model with user-specific system instructions.
+  void updateContext(UserContext ctx) {
+    _currencySymbol = ctx.currencySymbol;
+    final systemText = '''
+You are a context quality agent that encourages users to provide richer transaction details.
+
+${ContextFormatter.formatCoreRules(ctx)}
+''';
+    _model = FirebaseAI.googleAI().generativeModel(
+      model: 'gemini-3.1-flash-lite-preview',
+      systemInstruction: Content.text(systemText),
     );
   }
 
@@ -96,7 +113,7 @@ class ContextAgent {
       final prompt = '''
 Generate a friendly suggestion to upload a receipt for better tracking.
 
-Transaction: ${data.item} - \$${data.amount} (${data.category})
+Transaction: ${data.item} - $_currencySymbol${data.amount} (${data.category})
 
 Rules:
 - Be casual and encouraging, not pushy

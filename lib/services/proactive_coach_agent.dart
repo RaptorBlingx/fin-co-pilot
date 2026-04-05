@@ -1,19 +1,53 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'package:firebase_ai/firebase_ai.dart';
-import '../shared/models/transaction.dart';
+import '../models/transaction.dart';
+import '../models/user_context.dart';
+import 'context_formatter.dart';
 import '../shared/models/coaching_tip.dart';
 
 class ProactiveCoachAgent {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GenerativeModel _model = FirebaseAI.googleAI().generativeModel(
-    model: 'gemini-2.5-pro',
-    generationConfig: GenerationConfig(
-      temperature: 0.7,
-      topK: 40,
-      topP: 0.95,
-      maxOutputTokens: 8192,
-    ),
-  );
+  late GenerativeModel _model;
+  String _currencySymbol = '\$';
+
+  ProactiveCoachAgent() {
+    _model = FirebaseAI.googleAI().generativeModel(
+      model: 'gemini-3-flash-preview',
+      generationConfig: GenerationConfig(
+        maxOutputTokens: 8192,
+      ),
+    );
+  }
+
+  UserContext? _userContext;
+
+  /// Update the model with user-specific system instructions.
+  void updateContext(UserContext ctx) {
+    _currencySymbol = ctx.currencySymbol;
+    _userContext = ctx;
+    final systemText = '''
+You are an expert personal finance coach providing personalized, actionable coaching tips.
+
+${ContextFormatter.formatForSystemInstruction(ctx)}
+
+${ContextFormatter.formatCoreRules(ctx)}
+
+COACHING PHILOSOPHY:
+- Be time-aware: consider time of day, day of week, and month position
+- Be pattern-aware: reference specific spending patterns and trends you observe
+- Be goal-aware: tie advice to the user's financial goals when known
+- Be life-event-aware: acknowledge paydays, weekends, holidays, end-of-month
+- Use behavioral psychology: loss aversion, anchoring, social proof
+- Balance encouragement with constructive guidance
+''';
+    _model = FirebaseAI.googleAI().generativeModel(
+      model: 'gemini-3-flash-preview',
+      systemInstruction: Content.text(systemText),
+      generationConfig: GenerationConfig(
+        maxOutputTokens: 8192,
+      ),
+    );
+  }
 
   /// Generate personalized coaching tips based on user's spending behavior
   Future<List<CoachingTip>> generateWeeklyCoaching({
@@ -243,7 +277,7 @@ class ProactiveCoachAgent {
     };
   }
 
-  /// Build coaching prompt for Gemini
+  /// Build coaching prompt for Gemini — time, pattern, goal, and life-event aware.
   String _buildCoachingPrompt(
     List<Transaction> transactions,
     Map<String, dynamic> analysis,
@@ -251,39 +285,123 @@ class ProactiveCoachAgent {
     List<CoachingTip> previousTips,
   ) {
     final previousTitles = previousTips.map((tip) => tip.title).join(', ');
-    
-    return '''
-You are an expert personal finance coach using Gemini 2.5 Pro with advanced reasoning capabilities. Use deep analytical thinking to provide personalized coaching.
+    final ctx = _userContext;
 
+    // Temporal awareness
+    final timeContext = ctx != null
+        ? '''
+TEMPORAL CONTEXT:
+- Time of day: ${ctx.timeOfDay}
+- Day of week: ${ctx.dayOfWeek}
+- Month position: ${ctx.monthPosition} (${ctx.budgetDaysRemaining ?? '?'} days remaining)
+- Consider: ${_temporalInsight(ctx)}'''
+        : '';
+
+    // Memory / goals awareness
+    final memoryContext = ctx?.memoryDossier != null
+        ? '''
+USER MEMORY (patterns & goals):
+${ctx!.memoryDossier}'''
+        : '';
+
+    // Budget awareness
+    final budgetContext = ctx != null && ctx.hasBudget
+        ? '''
+BUDGET STATUS:
+- Budget: $_currencySymbol${ctx.budgetAmount?.toStringAsFixed(2)}
+- Spent: $_currencySymbol${ctx.budgetSpent?.toStringAsFixed(2)} (${((ctx.budgetUtilization ?? 0) * 100).toStringAsFixed(0)}%)
+- ${_budgetInsight(ctx)}'''
+        : '';
+
+    // Month-over-month trend
+    final trendContext = ctx != null && ctx.lastMonthTotal > 0
+        ? '''
+SPENDING TREND:
+- This month: $_currencySymbol${ctx.monthTotal.toStringAsFixed(2)}
+- Last month: $_currencySymbol${ctx.lastMonthTotal.toStringAsFixed(2)}
+- Change: ${ctx.monthDelta > 0 ? '+' : ''}${ctx.monthDelta.toStringAsFixed(1)}%'''
+        : '';
+
+    return '''
 REASONING APPROACH:
 1. Analyze spending patterns for trends, anomalies, and behavioral insights
-2. Consider psychological factors behind spending decisions
-3. Identify both immediate opportunities and long-term financial health strategies
-4. Provide actionable, personalized recommendations based on user's specific behavior
+2. Consider the temporal context — what time-specific advice is most relevant?
+3. Reference the user's financial goals and memory to personalize deeply
+4. Identify both immediate opportunities and long-term financial health strategies
+5. Use behavioral psychology: loss aversion, anchoring, social proof, commitment devices
+
+$timeContext
+
+$budgetContext
+
+$trendContext
 
 SPENDING ANALYSIS:
-- Total spent (30 days): \$${analysis['totalSpent']?.toStringAsFixed(2) ?? '0'}
-- Daily average: \$${analysis['avgDaily']?.toStringAsFixed(2) ?? '0'}
+- Total spent (30 days): $_currencySymbol${analysis['totalSpent']?.toStringAsFixed(2) ?? '0'}
+- Daily average: $_currencySymbol${analysis['avgDaily']?.toStringAsFixed(2) ?? '0'}
 - Top category: ${analysis['topCategory'] ?? 'N/A'}
-- Weekend spending: \$${analysis['weekendSpending']?.toStringAsFixed(2) ?? '0'}
-- Weekday spending: \$${analysis['weekdaySpending']?.toStringAsFixed(2) ?? '0'}
-- Recent positive habits: ${analysis['positiveHabits']?.join(', ') ?? 'None'}
-- Areas for improvement: ${analysis['negativeHabits']?.join(', ') ?? 'None'}
+- Category breakdown: ${_formatCategoryBreakdown(analysis)}
+- Weekend spending: $_currencySymbol${analysis['weekendSpending']?.toStringAsFixed(2) ?? '0'}
+- Weekday spending: $_currencySymbol${analysis['weekdaySpending']?.toStringAsFixed(2) ?? '0'}
+- Recent positive habits: ${analysis['positiveHabits']?.join(', ') ?? 'None detected yet'}
+- Areas for improvement: ${analysis['negativeHabits']?.join(', ') ?? 'None detected yet'}
+
+$memoryContext
 
 RECENT TRANSACTIONS (last 10):
-${transactions.take(10).map((tx) => '- ${tx.transactionDate.toString().split(' ')[0]}: \$${tx.amount.toStringAsFixed(2)} on ${tx.category} (${tx.description})').join('\n')}
+${transactions.take(10).map((tx) => '- ${tx.transactionDate.toString().split(' ')[0]}: $_currencySymbol${tx.amount.toStringAsFixed(2)} on ${tx.category}${tx.merchant != null ? ' at ${tx.merchant}' : ''} (${tx.description})').join('\n')}
 
-AVOID REPETITION: Don't suggest these previous tips: $previousTitles
+AVOID REPETITION — previous tips: $previousTitles
 
 COACHING REQUIREMENTS:
-- Create 2-3 different, actionable coaching tips
-- Use behavioral psychology principles
-- Provide specific, measurable recommendations
-- Balance encouragement with constructive guidance
-- Consider both short-term wins and long-term financial health
-
-Use your advanced reasoning to create highly personalized, effective coaching tips.
+- Create 2-3 personalized, actionable coaching tips
+- At least one tip should be time-relevant (based on temporal context)
+- Reference specific numbers from the user's spending data
+- If goals exist, tie at least one tip to goal progress
+- Use the user's currency ($_currencySymbol) for all amounts
+- Balance: 1 encouraging/positive tip, 1-2 constructive/actionable tips
+- Keep messages concise (1-2 sentences each)
 ''';
+  }
+
+  String _temporalInsight(UserContext ctx) {
+    final insights = <String>[];
+    if (ctx.monthPosition == 'end') {
+      insights.add('end of month — ideal for reviewing monthly spending');
+    } else if (ctx.monthPosition == 'start') {
+      insights.add('start of month — good time to set category budgets');
+    }
+    if (ctx.dayOfWeek == 'Saturday' || ctx.dayOfWeek == 'Sunday') {
+      insights.add('weekend — typically higher discretionary spending');
+    }
+    if (ctx.dayOfWeek == 'Monday') {
+      insights.add('start of week — good time for a fresh spending plan');
+    }
+    if (ctx.timeOfDay == 'morning') {
+      insights.add('morning — planning-focused tips work best');
+    } else if (ctx.timeOfDay == 'evening') {
+      insights.add('evening — reflection and review tips work best');
+    }
+    return insights.isNotEmpty ? insights.join('; ') : 'standard context';
+  }
+
+  String _budgetInsight(UserContext ctx) {
+    final util = ctx.budgetUtilization ?? 0;
+    final days = ctx.budgetDaysRemaining ?? 0;
+    if (util > 0.9) return 'WARNING: Budget nearly exhausted with $days days remaining';
+    if (util > 0.7) return 'Caution: ${(util * 100).toStringAsFixed(0)}% used with $days days left';
+    return 'On track: ${(util * 100).toStringAsFixed(0)}% used with $days days remaining';
+  }
+
+  String _formatCategoryBreakdown(Map<String, dynamic> analysis) {
+    final totals = analysis['categoryTotals'] as Map<String, double>?;
+    if (totals == null || totals.isEmpty) return 'No category data';
+    final sorted = totals.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return sorted
+        .take(5)
+        .map((e) => '${e.key}: $_currencySymbol${e.value.toStringAsFixed(2)}')
+        .join(', ');
   }
 
   /// Parse Gemini response into CoachingTip objects
@@ -309,7 +427,7 @@ Use your advanced reasoning to create highly personalized, effective coaching ti
         type: 'insight',
         priority: 'high',
         title: 'High $topCategory spending',
-        message: 'You spent \$${categoryTotals[topCategory]!.toStringAsFixed(2)} on $topCategory. Consider setting a weekly budget.',
+        message: 'You spent $_currencySymbol${categoryTotals[topCategory]!.toStringAsFixed(2)} on $topCategory. Consider setting a weekly budget.',
         actionable: true,
         createdAt: DateTime.now(),
       ));
@@ -323,7 +441,7 @@ Use your advanced reasoning to create highly personalized, effective coaching ti
         type: 'suggestion',
         priority: 'medium',
         title: 'Track daily spending',
-        message: 'Your daily average is \$${avgDaily.toStringAsFixed(2)}. Try setting a daily limit.',
+        message: 'Your daily average is $_currencySymbol${avgDaily.toStringAsFixed(2)}. Try setting a daily limit.',
         actionable: true,
         createdAt: DateTime.now(),
       ));

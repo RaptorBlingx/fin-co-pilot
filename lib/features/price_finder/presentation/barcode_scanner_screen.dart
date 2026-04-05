@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/navigation/page_transitions.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../services/enhanced_price_service.dart';
 import '../../../core/utils/haptic_utils.dart';
@@ -64,12 +65,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       if (!mounted) return;
 
       // Navigate to product detail
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ProductDetailScreen(product: product),
-        ),
-      );
+      await context.pushWithFade(ProductDetailScreen(product: product));
 
       // Resume scanning
       if (mounted) {

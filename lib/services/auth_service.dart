@@ -27,16 +27,31 @@ class AuthService {
         password: password,
       );
       
+      // Check if user document exists (edge case: user deleted from Firestore but auth exists)
+      final userDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
+      final isReturningUser = userDoc.exists;
+      final hasCompletedOnboarding = isReturningUser && (userDoc.data()?['onboarding_complete'] == true);
+      
+      if (!isReturningUser) {
+        print('⚠️ AUTH: Email sign-in but no Firestore doc (recreating)');
+        await _createUserDocument(userCredential.user!);
+        print('🔄 AUTH: Setting onboarding flag = FALSE');
+        await PreferencesService.setOnboardingComplete(false);
+      } else if (!hasCompletedOnboarding) {
+        print('⚠️ AUTH: Email sign-in but onboarding NOT complete in Firestore');
+        print('🔄 AUTH: Setting onboarding flag = FALSE');
+        await PreferencesService.setOnboardingComplete(false);
+      } else {
+        print('🔍 AUTH: Email sign-in, returning user with completed onboarding');
+        await PreferencesService.setOnboardingComplete(true);
+      }
+      
       // Track analytics
       await AnalyticsService.logSignIn('email');
       await AnalyticsService.setUserProperties(userId: userCredential.user?.uid);
       
       // Initialize notifications after successful login
       await _initializeNotificationsForUser(userCredential.user!);
-      
-      // Existing users skip onboarding
-      print('🔍 AUTH: Email sign-in, setting onboarding complete');
-      await PreferencesService.setOnboardingComplete(true);
       
       return userCredential;
     } catch (e) {
@@ -52,6 +67,8 @@ class AuthService {
         password: password,
       );
       
+      print('🆕 AUTH: New email sign-up');
+      
       // Track analytics
       await AnalyticsService.logSignUp('email');
       await AnalyticsService.setUserProperties(userId: credential.user?.uid);
@@ -62,6 +79,10 @@ class AuthService {
         // Initialize notifications for new user
         await _initializeNotificationsForUser(credential.user!);
       }
+      
+      // CRITICAL: Reset onboarding flag for new users
+      print('🔄 AUTH: Resetting onboarding flag to false for new email user');
+      await PreferencesService.setOnboardingComplete(false);
       
       return credential;
     } catch (e) {
@@ -88,13 +109,30 @@ class AuthService {
 
       final userCredential = await _auth.signInWithCredential(credential);
       
+      // Check if user document exists in Firestore (reliable way to detect returning users)
+      final userDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
+      final isReturningUser = userDoc.exists;
+      final hasCompletedOnboarding = isReturningUser && (userDoc.data()?['onboarding_complete'] == true);
+      
       // Track analytics
-      final isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
-      if (isNewUser) {
+      if (!isReturningUser) {
+        print('🆕 AUTH: New Google user (no Firestore doc), creating user document');
         await AnalyticsService.logSignUp('google');
         await _createUserDocument(userCredential.user!);
-      } else {
+        // CRITICAL: Reset onboarding flag for new users (clears old cached value)
+        print('🔄 AUTH: New user → Setting onboarding flag = FALSE');
+        await PreferencesService.setOnboardingComplete(false);
+      } else if (!hasCompletedOnboarding) {
+        print('⚠️ AUTH: Returning Google user but onboarding NOT complete in Firestore');
         await AnalyticsService.logSignIn('google');
+        print('🔄 AUTH: Onboarding incomplete → Setting flag = FALSE');
+        await PreferencesService.setOnboardingComplete(false);
+      } else {
+        print('🔍 AUTH: Returning Google user with completed onboarding');
+        await AnalyticsService.logSignIn('google');
+        // Set onboarding complete for returning users
+        print('✅ AUTH: Returning user → Setting onboarding flag = TRUE');
+        await PreferencesService.setOnboardingComplete(true);
       }
       
       // Set user properties
@@ -102,14 +140,6 @@ class AuthService {
       
       // Initialize notifications after successful login
       await _initializeNotificationsForUser(userCredential.user!);
-      
-      // Set onboarding complete for existing users (new users go through onboarding)
-      if (!isNewUser) {
-        print('🔍 AUTH: Existing Google user detected, setting onboarding complete');
-        await PreferencesService.setOnboardingComplete(true);
-      } else {
-        print('🆕 AUTH: New Google user, will go through onboarding');
-      }
       
       return userCredential;
     } catch (e) {
@@ -185,6 +215,9 @@ class AuthService {
       'avatar_url': user.photoURL ?? '',
       'created_at': FieldValue.serverTimestamp(),
       'last_login': FieldValue.serverTimestamp(),
+      
+      // Onboarding status (CRITICAL: must be false for new users)
+      'onboarding_complete': false,
       
       // Default preferences (will be updated during onboarding)
       'device_locale': Platform.localeName,

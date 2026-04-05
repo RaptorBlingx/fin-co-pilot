@@ -22,7 +22,7 @@ class EnhancedPriceService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final GenerativeModel _model = FirebaseAI.googleAI().generativeModel(
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3-flash-preview',
   );
 
   /// Search product by barcode/UPC

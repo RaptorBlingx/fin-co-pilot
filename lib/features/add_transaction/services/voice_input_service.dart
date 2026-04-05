@@ -58,9 +58,11 @@ class VoiceInputService {
         },
         listenFor: const Duration(seconds: 30),
         pauseFor: const Duration(seconds: 3),
-        partialResults: true,
-        cancelOnError: true,
-        listenMode: stt.ListenMode.confirmation,
+        listenOptions: stt.SpeechListenOptions(
+          partialResults: true,
+          cancelOnError: true,
+          listenMode: stt.ListenMode.confirmation,
+        ),
       );
 
       return null; // Success
@@ -247,7 +249,7 @@ class _VoiceInputBottomSheetState extends State<VoiceInputBottomSheet>
             constraints: const BoxConstraints(minHeight: 60),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(

@@ -1,8 +1,14 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/theme/design_tokens.dart';
+import '../../core/constants/app_icons.dart';
+import '../../core/utils/haptic_utils.dart';
 import '../../shared/widgets/gradient_fab.dart';
+import '../navigation/page_transitions.dart';
 
-// Import your existing screens
+// Import screens
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/transactions/presentation/screens/transactions_screen.dart';
 import '../../features/insights/presentation/screens/insights_screen.dart';
@@ -12,78 +18,88 @@ import '../../features/financial_copilot/presentation/screens/financial_copilot_
 /// Provider for managing the selected navigation tab
 final selectedIndexProvider = StateProvider<int>((ref) => 0);
 
-/// Main app navigation widget with 4-tab bottom navigation
-/// 
-/// ARCHITECTURE DECISION: Changed from 5-tab to 4-tab layout
-/// - Removed disabled "Add" tab (was causing UX confusion)
-/// - FAB handles all "Add Transaction" functionality
-/// - Cleaner, more premium feel
+/// Main app navigation widget with M3 NavigationBar + glass treatment.
 class AppNavigation extends ConsumerWidget {
   const AppNavigation({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = ref.watch(selectedIndexProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
 
-    // 4 main screens - NO PLACEHOLDERS
     final List<Widget> screens = [
-      const DashboardScreen(),        // Tab 0: Home
-      const TransactionsScreen(),      // Tab 1: Transactions (FIXED - using real screen)
-      const InsightsScreen(),          // Tab 2: Insights
-      const MoreScreen(),              // Tab 3: More
+      const DashboardScreen(),
+      const TransactionsScreen(),
+      const InsightsScreen(),
+      const MoreScreen(),
     ];
 
     return Scaffold(
+      extendBody: true,
       body: IndexedStack(
         index: selectedIndex,
         children: screens,
       ),
-      // Global FAB - accessible from all tabs
       floatingActionButton: GradientFAB(
         onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const FinancialCopilotScreen(),
-              fullscreenDialog: true,
-            ),
-          );
+          HapticUtils.medium();
+          context.pushWithSlideUp(const FinancialCopilotScreen());
         },
-        icon: Icons.auto_awesome,
-        tooltip: 'Fin Copilot',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: selectedIndex,
-        onTap: (index) {
-          ref.read(selectedIndexProvider.notifier).state = index;
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppTheme.darkSurface.withOpacity(0.85)
+                  : Colors.white.withOpacity(0.85),
+              border: Border(
+                top: BorderSide(
+                  color: isDark
+                      ? Colors.white.withOpacity(0.06)
+                      : Colors.black.withOpacity(0.06),
+                ),
+              ),
+            ),
+            child: NavigationBar(
+              selectedIndex: selectedIndex,
+              onDestinationSelected: (index) {
+                HapticUtils.light();
+                ref.read(selectedIndexProvider.notifier).state = index;
+              },
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              indicatorColor: colors.primary.withOpacity(0.12),
+              height: DesignTokens.bottomNavHeight,
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              destinations: [
+                NavigationDestination(
+                  icon: Icon(AppIcons.dashboard, size: DesignTokens.iconMD),
+                  selectedIcon: Icon(AppIcons.dashboardFilled, size: DesignTokens.iconMD),
+                  label: 'Home',
+                ),
+                NavigationDestination(
+                  icon: Icon(AppIcons.transactions, size: DesignTokens.iconMD),
+                  selectedIcon: Icon(AppIcons.transactionsFilled, size: DesignTokens.iconMD),
+                  label: 'Transactions',
+                ),
+                NavigationDestination(
+                  icon: Icon(AppIcons.insights, size: DesignTokens.iconMD),
+                  selectedIcon: Icon(AppIcons.insightsFilled, size: DesignTokens.iconMD),
+                  label: 'Insights',
+                ),
+                NavigationDestination(
+                  icon: Icon(AppIcons.more, size: DesignTokens.iconMD),
+                  selectedIcon: Icon(AppIcons.moreFilled, size: DesignTokens.iconMD),
+                  label: 'More',
+                ),
+              ],
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long_outlined),
-            activeIcon: Icon(Icons.receipt_long),
-            label: 'Transactions',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.insights_outlined),
-            activeIcon: Icon(Icons.insights),
-            label: 'Insights',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.more_horiz),
-            activeIcon: Icon(Icons.more_horiz),
-            label: 'More',
-          ),
-        ],
+        ),
       ),
     );
   }

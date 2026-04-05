@@ -5,6 +5,7 @@ import '../../../../services/auth_service.dart';
 import '../../../../shared/models/price_result.dart';
 import '../../../../shared/widgets/shimmer_loading.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../services/preferences_service.dart';
 import '../../../../core/utils/haptic_utils.dart';
 
 class ShoppingScreen extends StatefulWidget {
@@ -486,10 +487,10 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
     });
 
     try {
-      // Get user location data (from user profile or device)
-      final userCountry = 'United States'; // TODO: Get from user profile or device locale
-      final userLanguage = 'English'; // TODO: Get from user profile or device locale
-      final userCurrency = 'USD'; // TODO: Get from user profile
+      // Get user location data from preferences or device locale
+      final userCountry = Localizations.localeOf(context).countryCode ?? 'US';
+      final userLanguage = Localizations.localeOf(context).languageCode;
+      final userCurrency = PreferencesService.getCurrency() ?? 'USD';
 
       // Check cache first
       final cachedResults = await _priceAgent.getCachedResults(

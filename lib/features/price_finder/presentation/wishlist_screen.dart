@@ -5,6 +5,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../shared/models/product_price_data.dart';
 import '../../../core/utils/haptic_utils.dart';
+import '../../../core/utils/currency_utils.dart';
+import '../../../services/preferences_service.dart';
 
 /// Wishlist Management Screen - Full CRUD with Premium Features
 ///
@@ -877,10 +879,10 @@ class _EditWishlistItemDialogState extends State<_EditWishlistItemDialog> {
             TextField(
               controller: _targetPriceController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Target Price',
-                prefixText: '\$',
-                border: OutlineInputBorder(),
+                prefixText: '${CurrencyUtils.getCurrencySymbol(PreferencesService.getCurrency() ?? 'USD')} ',
+                border: const OutlineInputBorder(),
               ),
             ),
 

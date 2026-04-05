@@ -1,24 +1,24 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../services/transaction_service.dart';
-import '../../../../services/auth_service.dart';
-import '../../../../shared/models/transaction.dart' as model;
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../../core/providers/app_providers.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/design_tokens.dart';
+import '../../../../models/transaction.dart' as model;
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/utils/haptic_utils.dart';
 import '../../../../core/constants/categories.dart';
 import 'transaction_detail_screen.dart';
 import '../../../../core/navigation/page_transitions.dart';
+import '../../../../core/navigation/app_navigation.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/light_card.dart';
+import '../../../../shared/widgets/glass_search_bar.dart';
+import '../../../../shared/widgets/shimmer_loading.dart';
 
-/// Transactions List Screen
-/// 
-/// PHASE 1 FIX #2 - Improvements:
-/// - ✅ Removed duplicate FAB (now handled by global navigation FAB)
-/// - ✅ Added search functionality (was TODO)
-/// - ✅ Category filter as popup menu (was horizontal scroll)
-/// - ✅ Gradient total spending card
-/// - ✅ Improved empty states
-/// - ✅ Uses AppCategories for consistent styling
+import '../../../../shared/widgets/animated_counter.dart';
+
 class TransactionsScreen extends ConsumerStatefulWidget {
   const TransactionsScreen({super.key});
 
@@ -39,289 +39,210 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authService = AuthService();
-    final transactionService = TransactionService();
-    final user = authService.currentUser;
-
-    if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text('Not logged in')),
-      );
-    }
+    final allTransactions = ref.watch(transactionsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Transactions'),
-        actions: [
-          // Category filter as popup menu
-          PopupMenuButton<String>(
-            icon: Icon(
-              _selectedCategory != null 
-                ? Icons.filter_alt 
-                : Icons.filter_alt_outlined,
-              color: _selectedCategory != null 
-                ? Theme.of(context).primaryColor 
-                : null,
-            ),
-            tooltip: 'Filter by category',
-            onSelected: (String? value) {
-              setState(() {
-                _selectedCategory = value == 'All' ? null : value;
-              });
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                const PopupMenuItem<String>(
-                  value: 'All',
-                  child: Row(
-                    children: [
-                      Icon(Icons.clear_all),
-                      SizedBox(width: 12),
-                      Text('All Categories'),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(),
-                ...AppCategories.categories.map((category) {
-                  return PopupMenuItem<String>(
-                    value: category.name,
-                    child: Row(
-                      children: [
-                        Icon(category.icon, color: category.color),
-                        const SizedBox(width: 12),
-                        Text(category.name),
-                      ],
-                    ),
-                  );
-                }),
-              ];
-            },
+      body: SafeArea(
+        bottom: false,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
           ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search transactions...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() {
-                            _searchController.clear();
-                            _searchQuery = '';
-                          });
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          slivers: [
+            // Header
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.space20,
+                DesignTokens.space12,
+                DesignTokens.space20,
+                DesignTokens.space8,
               ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value.toLowerCase();
-                });
-              },
-            ),
-          ),
-        ),
-      ),
-      body: StreamBuilder<List<model.Transaction>>(
-        stream: transactionService.getTransactions(user.uid),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text('Error: ${snapshot.error}'),
-                ],
-              ),
-            );
-          }
-
-          var transactions = snapshot.data ?? [];
-
-          // Apply category filter (case-insensitive comparison)
-          if (_selectedCategory != null) {
-            transactions = transactions
-                .where((t) => t.category.toLowerCase() == _selectedCategory!.toLowerCase())
-                .toList();
-          }
-
-          // Apply search filter
-          if (_searchQuery.isNotEmpty) {
-            transactions = transactions.where((t) {
-              final merchant = t.merchant?.toLowerCase() ?? '';
-              final category = t.category.toLowerCase();
-              final notes = t.notes?.toLowerCase() ?? '';
-              return merchant.contains(_searchQuery) ||
-                  category.contains(_searchQuery) ||
-                  notes.contains(_searchQuery);
-            }).toList();
-          }
-
-          // Show empty state
-          if (transactions.isEmpty) {
-            return _buildEmptyState();
-          }
-
-          // Calculate total
-          final total = transactions.fold<double>(
-            0.0,
-            (sum, transaction) => sum + transaction.amount,
-          );
-
-          return Column(
-            children: [
-              // Total spending card with gradient
-              Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Theme.of(context).primaryColor,
-                      Theme.of(context).primaryColor.withOpacity(0.7),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context).primaryColor.withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
+              sliver: SliverToBoxAdapter(
                 child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.account_balance_wallet,
-                        color: Colors.white,
-                        size: 28,
+                    GestureDetector(
+                      onTap: () => ref.read(selectedIndexProvider.notifier).state = 0,
+                      child: Icon(
+                        PhosphorIcons.arrowLeft(),
+                        size: DesignTokens.iconMD,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _selectedCategory != null
-                                ? '$_selectedCategory Spending'
-                                : _searchQuery.isNotEmpty
-                                    ? 'Search Results'
-                                    : 'Total Spending',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            CurrencyUtils.formatAmount(total, 'USD'),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    const SizedBox(width: DesignTokens.space12),
                     Text(
-                      '${transactions.length} ${transactions.length == 1 ? 'item' : 'items'}',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
+                      'Transactions',
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontFamily: 'Manrope',
+                                fontWeight: FontWeight.w800,
+                              ),
+                    ),
+                    const Spacer(),
+                    _FilterButton(
+                      selectedCategory: _selectedCategory,
+                      onSelected: (value) {
+                        setState(() {
+                          _selectedCategory = value;
+                        });
+                      },
                     ),
                   ],
                 ),
               ),
+            ),
 
-              // Transactions list
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  itemCount: transactions.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final transaction = transactions[index];
-                    return _TransactionCard(transaction: transaction);
+            // Search bar
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.space20,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: GlassSearchBar(
+                  controller: _searchController,
+                  hintText: 'Search transactions...',
+                  onChanged: (value) {
+                    setState(() => _searchQuery = value.toLowerCase());
                   },
                 ),
               ),
-            ],
-          );
-        },
+            ),
+
+            const SliverToBoxAdapter(
+              child: SizedBox(height: DesignTokens.space16),
+            ),
+
+            // Content
+            ...allTransactions.when(
+              loading: () => [
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.space20,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: const _SpendingSummarySkeleton(),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.space20,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => Padding(
+                        padding:
+                            const EdgeInsets.only(bottom: DesignTokens.space8),
+                        child: const TransactionTileSkeleton(),
+                      ),
+                      childCount: 6,
+                    ),
+                  ),
+                ),
+              ],
+              error: (e, _) => [
+                SliverFillRemaining(
+                  child: _ErrorState(
+                    onRetry: () => ref.invalidate(transactionsProvider),
+                  ),
+                ),
+              ],
+              data: (txnList) {
+                var transactions = txnList;
+
+                // Apply category filter
+                if (_selectedCategory != null) {
+                  transactions = transactions
+                      .where((t) =>
+                          t.category.toLowerCase() ==
+                          _selectedCategory!.toLowerCase())
+                      .toList();
+                }
+
+                // Apply search filter
+                if (_searchQuery.isNotEmpty) {
+                  transactions = transactions.where((t) {
+                    final merchant = t.merchant?.toLowerCase() ?? '';
+                    final category = t.category.toLowerCase();
+                    final notes = t.notes?.toLowerCase() ?? '';
+                    return merchant.contains(_searchQuery) ||
+                        category.contains(_searchQuery) ||
+                        notes.contains(_searchQuery);
+                  }).toList();
+                }
+
+                if (transactions.isEmpty) {
+                  return [
+                    SliverFillRemaining(
+                      child: _buildEmptyState(),
+                    ),
+                  ];
+                }
+
+                final total = transactions.fold<double>(
+                    0.0, (sum, t) => sum + t.amount);
+
+                return [
+                  // Spending summary card
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.space20,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: _SpendingSummaryCard(
+                        total: total,
+                        count: transactions.length,
+                        label: _selectedCategory != null
+                            ? '$_selectedCategory Spending'
+                            : _searchQuery.isNotEmpty
+                                ? 'Search Results'
+                                : 'Total Spending',
+                      ),
+                    ),
+                  ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: DesignTokens.space16),
+                  ),
+
+                  // Transaction list
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.space20,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final transaction = transactions[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(
+                                bottom: DesignTokens.space8),
+                            child: _TransactionTile(
+                              transaction: transaction,
+                            ),
+                          );
+                        },
+                        childCount: transactions.length,
+                      ),
+                    ),
+                  ),
+
+                  // Bottom padding for nav bar
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height:
+                          DesignTokens.bottomNavHeight + DesignTokens.space32,
+                    ),
+                  ),
+                ];
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyState() {
     if (_searchQuery.isNotEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search_off,
-              size: 80,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No results found',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Try different search terms',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _searchController.clear();
-                  _searchQuery = '';
-                });
-              },
-              icon: const Icon(Icons.clear),
-              label: const Text('Clear Search'),
-            ),
-          ],
-        ),
-      );
+      return NoSearchResultsEmpty(query: _searchQuery);
     }
 
     if (_selectedCategory != null) {
@@ -330,159 +251,335 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.filter_alt_off,
-              size: 80,
-              color: Colors.grey[400],
+              PhosphorIcons.funnel(),
+              size: 56,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: DesignTokens.space16),
             Text(
               'No $_selectedCategory transactions',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.space8),
             Text(
               'Try a different category',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.5),
+                  ),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _selectedCategory = null;
-                });
-              },
-              icon: const Icon(Icons.clear_all),
-              label: const Text('Show All'),
+            const SizedBox(height: DesignTokens.space20),
+            TextButton(
+              onPressed: () => setState(() => _selectedCategory = null),
+              child: const Text('Show All'),
             ),
           ],
         ),
       );
     }
 
-    return const EmptyState(
-      icon: Icons.receipt_long_outlined,
-      title: 'No transactions yet',
-      message: 'Tap the + button to add your first transaction',
+    return const NoTransactionsEmpty();
+  }
+}
+
+// ── Filter Button ─────────────────────────────────────────────────────
+
+class _FilterButton extends StatelessWidget {
+  final String? selectedCategory;
+  final ValueChanged<String?> onSelected;
+
+  const _FilterButton({
+    required this.selectedCategory,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = selectedCategory != null;
+
+    return PopupMenuButton<String>(
+      icon: Icon(
+        isActive
+            ? PhosphorIcons.funnel(PhosphorIconsStyle.fill)
+            : PhosphorIcons.funnel(),
+        size: DesignTokens.iconMD,
+        color: isActive ? AppTheme.primaryIndigo : null,
+      ),
+      tooltip: 'Filter by category',
+      shape: RoundedRectangleBorder(
+        borderRadius: DesignTokens.borderRadiusLG,
+      ),
+      onSelected: (String? value) {
+        HapticUtils.light();
+        onSelected(value == 'All' ? null : value);
+      },
+      itemBuilder: (BuildContext context) {
+        return [
+          PopupMenuItem<String>(
+            value: 'All',
+            child: Row(
+              children: [
+                Icon(PhosphorIcons.listDashes(), size: DesignTokens.iconSM),
+                const SizedBox(width: DesignTokens.space12),
+                const Text('All Categories'),
+              ],
+            ),
+          ),
+          const PopupMenuDivider(),
+          ...AppCategories.categories.map((category) {
+            return PopupMenuItem<String>(
+              value: category.name,
+              child: Row(
+                children: [
+                  Icon(category.icon,
+                      color: category.color, size: DesignTokens.iconSM),
+                  const SizedBox(width: DesignTokens.space12),
+                  Text(category.name),
+                ],
+              ),
+            );
+          }),
+        ];
+      },
     );
   }
 }
 
-/// Transaction Card Widget
-class _TransactionCard extends StatelessWidget {
-  final model.Transaction transaction;
+// ── Spending Summary Card ─────────────────────────────────────────────
 
-  const _TransactionCard({required this.transaction});
+class _SpendingSummaryCard extends StatelessWidget {
+  final double total;
+  final int count;
+  final String label;
+
+  const _SpendingSummaryCard({
+    required this.total,
+    required this.count,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Get category data from AppCategories
-    final categoryData = AppCategories.getCategoryByName(transaction.category);
-    final icon = categoryData.icon;
-    final color = categoryData.color;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          HapticUtils.light();
-          context.pushWithSlideUp(
-            TransactionDetailScreen(transaction: transaction),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Category icon
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+    return Container(
+      padding: DesignTokens.cardPaddingLarge,
+      decoration: BoxDecoration(
+        gradient: isDark
+            ? AppTheme.primaryGradientDark
+            : AppTheme.primaryGradient,
+        borderRadius: DesignTokens.borderRadiusXL,
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryIndigo.withOpacity(isDark ? 0.15 : 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(DesignTokens.space12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: DesignTokens.borderRadiusMD,
+            ),
+            child: Icon(
+              PhosphorIcons.wallet(PhosphorIconsStyle.fill),
+              color: Colors.white,
+              size: DesignTokens.iconMD,
+            ),
+          ),
+          const SizedBox(width: DesignTokens.space16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white70,
+                  ),
                 ),
-                child: Icon(icon, color: color, size: 24),
+                const SizedBox(height: 2),
+                AnimatedCounter(
+                  value: total,
+                  prefix: '\$',
+                  decimalPlaces: 2,
+                  style: const TextStyle(
+                    fontFamily: 'Manrope',
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.space12,
+              vertical: DesignTokens.space4,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: DesignTokens.borderRadiusFull,
+            ),
+            child: Text(
+              '$count ${count == 1 ? 'item' : 'items'}',
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
-              const SizedBox(width: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-              // Transaction details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      transaction.merchant ?? 'Unknown',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          transaction.category,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        if (transaction.notes != null && transaction.notes!.isNotEmpty) ...[
-                          Text(
-                            ' • ',
-                            style: TextStyle(color: Colors.grey[400]),
-                          ),
-                          Flexible(
-                            child: Text(
-                              transaction.notes!,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey[600],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
+// ── Transaction Tile ──────────────────────────────────────────────────
+
+class _TransactionTile extends StatelessWidget {
+  final model.Transaction transaction;
+
+  const _TransactionTile({required this.transaction});
+
+  @override
+  Widget build(BuildContext context) {
+    final categoryData =
+        AppCategories.getCategoryByName(transaction.category);
+    final isIncome = transaction.type == model.TransactionType.income;
+    final financeColors = context.financeColors;
+
+    return LightCard(
+      onTap: () {
+        HapticUtils.light();
+        context.pushWithSlideUp(
+          TransactionDetailScreen(transaction: transaction),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.space16,
+          vertical: DesignTokens.space12,
+        ),
+        child: Row(
+          children: [
+            // Category icon
+            Container(
+              width: DesignTokens.avatarMD,
+              height: DesignTokens.avatarMD,
+              decoration: BoxDecoration(
+                color: categoryData.color.withOpacity(0.12),
+                borderRadius: DesignTokens.borderRadiusMD,
+              ),
+              child: Center(
+                child: Icon(
+                  categoryData.icon,
+                  color: categoryData.color,
+                  size: DesignTokens.iconSM,
                 ),
               ),
+            ),
+            const SizedBox(width: DesignTokens.space12),
 
-              // Amount and date
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+            // Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    CurrencyUtils.formatAmount(transaction.amount, transaction.currency),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    transaction.merchant ?? 'Unknown',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatDate(transaction.transactionDate),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Text(
+                        transaction.category,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.5),
+                            ),
+                      ),
+                      if (transaction.notes != null &&
+                          transaction.notes!.isNotEmpty) ...[
+                        Text(
+                          ' · ',
+                          style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.3),
+                          ),
+                        ),
+                        Flexible(
+                          child: Text(
+                            transaction.notes!,
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.5),
+                                    ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+
+            const SizedBox(width: DesignTokens.space8),
+
+            // Amount and date
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${isIncome ? '+' : '-'}${CurrencyUtils.formatAmount(transaction.amount.abs(), transaction.currency)}',
+                  style: AppTheme.monoAmountStyle(context).copyWith(
+                        color: isIncome
+                            ? financeColors.positive
+                            : financeColors.negative,
+                        fontFeatures: [const FontFeature.tabularFigures()],
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _formatDate(transaction.transactionDate),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 11,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.4),
+                      ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -494,35 +591,67 @@ class _TransactionCard extends StatelessWidget {
     final yesterday = today.subtract(const Duration(days: 1));
     final transactionDate = DateTime(date.year, date.month, date.day);
 
-    if (transactionDate == today) {
-      return 'Today';
-    } else if (transactionDate == yesterday) {
-      return 'Yesterday';
-    } else if (now.difference(date).inDays < 7) {
-      return _getDayName(date.weekday);
-    } else {
-      return '${date.month}/${date.day}/${date.year}';
-    }
+    if (transactionDate == today) return 'Today';
+    if (transactionDate == yesterday) return 'Yesterday';
+    if (now.difference(date).inDays < 7) return _getDayName(date.weekday);
+    return '${date.month}/${date.day}';
   }
 
   String _getDayName(int weekday) {
-    switch (weekday) {
-      case 1:
-        return 'Monday';
-      case 2:
-        return 'Tuesday';
-      case 3:
-        return 'Wednesday';
-      case 4:
-        return 'Thursday';
-      case 5:
-        return 'Friday';
-      case 6:
-        return 'Saturday';
-      case 7:
-        return 'Sunday';
-      default:
-        return '';
-    }
+    const days = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
+    return days[weekday - 1];
+  }
+}
+
+// ── Skeletons ─────────────────────────────────────────────────────────
+
+class _SpendingSummarySkeleton extends StatelessWidget {
+  const _SpendingSummarySkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const CardSkeleton();
+  }
+}
+
+// ── Error State ───────────────────────────────────────────────────────
+
+class _ErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _ErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            PhosphorIcons.warning(),
+            size: 48,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          const SizedBox(height: DesignTokens.space16),
+          Text(
+            'Unable to load transactions',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: DesignTokens.space12),
+          TextButton(
+            onPressed: onRetry,
+            child: const Text('Try Again'),
+          ),
+        ],
+      ),
+    );
   }
 }

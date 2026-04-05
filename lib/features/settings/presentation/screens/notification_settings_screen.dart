@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import '../../../../core/navigation/page_transitions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/notification_service.dart';
@@ -297,23 +298,44 @@ class _NotificationSettingsScreenState
   }
 
   Future<void> _sendTestNotification() async {
-    await _notificationService.sendMilestoneNotification(
-      title: '🎉 Test Notification',
-      body: 'Notifications are working correctly! Your FinCoPilot is ready to help you stay on track.',
-      milestoneType: 'test',
-      achievementData: {
-        'type': 'test_notification',
-        'timestamp': DateTime.now().toIso8601String(),
-      },
-    );
+    // Check permission first
+    final permitted = await _notificationService.areNotificationsPermitted();
+    if (!permitted) {
+      // Try to request permission
+      final granted = await _notificationService.requestPermissionAgain();
+      if (!granted && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Notification permission denied. Please enable in Android Settings → Apps → FinCoPilot → Notifications.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 5),
+          ),
+        );
+        return;
+      }
+    }
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Test notification sent!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+    try {
+      await _notificationService.showTestNotification();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Test notification sent! Check your notification shade.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Notification failed: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 
@@ -321,11 +343,7 @@ class _NotificationSettingsScreenState
     final user = _authService.currentUser;
     if (user == null) return;
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => _NotificationHistoryScreen(userId: user.uid),
-      ),
-    );
+    context.pushWithSlideUp(_NotificationHistoryScreen(userId: user.uid));
   }
 
   Future<void> _clearAllNotifications() async {
